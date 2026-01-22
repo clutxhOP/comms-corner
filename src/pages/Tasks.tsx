@@ -5,24 +5,33 @@ import { LeadAlertCard } from '@/components/tasks/LeadAlertCard';
 import { LeadOutreachCard } from '@/components/tasks/LeadOutreachCard';
 import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
-import { mockTasks } from '@/data/mockData';
-import { Task } from '@/types';
+import { useTasks, DbTask } from '@/hooks/useTasks';
+import { Task, LeadApprovalDetails, LeadAlertDetails, LeadOutreachDetails, OtherTaskDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck, MoreHorizontal } from 'lucide-react';
 
+// Convert DbTask to Task for components
+function convertToTask(dbTask: DbTask): Task {
+  return {
+    id: dbTask.id,
+    type: dbTask.type,
+    title: dbTask.title,
+    status: dbTask.status === 'approved' || dbTask.status === 'disapproved' ? 'done' : dbTask.status,
+    createdAt: dbTask.created_at,
+    details: dbTask.details as unknown as Task['details'],
+    disapprovalReason: dbTask.disapproval_reason || undefined,
+  };
+}
+
 export default function Tasks() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const { tasks, loading, approveTask, disapproveTask, markTaskDone } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const handleTaskAction = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: 'done' }
-        : task
-    ));
+  const handleApprove = async (taskId: string) => {
+    await approveTask(taskId);
   };
 
   const handleDisapproveClick = (taskId: string) => {
@@ -30,15 +39,15 @@ export default function Tasks() {
     setDisapprovalDialogOpen(true);
   };
 
-  const handleDisapprovalConfirm = (reason: string) => {
+  const handleDisapprovalConfirm = async (reason: string) => {
     if (selectedTaskId) {
-      setTasks(prev => prev.map(task => 
-        task.id === selectedTaskId 
-          ? { ...task, status: 'done', disapprovalReason: reason }
-          : task
-      ));
+      await disapproveTask(selectedTaskId, reason);
       setSelectedTaskId(null);
     }
+  };
+
+  const handleMarkDone = async (taskId: string) => {
+    await markTaskDone(taskId);
   };
 
   const filteredTasks = tasks.filter(task => 
@@ -54,43 +63,68 @@ export default function Tasks() {
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
-  const renderTaskCard = (task: Task) => {
-    switch (task.type) {
+  const renderTaskCard = (dbTask: DbTask) => {
+    const task = convertToTask(dbTask);
+    const isActioned = dbTask.status === 'approved' || dbTask.status === 'disapproved' || dbTask.status === 'done';
+    
+    switch (dbTask.type) {
       case 'lead-approval':
         return (
           <LeadApprovalCard 
-            key={task.id} 
-            task={task} 
-            onApprove={handleTaskAction}
+            key={dbTask.id} 
+            task={{
+              ...task,
+              status: isActioned ? 'done' : 'pending',
+            }} 
+            onApprove={handleApprove}
             onDisapprove={handleDisapproveClick}
           />
         );
       case 'lead-alert':
         return (
           <LeadAlertCard 
-            key={task.id} 
-            task={task} 
-            onMarkDone={handleTaskAction}
+            key={dbTask.id} 
+            task={{
+              ...task,
+              status: isActioned ? 'done' : 'pending',
+            }} 
+            onMarkDone={handleMarkDone}
           />
         );
       case 'lead-outreach':
         return (
           <LeadOutreachCard 
-            key={task.id} 
-            task={task} 
-            onMarkDone={handleTaskAction}
+            key={dbTask.id} 
+            task={{
+              ...task,
+              status: isActioned ? 'done' : 'pending',
+            }} 
+            onMarkDone={handleMarkDone}
           />
         );
       case 'other':
         return (
           <OtherTaskCard 
-            key={task.id} 
-            task={task} 
-            onMarkDone={handleTaskAction}
+            key={dbTask.id} 
+            task={{
+              ...task,
+              status: isActioned ? 'done' : 'pending',
+            }} 
+            onMarkDone={handleMarkDone}
           />
         );
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -146,30 +180,55 @@ export default function Tasks() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredTasks.map(renderTaskCard)}
             </div>
+            {filteredTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No tasks found
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="approvals" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {approvalTasks.map(renderTaskCard)}
             </div>
+            {approvalTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No approval tasks
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="alerts" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {alertTasks.map(renderTaskCard)}
             </div>
+            {alertTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No alert tasks
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="outreach" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {outreachTasks.map(renderTaskCard)}
             </div>
+            {outreachTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No outreach tasks
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="other" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {otherTasks.map(renderTaskCard)}
             </div>
+            {otherTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No other tasks
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

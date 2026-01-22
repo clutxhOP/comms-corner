@@ -1,14 +1,26 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { mockTasks } from '@/data/mockData';
+import { useTasks } from '@/hooks/useTasks';
 import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock } from 'lucide-react';
 
 export default function Dashboard() {
-  const pendingApprovals = mockTasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
-  const leadAlerts = mockTasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
-  const pendingOutreach = mockTasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
-  const completedToday = mockTasks.filter(t => t.status === 'done').length;
-  const totalPending = mockTasks.filter(t => t.status === 'pending').length;
+  const { tasks, loading } = useTasks();
+
+  const pendingApprovals = tasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
+  const leadAlerts = tasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
+  const pendingOutreach = tasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
+  const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'approved').length;
+  const totalPending = tasks.filter(t => t.status === 'pending').length;
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -23,14 +35,12 @@ export default function Dashboard() {
             title="Pending Approvals"
             value={pendingApprovals}
             icon={CheckSquare}
-            trend={{ value: 12, isPositive: false }}
             className="border-l-4 border-l-primary"
           />
           <StatCard
             title="Lead Alerts"
             value={leadAlerts}
             icon={AlertCircle}
-            trend={{ value: 2, isPositive: false }}
             className="border-l-4 border-l-destructive"
           />
           <StatCard
@@ -40,10 +50,9 @@ export default function Dashboard() {
             className="border-l-4 border-l-warning"
           />
           <StatCard
-            title="Completed Today"
-            value={completedToday}
+            title="Completed"
+            value={completedTasks}
             icon={CheckCircle2}
-            trend={{ value: 8, isPositive: true }}
             className="border-l-4 border-l-success"
           />
         </div>
@@ -55,36 +64,36 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Lead Approvals</span>
-                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-approval').length}</span>
+                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-approval').length}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary rounded-full transition-all" 
-                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-approval').length / mockTasks.length) * 100}%` }}
+                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-approval').length / tasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Lead Alerts</span>
-                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-alert').length}</span>
+                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-alert').length}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-destructive rounded-full transition-all" 
-                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-alert').length / mockTasks.length) * 100}%` }}
+                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-alert').length / tasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Lead Outreach</span>
-                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-outreach').length}</span>
+                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-outreach').length}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-warning rounded-full transition-all" 
-                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-outreach').length / mockTasks.length) * 100}%` }}
+                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-outreach').length / tasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>
@@ -107,7 +116,7 @@ export default function Dashboard() {
                   <span>Completion Rate</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {Math.round((completedToday / mockTasks.length) * 100)}%
+                  {tasks.length ? Math.round((completedTasks / tasks.length) * 100) : 0}%
                 </p>
               </div>
             </div>
