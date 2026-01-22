@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ const adminNavItems = [
   { title: 'Admin Dashboard', url: '/admin', icon: Shield },
   { title: 'Manage Users', url: '/admin/users', icon: Users },
   { title: 'Create Task', url: '/admin/create-task', icon: Plus },
+  { title: 'API Docs', url: '/admin/api-docs', icon: Code },
 ];
 
 export function AppSidebar() {
