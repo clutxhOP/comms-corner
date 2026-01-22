@@ -3,15 +3,19 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { LeadApprovalCard } from '@/components/tasks/LeadApprovalCard';
 import { LeadAlertCard } from '@/components/tasks/LeadAlertCard';
 import { LeadOutreachCard } from '@/components/tasks/LeadOutreachCard';
+import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
+import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
 import { mockTasks } from '@/data/mockData';
 import { Task } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck } from 'lucide-react';
+import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck, MoreHorizontal } from 'lucide-react';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [searchQuery, setSearchQuery] = useState('');
+  const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const handleTaskAction = (taskId: string) => {
     setTasks(prev => prev.map(task => 
@@ -21,16 +25,34 @@ export default function Tasks() {
     ));
   };
 
+  const handleDisapproveClick = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDisapprovalDialogOpen(true);
+  };
+
+  const handleDisapprovalConfirm = (reason: string) => {
+    if (selectedTaskId) {
+      setTasks(prev => prev.map(task => 
+        task.id === selectedTaskId 
+          ? { ...task, status: 'done', disapprovalReason: reason }
+          : task
+      ));
+      setSelectedTaskId(null);
+    }
+  };
+
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const pendingTasks = filteredTasks.filter(t => t.status === 'pending');
-  const doneTasks = filteredTasks.filter(t => t.status === 'done');
   
   const approvalTasks = filteredTasks.filter(t => t.type === 'lead-approval');
   const alertTasks = filteredTasks.filter(t => t.type === 'lead-alert');
   const outreachTasks = filteredTasks.filter(t => t.type === 'lead-outreach');
+  const otherTasks = filteredTasks.filter(t => t.type === 'other');
+
+  const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   const renderTaskCard = (task: Task) => {
     switch (task.type) {
@@ -40,7 +62,7 @@ export default function Tasks() {
             key={task.id} 
             task={task} 
             onApprove={handleTaskAction}
-            onDisapprove={handleTaskAction}
+            onDisapprove={handleDisapproveClick}
           />
         );
       case 'lead-alert':
@@ -54,6 +76,14 @@ export default function Tasks() {
       case 'lead-outreach':
         return (
           <LeadOutreachCard 
+            key={task.id} 
+            task={task} 
+            onMarkDone={handleTaskAction}
+          />
+        );
+      case 'other':
+        return (
+          <OtherTaskCard 
             key={task.id} 
             task={task} 
             onMarkDone={handleTaskAction}
@@ -106,6 +136,10 @@ export default function Tasks() {
               <Send className="h-4 w-4" />
               Outreach ({outreachTasks.length})
             </TabsTrigger>
+            <TabsTrigger value="other" className="gap-1.5">
+              <MoreHorizontal className="h-4 w-4" />
+              Other ({otherTasks.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
@@ -131,8 +165,21 @@ export default function Tasks() {
               {outreachTasks.map(renderTaskCard)}
             </div>
           </TabsContent>
+
+          <TabsContent value="other" className="mt-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {otherTasks.map(renderTaskCard)}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
+
+      <DisapprovalDialog
+        open={disapprovalDialogOpen}
+        onOpenChange={setDisapprovalDialogOpen}
+        onConfirm={handleDisapprovalConfirm}
+        taskTitle={selectedTask?.title || ''}
+      />
     </MainLayout>
   );
 }

@@ -1,4 +1,9 @@
-export type TaskType = 'lead-approval' | 'lead-alert' | 'lead-outreach';
+export type TaskType = 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'other';
+
+export interface OtherTaskDetails {
+  description: string;
+  notes?: string;
+}
 
 export interface LeadApprovalDetails {
   clientId: string;
@@ -33,7 +38,8 @@ export interface Task {
   title: string;
   status: 'pending' | 'done';
   createdAt: string;
-  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails;
+  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | OtherTaskDetails;
+  disapprovalReason?: string;
 }
 
 export interface ChatMessage {
