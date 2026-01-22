@@ -1,10 +1,14 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/hooks/useAuth';
 import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock, FileText } from 'lucide-react';
 
 export default function Dashboard() {
   const { tasks, loading } = useTasks();
+  const { profile } = useAuth();
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
   const pendingApprovals = tasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
   const leadAlerts = tasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
@@ -27,8 +31,8 @@ export default function Dashboard() {
     <MainLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Overview of your operations</p>
+          <h1 className="text-2xl font-bold text-foreground">Welcome back, {firstName}!</h1>
+          <p className="text-muted-foreground mt-1">Here's an overview of your operations</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
