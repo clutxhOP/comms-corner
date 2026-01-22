@@ -73,6 +73,45 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          company: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          last_lead_sent_at: string | null
+          name: string
+          phone: string | null
+          total_leads_sent: number
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          last_lead_sent_at?: string | null
+          name: string
+          phone?: string | null
+          total_leads_sent?: number
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          last_lead_sent_at?: string | null
+          name?: string
+          phone?: string | null
+          total_leads_sent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
