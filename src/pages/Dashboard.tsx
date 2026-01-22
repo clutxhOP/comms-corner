@@ -1,131 +1,114 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { TaskCard } from '@/components/tasks/TaskCard';
 import { mockTasks } from '@/data/mockData';
-import { CheckCircle2, Clock, AlertCircle, ListTodo, TrendingUp } from 'lucide-react';
+import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock } from 'lucide-react';
 
 export default function Dashboard() {
-  const openTasks = mockTasks.filter(t => t.status === 'open').length;
-  const inProgressTasks = mockTasks.filter(t => t.status === 'in-progress').length;
-  const completedTasks = mockTasks.filter(t => t.status === 'done').length;
-  const totalTasks = mockTasks.length;
-
-  const recentTasks = mockTasks.slice(0, 3);
+  const pendingApprovals = mockTasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
+  const leadAlerts = mockTasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
+  const pendingOutreach = mockTasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
+  const completedToday = mockTasks.filter(t => t.status === 'done').length;
+  const totalPending = mockTasks.filter(t => t.status === 'pending').length;
 
   return (
     <MainLayout>
-      <div className="p-6 space-y-8">
+      <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's your operations overview.</p>
+          <p className="text-muted-foreground mt-1">Overview of your operations</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Open Tasks"
-            value={openTasks}
-            icon={<ListTodo className="h-5 w-5" />}
-            variant="primary"
+            title="Pending Approvals"
+            value={pendingApprovals}
+            icon={CheckSquare}
             trend={{ value: 12, isPositive: false }}
+            className="border-l-4 border-l-primary"
           />
           <StatCard
-            title="In Progress"
-            value={inProgressTasks}
-            icon={<Clock className="h-5 w-5" />}
-            variant="warning"
+            title="Lead Alerts"
+            value={leadAlerts}
+            icon={AlertCircle}
+            trend={{ value: 2, isPositive: false }}
+            className="border-l-4 border-l-destructive"
           />
           <StatCard
-            title="Completed"
-            value={completedTasks}
-            icon={<CheckCircle2 className="h-5 w-5" />}
-            variant="success"
+            title="Pending Outreach"
+            value={pendingOutreach}
+            icon={Send}
+            className="border-l-4 border-l-warning"
+          />
+          <StatCard
+            title="Completed Today"
+            value={completedToday}
+            icon={CheckCircle2}
             trend={{ value: 8, isPositive: true }}
-          />
-          <StatCard
-            title="Completion Rate"
-            value={`${Math.round((completedTasks / totalTasks) * 100)}%`}
-            icon={<TrendingUp className="h-5 w-5" />}
-            variant="default"
+            className="border-l-4 border-l-success"
           />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">Recent Tasks</h2>
-              <a href="/tasks" className="text-sm font-medium text-primary hover:underline">View all</a>
-            </div>
-            <div className="space-y-3">
-              {recentTasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Quick Stats</h2>
-            <div className="rounded-xl border bg-card p-6 shadow-card">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">High Priority</span>
-                  <span className="font-semibold text-destructive">
-                    {mockTasks.filter(t => t.priority === 'high' && t.status !== 'done').length}
-                  </span>
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <h2 className="font-semibold text-foreground mb-4">Task Distribution</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Lead Approvals</span>
+                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-approval').length}</span>
                 </div>
-                <div className="h-px bg-border" />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Due Today</span>
-                  <span className="font-semibold text-warning">
-                    {mockTasks.filter(t => t.dueDate === '2026-01-22').length}
-                  </span>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all" 
+                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-approval').length / mockTasks.length) * 100}%` }}
+                  />
                 </div>
-                <div className="h-px bg-border" />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Team Members Active</span>
-                  <span className="font-semibold text-success">4</span>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Lead Alerts</span>
+                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-alert').length}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-destructive rounded-full transition-all" 
+                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-alert').length / mockTasks.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Lead Outreach</span>
+                  <span className="font-medium">{mockTasks.filter(t => t.type === 'lead-outreach').length}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-warning rounded-full transition-all" 
+                    style={{ width: `${(mockTasks.filter(t => t.type === 'lead-outreach').length / mockTasks.length) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="rounded-xl border bg-card p-6 shadow-card">
-              <h3 className="font-medium text-foreground mb-4">Task Distribution</h3>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Open</span>
-                    <span className="font-medium">{openTasks}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${(openTasks / totalTasks) * 100}%` }}
-                    />
-                  </div>
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <h2 className="font-semibold text-foreground mb-4">Quick Stats</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Clock className="h-4 w-4" />
+                  <span>Total Pending</span>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">In Progress</span>
-                    <span className="font-medium">{inProgressTasks}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-warning rounded-full transition-all"
-                      style={{ width: `${(inProgressTasks / totalTasks) * 100}%` }}
-                    />
-                  </div>
+                <p className="text-2xl font-bold text-foreground mt-1">{totalPending}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Completion Rate</span>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Completed</span>
-                    <span className="font-medium">{completedTasks}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-success rounded-full transition-all"
-                      style={{ width: `${(completedTasks / totalTasks) * 100}%` }}
-                    />
-                  </div>
-                </div>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {Math.round((completedToday / mockTasks.length) * 100)}%
+                </p>
               </div>
             </div>
           </div>
