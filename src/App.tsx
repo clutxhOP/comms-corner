@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import CreateTask from "./pages/admin/CreateTask";
+import ApiDocs from "./pages/admin/ApiDocs";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,11 @@ const App = () => (
             <Route path="/admin/create-task" element={
               <ProtectedRoute requireAdmin>
                 <CreateTask />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/api-docs" element={
+              <ProtectedRoute requireAdmin>
+                <ApiDocs />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
