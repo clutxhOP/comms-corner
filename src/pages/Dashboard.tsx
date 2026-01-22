@@ -1,7 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useTasks } from '@/hooks/useTasks';
-import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock } from 'lucide-react';
+import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock, FileText } from 'lucide-react';
 
 export default function Dashboard() {
   const { tasks, loading } = useTasks();
@@ -9,6 +9,7 @@ export default function Dashboard() {
   const pendingApprovals = tasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
   const leadAlerts = tasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
   const pendingOutreach = tasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
+  const pendingOthers = tasks.filter(t => t.type === 'other' && t.status === 'pending').length;
   const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'approved').length;
   const totalPending = tasks.filter(t => t.status === 'pending').length;
 
@@ -30,7 +31,7 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">Overview of your operations</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Pending Approvals"
             value={pendingApprovals}
@@ -48,6 +49,12 @@ export default function Dashboard() {
             value={pendingOutreach}
             icon={Send}
             className="border-l-4 border-l-warning"
+          />
+          <StatCard
+            title="Pending Others"
+            value={pendingOthers}
+            icon={FileText}
+            className="border-l-4 border-l-muted-foreground"
           />
           <StatCard
             title="Completed"
@@ -94,6 +101,18 @@ export default function Dashboard() {
                   <div 
                     className="h-full bg-warning rounded-full transition-all" 
                     style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-outreach').length / tasks.length) * 100}%` : '0%' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Other Tasks</span>
+                  <span className="font-medium">{tasks.filter(t => t.type === 'other').length}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-muted-foreground rounded-full transition-all" 
+                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'other').length / tasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>

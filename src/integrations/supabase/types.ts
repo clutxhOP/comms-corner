@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_channels: {
+        Row: {
+          allowed_roles: Database["public"]["Enums"]["user_role"][]
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          allowed_roles?: Database["public"]["Enums"]["user_role"][]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          allowed_roles?: Database["public"]["Enums"]["user_role"][]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          channel_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -40,6 +99,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      task_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -90,19 +181,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["user_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["user_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["user_role"]
           user_id?: string
         }
         Relationships: []
@@ -114,16 +205,16 @@ export type Database = {
     Functions: {
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
         Returns: boolean
       }
     }
     Enums: {
-      app_role: "admin" | "user"
       task_status: "pending" | "done" | "approved" | "disapproved"
       task_type: "lead-approval" | "lead-alert" | "lead-outreach" | "other"
+      user_role: "admin" | "dev" | "ops"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -251,9 +342,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
       task_status: ["pending", "done", "approved", "disapproved"],
       task_type: ["lead-approval", "lead-alert", "lead-outreach", "other"],
+      user_role: ["admin", "dev", "ops"],
     },
   },
 } as const
