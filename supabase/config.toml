@@ -1,1 +1,10 @@
 project_id = "ypbdxgcumtbtfknpoykp"
+
+[functions.manage-tasks]
+verify_jwt = false
+
+[functions.manage-customers]
+verify_jwt = false
+
+[functions.record-lead-sent]
+verify_jwt = false

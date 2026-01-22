@@ -131,8 +131,8 @@ export default function AdminDashboard() {
                 {userAssignedStats.map(user => (
                   <Collapsible key={user.id} open={expandedUsers.has(user.id)} onOpenChange={() => toggleUserExpanded(user.id)}>
                     <TableRow className={user.total > 0 ? "cursor-pointer hover:bg-muted/50" : ""}>
-                      <TableCell className="w-10">
-                        {user.total > 0 && (
+                      <TableCell className="w-10 px-2">
+                        {user.total > 0 ? (
                           <CollapsibleTrigger asChild>
                             <button className="p-1 rounded hover:bg-muted">
                               {expandedUsers.has(user.id) ? (
@@ -142,6 +142,8 @@ export default function AdminDashboard() {
                               )}
                             </button>
                           </CollapsibleTrigger>
+                        ) : (
+                          <div className="w-6" />
                         )}
                       </TableCell>
                       <TableCell onClick={() => user.total > 0 && toggleUserExpanded(user.id)}>
