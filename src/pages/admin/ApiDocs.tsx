@@ -258,30 +258,13 @@ export default function ApiDocs() {
                 <Endpoint
                   method="POST"
                   path="/manage-tasks"
-                  description="Create a new task. Admin only."
+                  description="Create a new task. Admin only. All details fields are mandatory based on task type."
                   auth="Admin only"
                   requestBody={`{
   "type": "lead-approval | lead-alert | lead-outreach | other",
   "title": "Task title (required)",
   "assigned_to": "profile_id (optional)",
-  "details": {
-    // Task-specific data (optional)
-    // For lead-approval:
-    "leadName": "John Doe",
-    "email": "john@example.com",
-    "source": "Website",
-    
-    // For lead-alert:
-    "alertType": "high-priority",
-    "message": "Urgent follow-up needed",
-    
-    // For lead-outreach:
-    "targetCompany": "Acme Inc",
-    "contactPerson": "Jane Smith",
-    
-    // For other:
-    "description": "Custom task details"
-  }
+  "details": { ... } // Required fields depend on task type (see below)
 }`}
                   responseExample={`{
   "data": {
@@ -289,10 +272,60 @@ export default function ApiDocs() {
     "type": "lead-approval",
     "title": "Task title",
     "status": "pending",
+    "details": { ... },
     "created_at": "2026-01-22T10:00:00Z"
   }
 }`}
                 />
+
+                {/* Task Type Schemas */}
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                  <h4 className="font-medium text-foreground">Task Type Details Schema (all fields mandatory)</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Badge className="mb-2">lead-approval</Badge>
+                      <CodeBlock code={`{
+  "clientId": "string",
+  "category": "string",
+  "icp": "string",
+  "requirement": "string",
+  "contactInfo": "string (email or URL)",
+  "proofLink": "string (URL)"
+}`} />
+                    </div>
+
+                    <div>
+                      <Badge className="mb-2">lead-alert</Badge>
+                      <CodeBlock code={`{
+  "clientName": "string",
+  "category": "string",
+  "whatsapp": "string",
+  "clientStatus": "string",
+  "alertLevel": "yellow | red",
+  "issue": "string",
+  "timeSinceLastLead": "string (e.g., '48 hours')"
+}`} />
+                    </div>
+
+                    <div>
+                      <Badge className="mb-2">lead-outreach</Badge>
+                      <CodeBlock code={`{
+  "requirement": "string",
+  "contactInfo": "string (email or URL)",
+  "post": "string (URL to the post)",
+  "comment": "string (comment to post)"
+}`} />
+                    </div>
+
+                    <div>
+                      <Badge className="mb-2">other</Badge>
+                      <CodeBlock code={`{
+  "description": "string"
+}`} />
+                    </div>
+                  </div>
+                </div>
 
                 <Endpoint
                   method="DELETE"
