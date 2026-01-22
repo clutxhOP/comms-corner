@@ -1,38 +1,22 @@
-import { ReactNode } from 'react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
   value: number | string;
-  icon: ReactNode;
+  icon: LucideIcon;
   trend?: {
     value: number;
     isPositive: boolean;
   };
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'destructive';
+  className?: string;
 }
 
-const variantStyles = {
-  default: 'bg-card',
-  primary: 'bg-primary/10',
-  success: 'bg-success/10',
-  warning: 'bg-warning/10',
-  destructive: 'bg-destructive/10',
-};
-
-const iconVariantStyles = {
-  default: 'bg-muted text-muted-foreground',
-  primary: 'bg-primary/20 text-primary',
-  success: 'bg-success/20 text-success',
-  warning: 'bg-warning/20 text-warning',
-  destructive: 'bg-destructive/20 text-destructive',
-};
-
-export function StatCard({ title, value, icon, trend, variant = 'default' }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
   return (
     <div className={cn(
-      'rounded-xl border p-6 shadow-card transition-shadow hover:shadow-card-hover animate-fade-in',
-      variantStyles[variant]
+      'rounded-xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md',
+      className
     )}>
       <div className="flex items-start justify-between">
         <div>
@@ -47,11 +31,8 @@ export function StatCard({ title, value, icon, trend, variant = 'default' }: Sta
             </p>
           )}
         </div>
-        <div className={cn(
-          'rounded-lg p-3',
-          iconVariantStyles[variant]
-        )}>
-          {icon}
+        <div className="rounded-lg p-3 bg-muted">
+          <Icon className="h-5 w-5 text-muted-foreground" />
         </div>
       </div>
     </div>

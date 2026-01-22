@@ -26,15 +26,15 @@ const settingsNavItems = [
 
 export function AppSidebar() {
   return (
-    <Sidebar className="border-r-0">
+    <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-            <span className="text-sm font-bold text-sidebar-primary-foreground">OP</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
+            <span className="text-sm font-bold text-primary-foreground">OP</span>
           </div>
           <div>
             <h2 className="text-sm font-semibold text-sidebar-foreground">Ops Portal</h2>
-            <p className="text-xs text-sidebar-foreground/60">Internal Tools</p>
+            <p className="text-xs text-muted-foreground">Internal Tools</p>
           </div>
         </div>
       </SidebarHeader>
