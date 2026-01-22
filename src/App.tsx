@@ -41,6 +41,12 @@ const App = () => (
                 <Chat />
               </ProtectedRoute>
             } />
+            {/* API Docs accessible by admin and dev */}
+            <Route path="/api-docs" element={
+              <ProtectedRoute requireDevOrAdmin>
+                <ApiDocs />
+              </ProtectedRoute>
+            } />
             <Route path="/admin" element={
               <ProtectedRoute requireAdmin>
                 <AdminDashboard />
@@ -56,8 +62,9 @@ const App = () => (
                 <CreateTask />
               </ProtectedRoute>
             } />
+            {/* Keep old route for backwards compatibility */}
             <Route path="/admin/api-docs" element={
-              <ProtectedRoute requireAdmin>
+              <ProtectedRoute requireDevOrAdmin>
                 <ApiDocs />
               </ProtectedRoute>
             } />

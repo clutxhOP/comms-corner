@@ -70,7 +70,7 @@ export default function CreateTask() {
       title,
       status: 'pending',
       details,
-      assigned_to: assignedTo || null,
+      assigned_to: assignedTo ? [assignedTo] : null,  // Convert single ID to array
       created_by: null,
       disapproval_reason: null,
     });
