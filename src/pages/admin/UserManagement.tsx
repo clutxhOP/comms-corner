@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useUsers } from '@/hooks/useUsers';
+import { useUsers, UserRole } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -17,13 +18,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -32,14 +26,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Shield, User, Users, Plus, Trash2, KeyRound } from 'lucide-react';
+import { Shield, User, Users, Plus, Trash2, KeyRound, Code, Settings } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
+const AVAILABLE_ROLES: { value: UserRole; label: string; icon: React.ReactNode }[] = [
+  { value: 'admin', label: 'Admin', icon: <Shield className="h-4 w-4" /> },
+  { value: 'dev', label: 'Developer', icon: <Code className="h-4 w-4" /> },
+  { value: 'ops', label: 'Operations', icon: <Settings className="h-4 w-4" /> },
+];
+
 export default function UserManagement() {
-  const { users, loading, setUserRole, fetchUsers } = useUsers();
+  const { users, loading, addUserRole, removeUserRole, fetchUsers } = useUsers();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -48,7 +48,7 @@ export default function UserManagement() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
-  const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
+  const [newRoles, setNewRoles] = useState<UserRole[]>(['ops']);
   const [addLoading, setAddLoading] = useState(false);
 
   // Reset password dialog state
@@ -63,6 +63,12 @@ export default function UserManagement() {
   const [editUserId, setEditUserId] = useState<string | null>(null);
   const [editFullName, setEditFullName] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+
+  const toggleNewRole = (role: UserRole) => {
+    setNewRoles(prev => 
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    );
+  };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +91,6 @@ export default function UserManagement() {
     setAddLoading(true);
 
     try {
-      // Create user via Supabase Auth admin endpoint (using signUp for now since we don't have admin API access)
       const { data, error } = await supabase.auth.signUp({
         email: newEmail,
         password: newPassword,
@@ -105,11 +110,11 @@ export default function UserManagement() {
           .update({ full_name: newFullName })
           .eq('user_id', data.user.id);
 
-        // Set role if not default
-        if (newRole) {
+        // Set roles
+        for (const role of newRoles) {
           await supabase
             .from('user_roles')
-            .upsert({ user_id: data.user.id, role: newRole });
+            .insert({ user_id: data.user.id, role });
         }
       }
 
@@ -122,7 +127,7 @@ export default function UserManagement() {
       setNewEmail('');
       setNewPassword('');
       setNewFullName('');
-      setNewRole('user');
+      setNewRoles(['ops']);
       setAddDialogOpen(false);
       fetchUsers();
     } catch (error) {
@@ -154,8 +159,6 @@ export default function UserManagement() {
     setResetLoading(true);
 
     try {
-      // Note: Admin password reset requires service role key which we don't expose client-side
-      // For now, we'll show a message that this requires backend implementation
       toast({
         title: 'Password Reset',
         description: 'Password reset requires admin backend API. Contact your system administrator.',
@@ -226,7 +229,6 @@ export default function UserManagement() {
     }
 
     try {
-      // Delete profile (cascades in some cases, or we delete what we can)
       await supabase.from('user_roles').delete().eq('user_id', userId);
       await supabase.from('profiles').delete().eq('user_id', userId);
 
@@ -246,6 +248,15 @@ export default function UserManagement() {
     }
   };
 
+  const handleToggleRole = async (userId: string, role: UserRole, hasRole: boolean) => {
+    if (hasRole) {
+      await removeUserRole(userId, role);
+    } else {
+      await addUserRole(userId, role);
+    }
+    fetchUsers();
+  };
+
   const openResetDialog = (userId: string, email: string) => {
     setResetUserId(userId);
     setResetUserEmail(email);
@@ -256,6 +267,13 @@ export default function UserManagement() {
     setEditUserId(userId);
     setEditFullName(fullName);
     setEditDialogOpen(true);
+  };
+
+  const getRoleIcon = (roles: UserRole[]) => {
+    if (roles.includes('admin')) return <Shield className="h-4 w-4 text-primary" />;
+    if (roles.includes('dev')) return <Code className="h-4 w-4 text-blue-500" />;
+    if (roles.includes('ops')) return <Settings className="h-4 w-4 text-orange-500" />;
+    return <User className="h-4 w-4 text-muted-foreground" />;
   };
 
   if (loading) {
@@ -329,16 +347,22 @@ export default function UserManagement() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={newRole} onValueChange={(v: 'admin' | 'user') => setNewRole(v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Roles</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {AVAILABLE_ROLES.map(role => (
+                        <label
+                          key={role.value}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                        >
+                          <Checkbox
+                            checked={newRoles.includes(role.value)}
+                            onCheckedChange={() => toggleNewRole(role.value)}
+                          />
+                          {role.icon}
+                          <span className="text-sm">{role.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
@@ -360,7 +384,7 @@ export default function UserManagement() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Roles</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -371,11 +395,7 @@ export default function UserManagement() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                        {user.role === 'admin' ? (
-                          <Shield className="h-4 w-4 text-primary" />
-                        ) : (
-                          <User className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {getRoleIcon(user.roles)}
                       </div>
                       <button
                         onClick={() => openEditDialog(user.user_id, user.full_name)}
@@ -387,13 +407,26 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
-                    {user.role === 'admin' ? (
-                      <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
-                    ) : user.role === 'user' ? (
-                      <Badge variant="outline">User</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">No role</Badge>
-                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles.length === 0 ? (
+                        <Badge variant="outline" className="text-muted-foreground">No roles</Badge>
+                      ) : (
+                        user.roles.map(role => (
+                          <Badge
+                            key={role}
+                            className={
+                              role === 'admin'
+                                ? 'bg-primary/10 text-primary border-primary/20'
+                                : role === 'dev'
+                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                : 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+                            }
+                          >
+                            {role === 'admin' ? 'Admin' : role === 'dev' ? 'Dev' : 'Ops'}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString()}
@@ -402,18 +435,20 @@ export default function UserManagement() {
                     <div className="flex items-center justify-end gap-2">
                       {user.user_id !== currentUser?.id && (
                         <>
-                          <Select
-                            value={user.role || 'user'}
-                            onValueChange={(value: 'admin' | 'user') => setUserRole(user.user_id, value)}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-1">
+                            {AVAILABLE_ROLES.map(role => (
+                              <Button
+                                key={role.value}
+                                variant={user.roles.includes(role.value) ? 'default' : 'outline'}
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() => handleToggleRole(user.user_id, role.value, user.roles.includes(role.value))}
+                                title={role.label}
+                              >
+                                {role.icon}
+                              </Button>
+                            ))}
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -494,9 +529,9 @@ export default function UserManagement() {
             </DialogHeader>
             <form onSubmit={handleEditName} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="editFullName">Full Name</Label>
+                <Label htmlFor="editName">Full Name</Label>
                 <Input
-                  id="editFullName"
+                  id="editName"
                   value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
                   placeholder="John Doe"
@@ -508,7 +543,7 @@ export default function UserManagement() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={editLoading}>
-                  {editLoading ? 'Saving...' : 'Save'}
+                  {editLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </DialogFooter>
             </form>

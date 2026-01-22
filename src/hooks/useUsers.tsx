@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
-export interface UserWithRole {
+export type UserRole = 'admin' | 'dev' | 'ops';
+
+export interface UserWithRoles {
   id: string;
   user_id: string;
   full_name: string;
   email: string;
-  role: 'admin' | 'user' | null;
+  roles: UserRole[];
   created_at: string;
 }
 
 export function useUsers() {
-  const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -33,12 +35,12 @@ export function useUsers() {
 
       if (rolesError) throw rolesError;
 
-      // Combine data
-      const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
-        const userRole = roles?.find(r => r.user_id === profile.user_id);
+      // Combine data - group roles by user
+      const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => {
+        const userRoles = roles?.filter(r => r.user_id === profile.user_id).map(r => r.role as UserRole) || [];
         return {
           ...profile,
-          role: userRole?.role as 'admin' | 'user' | null ?? null,
+          roles: userRoles,
         };
       });
 
@@ -59,51 +61,61 @@ export function useUsers() {
     fetchUsers();
   }, []);
 
-  const setUserRole = async (userId: string, role: 'admin' | 'user') => {
+  const addUserRole = async (userId: string, role: UserRole) => {
     try {
-      // Check if role exists
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from('user_roles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .insert({ user_id: userId, role });
 
-      if (existing) {
-        // Update existing role
-        const { error } = await supabase
-          .from('user_roles')
-          .update({ role })
-          .eq('user_id', userId);
-
-        if (error) throw error;
-      } else {
-        // Insert new role
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role });
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       setUsers(prev => prev.map(u => 
-        u.user_id === userId ? { ...u, role } : u
+        u.user_id === userId ? { ...u, roles: [...u.roles, role] } : u
       ));
 
       toast({
-        title: 'Role updated',
-        description: `User role has been set to ${role}.`,
+        title: 'Role added',
+        description: `${role} role has been added.`,
       });
     } catch (error) {
-      console.error('Error setting role:', error);
+      console.error('Error adding role:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update user role',
+        description: 'Failed to add role',
         variant: 'destructive',
       });
     }
   };
 
-  const removeUserRole = async (userId: string) => {
+  const removeUserRole = async (userId: string, role: UserRole) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', role);
+
+      if (error) throw error;
+
+      setUsers(prev => prev.map(u => 
+        u.user_id === userId ? { ...u, roles: u.roles.filter(r => r !== role) } : u
+      ));
+
+      toast({
+        title: 'Role removed',
+        description: `${role} role has been removed.`,
+      });
+    } catch (error) {
+      console.error('Error removing role:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove role',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const removeAllRoles = async (userId: string) => {
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -113,18 +125,18 @@ export function useUsers() {
       if (error) throw error;
 
       setUsers(prev => prev.map(u => 
-        u.user_id === userId ? { ...u, role: null } : u
+        u.user_id === userId ? { ...u, roles: [] } : u
       ));
 
       toast({
-        title: 'Role removed',
-        description: 'User role has been removed.',
+        title: 'Roles removed',
+        description: 'All roles have been removed.',
       });
     } catch (error) {
-      console.error('Error removing role:', error);
+      console.error('Error removing roles:', error);
       toast({
         title: 'Error',
-        description: 'Failed to remove user role',
+        description: 'Failed to remove roles',
         variant: 'destructive',
       });
     }
@@ -134,7 +146,8 @@ export function useUsers() {
     users,
     loading,
     fetchUsers,
-    setUserRole,
+    addUserRole,
     removeUserRole,
+    removeAllRoles,
   };
 }
