@@ -45,10 +45,10 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-            <span className="text-sm font-bold text-primary-foreground">OP</span>
+            <span className="text-sm font-bold text-primary-foreground">B</span>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-sidebar-foreground">Ops Portal</h2>
+            <h2 className="text-sm font-semibold text-sidebar-foreground">BUDDY</h2>
             <p className="text-xs text-muted-foreground">Internal Tools</p>
           </div>
         </div>
