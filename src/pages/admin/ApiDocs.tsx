@@ -263,7 +263,7 @@ export default function ApiDocs() {
                   requestBody={`{
   "type": "lead-approval | lead-alert | lead-outreach | other",
   "title": "Task title (required)",
-  "assigned_to": "profile_id (optional)",
+  "assigned_to": "string or string[] (optional) - see assignment options below",
   "details": { ... } // Required fields depend on task type (see below)
 }`}
                   responseExample={`{
@@ -272,11 +272,44 @@ export default function ApiDocs() {
     "type": "lead-approval",
     "title": "Task title",
     "status": "pending",
+    "assigned_to": ["user-uuid-1", "user-uuid-2"],
     "details": { ... },
     "created_at": "2026-01-22T10:00:00Z"
   }
 }`}
                 />
+
+                {/* Assignment Options */}
+                <div className="border rounded-lg p-4 space-y-4 bg-primary/5 border-primary/20">
+                  <h4 className="font-medium text-foreground">Assignment Options (assigned_to)</h4>
+                  <p className="text-sm text-muted-foreground">
+                    The <code className="text-primary">assigned_to</code> field supports multiple formats:
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <Badge variant="outline" className="mb-2">Single User by Email</Badge>
+                      <CodeBlock code={`"assigned_to": "john@company.com"`} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Single User by Profile ID</Badge>
+                      <CodeBlock code={`"assigned_to": "550e8400-e29b-41d4-a716-446655440000"`} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Multiple Users</Badge>
+                      <CodeBlock code={`"assigned_to": ["john@company.com", "jane@company.com"]`} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Department Email (assigns to all users with that role)</Badge>
+                      <CodeBlock code={`"assigned_to": "ops@backendglamor.com"  // Assigns to all ops team
+"assigned_to": "dev@backendglamor.com"  // Assigns to all dev team
+"assigned_to": "admin@backendglamor.com" // Assigns to all admins`} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Mixed Assignment</Badge>
+                      <CodeBlock code={`"assigned_to": ["ops@backendglamor.com", "john@company.com"]`} />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Task Type Schemas */}
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
@@ -326,6 +359,26 @@ export default function ApiDocs() {
                     </div>
                   </div>
                 </div>
+
+                <Endpoint
+                  method="PATCH"
+                  path="/manage-tasks?id=<task_uuid>"
+                  description="Update task assignment. Admin only."
+                  auth="Admin only"
+                  queryParams={[
+                    { name: 'id', type: 'uuid', description: 'The task ID to update' }
+                  ]}
+                  requestBody={`{
+  "assigned_to": "string or string[] - email, profile ID, or department email"
+}`}
+                  responseExample={`{
+  "data": {
+    "id": "task-uuid",
+    "assigned_to": ["user-uuid-1", "user-uuid-2"],
+    ...
+  }
+}`}
+                />
 
                 <Endpoint
                   method="DELETE"

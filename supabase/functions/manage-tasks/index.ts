@@ -8,7 +8,7 @@ const corsHeaders = {
 interface TaskPayload {
   type: "lead-approval" | "lead-alert" | "lead-outreach" | "other";
   title: string;
-  assigned_to?: string; // Profile ID of the user
+  assigned_to?: string | string[]; // Can be email(s), profile ID(s), or department email
   details?: Record<string, unknown>;
 }
 
@@ -18,6 +18,13 @@ const requiredFields: Record<string, string[]> = {
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
   "other": ["description"],
+};
+
+// Department email to role mapping
+const departmentEmails: Record<string, string> = {
+  "ops@backendglamor.com": "ops",
+  "dev@backendglamor.com": "dev",
+  "admin@backendglamor.com": "admin",
 };
 
 function validateDetails(type: string, details: Record<string, unknown> | undefined): { valid: boolean; missing: string[] } {
@@ -34,6 +41,57 @@ function validateDetails(type: string, details: Record<string, unknown> | undefi
   }
   
   return { valid: missing.length === 0, missing };
+}
+
+// Resolve assignees from email(s) to user IDs
+async function resolveAssignees(
+  supabase: any,
+  assignedTo: string | string[] | undefined
+): Promise<string[]> {
+  if (!assignedTo) return [];
+  
+  const inputs = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
+  const userIds: string[] = [];
+  
+  for (const input of inputs) {
+    // Check if it's a department email
+    const role = departmentEmails[input.toLowerCase()];
+    if (role) {
+      // Get all users with this role
+      const { data: roleUsers } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", role);
+      
+      if (roleUsers && Array.isArray(roleUsers)) {
+        for (const r of roleUsers) {
+          userIds.push(r.user_id as string);
+        }
+      }
+      continue;
+    }
+    
+    // Check if it's a UUID (profile ID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(input)) {
+      userIds.push(input);
+      continue;
+    }
+    
+    // Try to find user by email
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("email", input.toLowerCase())
+      .maybeSingle();
+    
+    if (profile && profile.user_id) {
+      userIds.push(profile.user_id as string);
+    }
+  }
+  
+  // Remove duplicates
+  return [...new Set(userIds)];
 }
 
 Deno.serve(async (req) => {
@@ -87,7 +145,7 @@ Deno.serve(async (req) => {
 
       // Non-admins can only see tasks assigned to them or unassigned
       if (!isAdmin) {
-        query = query.or(`assigned_to.eq.${user.id},assigned_to.is.null`);
+        query = query.or(`assigned_to.cs.{${user.id}},assigned_to.is.null`);
       }
 
       const { data, error } = await query;
@@ -128,7 +186,7 @@ Deno.serve(async (req) => {
               details: "object - required fields depend on task type"
             },
             optional: {
-              assigned_to: "Profile ID (uuid)"
+              assigned_to: "Email, Profile ID, Department email (e.g., ops@backendglamor.com), or array of these"
             }
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -189,12 +247,15 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Resolve assignees from emails/IDs/department emails
+      const resolvedAssignees = await resolveAssignees(supabase, payload.assigned_to);
+
       const { data, error } = await supabase
         .from("tasks")
         .insert({
           type: payload.type,
           title: payload.title,
-          assigned_to: payload.assigned_to || null,
+          assigned_to: resolvedAssignees.length > 0 ? resolvedAssignees : null,
           details: payload.details || {},
           created_by: user.id,
           status: "pending",
@@ -210,11 +271,57 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log("Task created:", data.id, "by user:", user.id);
+      console.log("Task created:", data.id, "by user:", user.id, "assigned_to:", resolvedAssignees);
 
       return new Response(
         JSON.stringify({ data }),
         { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // PATCH - Update task assignment (admin only)
+    if (method === "PATCH") {
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Only admins can update task assignments" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!taskId) {
+        return new Response(
+          JSON.stringify({ error: "Task ID required as query parameter: ?id=<uuid>" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const payload = await req.json();
+      
+      // Resolve assignees from emails/IDs/department emails
+      const resolvedAssignees = await resolveAssignees(supabase, payload.assigned_to);
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .update({
+          assigned_to: resolvedAssignees.length > 0 ? resolvedAssignees : null,
+        })
+        .eq("id", taskId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating task:", error);
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("Task updated:", taskId, "assigned_to:", resolvedAssignees);
+
+      return new Response(
+        JSON.stringify({ data }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

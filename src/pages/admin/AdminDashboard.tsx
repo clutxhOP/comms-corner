@@ -53,7 +53,7 @@ export default function AdminDashboard() {
 
   // Get assigned tasks per user with task details
   const userAssignedStats = users.map(user => {
-    const assignedTasks = tasks.filter(t => t.assigned_to === user.user_id);
+    const assignedTasks = tasks.filter(t => t.assigned_to?.includes(user.user_id));
     return {
       ...user,
       tasks: assignedTasks,

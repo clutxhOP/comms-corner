@@ -9,7 +9,7 @@ export interface DbTask {
   title: string;
   status: 'pending' | 'done' | 'approved' | 'disapproved';
   details: Record<string, unknown>;
-  assigned_to: string | null;
+  assigned_to: string[] | null;  // Changed to array
   created_by: string | null;
   actioned_by: string | null;
   actioned_at: string | null;
@@ -237,6 +237,37 @@ export function useTasks() {
     }
   };
 
+  const updateTaskAssignment = async (taskId: string, assignees: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          assigned_to: assignees.length > 0 ? assignees : null,
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(t => 
+        t.id === taskId 
+          ? { ...t, assigned_to: assignees.length > 0 ? assignees : null }
+          : t
+      ));
+
+      toast({
+        title: 'Assignment updated',
+        description: 'The task assignment has been updated.',
+      });
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update assignment',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     tasks,
     loading,
@@ -246,5 +277,6 @@ export function useTasks() {
     markTaskDone,
     createTask,
     deleteTask,
+    updateTaskAssignment,
   };
 }

@@ -175,7 +175,7 @@ export type Database = {
         Row: {
           actioned_at: string | null
           actioned_by: string | null
-          assigned_to: string | null
+          assigned_to: string[] | null
           created_at: string
           created_by: string | null
           details: Json
@@ -189,7 +189,7 @@ export type Database = {
         Insert: {
           actioned_at?: string | null
           actioned_by?: string | null
-          assigned_to?: string | null
+          assigned_to?: string[] | null
           created_at?: string
           created_by?: string | null
           details?: Json
@@ -203,7 +203,7 @@ export type Database = {
         Update: {
           actioned_at?: string | null
           actioned_by?: string | null
-          assigned_to?: string | null
+          assigned_to?: string[] | null
           created_at?: string
           created_by?: string | null
           details?: Json

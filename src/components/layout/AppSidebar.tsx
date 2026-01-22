@@ -1,6 +1,7 @@
 import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -25,11 +26,19 @@ const adminNavItems = [
   { title: 'Admin Dashboard', url: '/admin', icon: Shield },
   { title: 'Manage Users', url: '/admin/users', icon: Users },
   { title: 'Create Task', url: '/admin/create-task', icon: Plus },
-  { title: 'API Docs', url: '/admin/api-docs', icon: Code },
+];
+
+// API Docs available to both admin and dev
+const devNavItems = [
+  { title: 'API Docs', url: '/api-docs', icon: Code },
 ];
 
 export function AppSidebar() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, signOut, user } = useAuth();
+  const { roles } = useUserRoles(user?.id);
+  
+  const isDev = roles.includes('dev');
+  const canAccessApiDocs = isAdmin || isDev;
 
   return (
     <Sidebar className="border-r border-sidebar-border">
@@ -67,6 +76,21 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* API Docs for dev and admin */}
+              {canAccessApiDocs && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to="/api-docs"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <Code className="h-4 w-4" />
+                      <span>API Docs</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -110,7 +134,7 @@ export function AppSidebar() {
               {profile?.full_name || 'Team Member'}
             </p>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {isAdmin ? 'Admin' : 'Operations'}
+              {isAdmin ? 'Admin' : isDev ? 'Developer' : 'Operations'}
             </p>
           </div>
           <Button 
