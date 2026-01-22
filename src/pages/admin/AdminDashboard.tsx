@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useTasks } from '@/hooks/useTasks';
 import { useUsers } from '@/hooks/useUsers';
-import { CheckSquare, XCircle, Users, TrendingUp, CheckCircle2, ClipboardList } from 'lucide-react';
+import { CheckSquare, XCircle, Users, TrendingUp, CheckCircle2, ClipboardList, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -12,10 +13,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 export default function AdminDashboard() {
   const { tasks, loading: tasksLoading } = useTasks();
   const { users, loading: usersLoading } = useUsers();
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+
+  const toggleUserExpanded = (userId: string) => {
+    setExpandedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
 
   const approvedTasks = tasks.filter(t => t.status === 'approved');
   const disapprovedTasks = tasks.filter(t => t.status === 'disapproved');
@@ -32,11 +51,12 @@ export default function AdminDashboard() {
     };
   });
 
-  // Get assigned tasks per user
+  // Get assigned tasks per user with task details
   const userAssignedStats = users.map(user => {
     const assignedTasks = tasks.filter(t => t.assigned_to === user.user_id);
     return {
       ...user,
+      tasks: assignedTasks,
       total: assignedTasks.length,
       pending: assignedTasks.filter(t => t.status === 'pending').length,
       approved: assignedTasks.filter(t => t.status === 'approved').length,
@@ -100,6 +120,7 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Team Member</TableHead>
                   <TableHead className="text-center">Total</TableHead>
                   <TableHead className="text-center">Pending</TableHead>
@@ -108,43 +129,93 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {userAssignedStats.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{user.full_name}</p>
-                        <div className="flex gap-1 mt-1">
-                          {user.roles.map(role => (
-                            <Badge
-                              key={role}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {role}
-                            </Badge>
-                          ))}
+                  <Collapsible key={user.id} open={expandedUsers.has(user.id)} onOpenChange={() => toggleUserExpanded(user.id)}>
+                    <TableRow className={user.total > 0 ? "cursor-pointer hover:bg-muted/50" : ""}>
+                      <TableCell className="w-10">
+                        {user.total > 0 && (
+                          <CollapsibleTrigger asChild>
+                            <button className="p-1 rounded hover:bg-muted">
+                              {expandedUsers.has(user.id) ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </CollapsibleTrigger>
+                        )}
+                      </TableCell>
+                      <TableCell onClick={() => user.total > 0 && toggleUserExpanded(user.id)}>
+                        <div>
+                          <p className="font-medium">{user.full_name}</p>
+                          <div className="flex gap-1 mt-1">
+                            {user.roles.map(role => (
+                              <Badge
+                                key={role}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {role}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">
-                        {user.total}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                        {user.pending}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        {user.approved + user.done}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-center" onClick={() => user.total > 0 && toggleUserExpanded(user.id)}>
+                        <Badge variant="outline">
+                          {user.total}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center" onClick={() => user.total > 0 && toggleUserExpanded(user.id)}>
+                        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                          {user.pending}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center" onClick={() => user.total > 0 && toggleUserExpanded(user.id)}>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          {user.approved + user.done}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <CollapsibleContent asChild>
+                      <TableRow>
+                        <TableCell colSpan={5} className="p-0">
+                          <div className="bg-muted/30 p-4 space-y-2">
+                            {user.tasks.map(task => (
+                              <div key={task.id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{task.title}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                      {task.type.replace('-', ' ')}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      Created {new Date(task.created_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Badge 
+                                  variant="outline" 
+                                  className={
+                                    task.status === 'pending' 
+                                      ? 'bg-warning/10 text-warning border-warning/20'
+                                      : task.status === 'approved' || task.status === 'done'
+                                      ? 'bg-success/10 text-success border-success/20'
+                                      : 'bg-destructive/10 text-destructive border-destructive/20'
+                                  }
+                                >
+                                  {task.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </CollapsibleContent>
+                  </Collapsible>
                 ))}
                 {userAssignedStats.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No team members found
                     </TableCell>
                   </TableRow>
