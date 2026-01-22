@@ -121,15 +121,15 @@ export default function CreateTask() {
 
                 <div className="space-y-2">
                   <Label htmlFor="assignedTo">Assign To</Label>
-                  <Select value={assignedTo} onValueChange={setAssignedTo}>
+                  <Select value={assignedTo || "unassigned"} onValueChange={(v) => setAssignedTo(v === "unassigned" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.user_id} value={user.user_id}>
-                          {user.full_name}
+                          {user.full_name} ({user.email})
                         </SelectItem>
                       ))}
                     </SelectContent>
