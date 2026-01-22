@@ -2,9 +2,10 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code, FileText, Users, Send, Copy, Check } from 'lucide-react';
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 const BASE_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
 
@@ -105,6 +106,62 @@ function Endpoint({ method, path, description, auth, requestBody, responseExampl
   );
 }
 
+function TokenDisplay() {
+  const { session } = useAuth();
+  const [showToken, setShowToken] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  const token = session?.access_token || '';
+  const maskedToken = token ? `${token.slice(0, 20)}...${token.slice(-10)}` : 'No token available';
+
+  const handleCopy = () => {
+    if (token) {
+      navigator.clipboard.writeText(token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <Card className="border-primary/20 bg-primary/5">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Key className="h-5 w-5 text-primary" />
+          Your API Token
+        </CardTitle>
+        <CardDescription>Use this token in the Authorization header for API requests</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-muted p-3 rounded-lg font-mono text-sm break-all">
+            {showToken ? token || 'No token available' : maskedToken}
+          </div>
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setShowToken(!showToken)}
+            title={showToken ? 'Hide token' : 'Show token'}
+          >
+            {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleCopy}
+            disabled={!token}
+            title="Copy token"
+          >
+            {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          ⚠️ Keep this token secure. It expires periodically and will refresh automatically.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ApiDocs() {
   return (
     <MainLayout>
@@ -118,6 +175,9 @@ export default function ApiDocs() {
             Reference for all available API endpoints
           </p>
         </div>
+
+        {/* Your Token */}
+        <TokenDisplay />
 
         {/* Base URL */}
         <Card>
@@ -140,9 +200,7 @@ export default function ApiDocs() {
             <CodeBlock
               code={`Authorization: Bearer <your_jwt_token>
 
-// Get token after login:
-const { data: { session } } = await supabase.auth.getSession();
-const token = session?.access_token;`}
+// The token shown above can be used directly in your requests`}
             />
           </CardContent>
         </Card>
