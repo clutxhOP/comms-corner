@@ -65,16 +65,21 @@ export function LeadOutreachCard({ task, onMarkDone }: LeadOutreachCardProps) {
           </div>
 
           <div>
-            <p className="font-medium text-foreground text-xs">Proof:</p>
+            <p className="font-medium text-foreground text-xs">Post:</p>
             <a 
-              href={details.proofLink} 
+              href={details.post} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary text-sm hover:underline flex items-center gap-1 break-all mt-1"
             >
-              {details.proofLink}
+              {details.post}
               <ExternalLink className="h-3 w-3 shrink-0" />
             </a>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground text-xs">Comment:</p>
+            <p className="text-muted-foreground text-sm mt-1">{details.comment}</p>
           </div>
 
           <p className="text-primary font-medium text-sm">Please reach out to this lead</p>

@@ -93,22 +93,11 @@ export function LeadAlertCard({ task, onMarkDone }: LeadAlertCardProps) {
             )}>
               <span className="font-medium">Issue:</span> {details.issue}
             </p>
-            {details.assignee && (
-              <p className="text-xs mt-1 text-muted-foreground">
-                Kindly do a brief check <span className="text-primary font-medium">{details.assignee}</span>
-              </p>
-            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-muted-foreground text-xs">Last Lead Sent:</p>
-              <p className="font-medium text-foreground text-sm">{details.lastLeadSent}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Time Since Last Lead:</p>
-              <p className="font-medium text-foreground text-sm">{details.timeSinceLastLead}</p>
-            </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Since Last Lead:</p>
+            <p className="font-medium text-foreground text-sm">{details.timeSinceLastLead}</p>
           </div>
 
           <div className="border-t pt-3">

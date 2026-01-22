@@ -12,6 +12,30 @@ interface TaskPayload {
   details?: Record<string, unknown>;
 }
 
+// Define required fields for each task type
+const requiredFields: Record<string, string[]> = {
+  "lead-approval": ["clientId", "category", "icp", "requirement", "contactInfo", "proofLink"],
+  "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
+  "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
+  "other": ["description"],
+};
+
+function validateDetails(type: string, details: Record<string, unknown> | undefined): { valid: boolean; missing: string[] } {
+  const required = requiredFields[type] || [];
+  if (!details) {
+    return { valid: required.length === 0, missing: required };
+  }
+  
+  const missing: string[] = [];
+  for (const field of required) {
+    if (details[field] === undefined || details[field] === null || details[field] === "") {
+      missing.push(field);
+    }
+  }
+  
+  return { valid: missing.length === 0, missing };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -100,11 +124,11 @@ Deno.serve(async (req) => {
             error: "Missing required fields",
             required: {
               type: "lead-approval | lead-alert | lead-outreach | other",
-              title: "string"
+              title: "string",
+              details: "object - required fields depend on task type"
             },
             optional: {
-              assigned_to: "Profile ID (uuid)",
-              details: "object - varies by task type"
+              assigned_to: "Profile ID (uuid)"
             }
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -117,6 +141,49 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: `Invalid task type. Must be one of: ${validTypes.join(", ")}`
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate details based on task type
+      const validation = validateDetails(payload.type, payload.details);
+      if (!validation.valid) {
+        const detailsSchema: Record<string, object> = {
+          "lead-approval": {
+            clientId: "string (required)",
+            category: "string (required)",
+            icp: "string (required)",
+            requirement: "string (required)",
+            contactInfo: "string (required)",
+            proofLink: "string (required)"
+          },
+          "lead-alert": {
+            clientName: "string (required)",
+            category: "string (required)",
+            whatsapp: "string (required)",
+            clientStatus: "string (required)",
+            alertLevel: "yellow | red (required)",
+            issue: "string (required)",
+            timeSinceLastLead: "string (required)"
+          },
+          "lead-outreach": {
+            requirement: "string (required)",
+            contactInfo: "string (required)",
+            post: "string (required)",
+            comment: "string (required)"
+          },
+          "other": {
+            description: "string (required)",
+            notes: "string (optional)"
+          }
+        };
+
+        return new Response(
+          JSON.stringify({ 
+            error: "Missing required fields in details",
+            missing_fields: validation.missing,
+            required_schema: detailsSchema[payload.type]
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

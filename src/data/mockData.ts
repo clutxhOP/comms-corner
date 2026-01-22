@@ -43,9 +43,7 @@ export const mockTasks: Task[] = [
       clientStatus: 'PAID',
       alertLevel: 'red',
       issue: 'No leads sent in the last 331 hours 2 minutes (over 72 hours).',
-      lastLeadSent: 'N/A',
       timeSinceLastLead: '331 hours 2 minutes',
-      assignee: '@Faheem Mashoor',
       whatsapp: '+16477721775',
     },
   },
@@ -61,9 +59,7 @@ export const mockTasks: Task[] = [
       clientStatus: 'PAID',
       alertLevel: 'yellow',
       issue: 'No leads sent in the last 50 hours (approaching 72 hours threshold).',
-      lastLeadSent: 'Jan 20, 2026',
       timeSinceLastLead: '50 hours',
-      assignee: '@Sarah Chen',
       whatsapp: '+14155551234',
     },
   },
@@ -76,7 +72,8 @@ export const mockTasks: Task[] = [
     details: {
       requirement: 'They are clearly hiring a freelance ad video editor and say they will pay per video, so this is a real paid job.',
       contactInfo: 'https://www.facebook.com/profile.php?id=100035412601618',
-      proofLink: 'https://www.facebook.com/groups/1770240367258363/permalink/2000494227566308/',
+      post: 'https://www.facebook.com/groups/1770240367258363/permalink/2000494227566308/',
+      comment: 'Hi! I saw your post about needing a video editor. I would love to help!',
     },
   },
   {
@@ -88,7 +85,8 @@ export const mockTasks: Task[] = [
     details: {
       requirement: 'They want to hire a video editor and ask for rates and an email, so it\'s a real job lead.',
       contactInfo: 'contact@example.com',
-      proofLink: 'https://twitter.com/sample/status/123456789',
+      post: 'https://twitter.com/sample/status/123456789',
+      comment: 'Hello! I am interested in the video editing position. Here are my rates...',
     },
   },
   {

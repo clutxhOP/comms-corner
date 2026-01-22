@@ -17,19 +17,18 @@ export interface LeadApprovalDetails {
 export interface LeadAlertDetails {
   clientName: string;
   category: string;
+  whatsapp: string;
   clientStatus: string;
   alertLevel: 'yellow' | 'red';
   issue: string;
-  lastLeadSent: string;
   timeSinceLastLead: string;
-  assignee: string;
-  whatsapp: string;
 }
 
 export interface LeadOutreachDetails {
   requirement: string;
   contactInfo: string;
-  proofLink: string;
+  post: string;
+  comment: string;
 }
 
 export interface Task {
