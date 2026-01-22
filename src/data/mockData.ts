@@ -107,15 +107,24 @@ export const mockTasks: Task[] = [
     },
   },
   {
-    id: '8',
-    type: 'lead-outreach',
-    title: 'Please reach out to this lead',
-    status: 'done',
-    createdAt: '2026-01-21T12:00:00',
+    id: '9',
+    type: 'other',
+    title: 'Review weekly metrics report',
+    status: 'pending',
+    createdAt: '2026-01-22T08:00:00',
     details: {
-      requirement: 'Completed outreach - client responded positively.',
-      contactInfo: 'completed@example.com',
-      proofLink: 'https://example.com/completed',
+      description: 'Review and summarize the weekly performance metrics for the team meeting.',
+      notes: 'Focus on conversion rates and response times.',
+    },
+  },
+  {
+    id: '10',
+    type: 'other',
+    title: 'Update client contact list',
+    status: 'pending',
+    createdAt: '2026-01-21T16:00:00',
+    details: {
+      description: 'Update the master contact list with new client information from this week.',
     },
   },
 ];
