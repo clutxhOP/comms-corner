@@ -89,10 +89,10 @@ export default function Auth() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm">
-              <span className="text-lg font-bold text-primary-foreground">OP</span>
+              <span className="text-lg font-bold text-primary-foreground">B</span>
             </div>
           </div>
-          <CardTitle className="text-2xl">Ops Portal</CardTitle>
+          <CardTitle className="text-2xl">BUDDY</CardTitle>
           <CardDescription>Sign in to access your team dashboard</CardDescription>
         </CardHeader>
         <CardContent>
