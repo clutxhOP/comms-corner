@@ -15,6 +15,8 @@ import UserManagement from "./pages/admin/UserManagement";
 import CreateTask from "./pages/admin/CreateTask";
 import ApiDocs from "./pages/admin/ApiDocs";
 import TokenManagement from "./pages/admin/TokenManagement";
+import WebhookManagement from "./pages/admin/WebhookManagement";
+import CompletedTasks from "./pages/admin/CompletedTasks";
 
 const queryClient = new QueryClient();
 
@@ -63,9 +65,19 @@ const App = () => (
                 <CreateTask />
               </ProtectedRoute>
             } />
+            <Route path="/admin/completed-tasks" element={
+              <ProtectedRoute requireAdmin>
+                <CompletedTasks />
+              </ProtectedRoute>
+            } />
             <Route path="/tokens" element={
               <ProtectedRoute requireDevOrAdmin>
                 <TokenManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/webhooks" element={
+              <ProtectedRoute requireDevOrAdmin>
+                <WebhookManagement />
               </ProtectedRoute>
             } />
             {/* Keep old route for backwards compatibility */}

@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -26,12 +26,16 @@ const adminNavItems = [
   { title: 'Admin Dashboard', url: '/admin', icon: Shield },
   { title: 'Manage Users', url: '/admin/users', icon: Users },
   { title: 'Create Task', url: '/admin/create-task', icon: Plus },
+  { title: 'Completed Tasks', url: '/admin/completed-tasks', icon: Archive },
+  { title: 'Access Tokens', url: '/tokens', icon: Key },
+  { title: 'Webhooks', url: '/webhooks', icon: Webhook },
 ];
 
-// API Docs available to both admin and dev
+// Items accessible by dev (non-admin)
 const devNavItems = [
   { title: 'API Docs', url: '/api-docs', icon: Code },
   { title: 'Access Tokens', url: '/tokens', icon: Key },
+  { title: 'Webhooks', url: '/webhooks', icon: Webhook },
 ];
 
 export function AppSidebar() {
@@ -104,6 +108,33 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Dev section - only show if dev but not admin (admins see it in admin section) */}
+        {isDev && !isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/50 text-xs uppercase tracking-wider">
+              Developer
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {devNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink 

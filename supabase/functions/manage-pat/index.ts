@@ -87,9 +87,10 @@ Deno.serve(async (req) => {
       if (!isAdmin) {
         query = query.eq("user_id", user.id);
       } else if (userId) {
-        // Admin filtering by user
+        // Admin filtering by specific user
         query = query.eq("user_id", userId);
       }
+      // If admin and no userId filter, return ALL tokens (no filter added)
 
       const { data, error } = await query;
 
@@ -100,6 +101,8 @@ Deno.serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      console.log(`Fetched ${data?.length || 0} tokens for user ${user.id} (isAdmin: ${isAdmin})`);
 
       return new Response(
         JSON.stringify({ data }),
