@@ -2,11 +2,16 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/hooks/useAuth';
-import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock, FileText } from 'lucide-react';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Dashboard() {
   const { tasks, loading } = useTasks();
-  const { profile } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
+  const { roles } = useUserRoles(user?.id);
+  const isDev = roles.includes('dev');
+  const canSeeErrors = isAdmin || isDev;
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -14,6 +19,7 @@ export default function Dashboard() {
   const leadAlerts = tasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
   const pendingOutreach = tasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
   const pendingOthers = tasks.filter(t => t.type === 'other' && t.status === 'pending').length;
+  const errorAlerts = tasks.filter(t => t.type === 'error-alert' && t.status === 'pending');
   const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'approved').length;
   const totalPending = tasks.filter(t => t.status === 'pending').length;
 
@@ -35,7 +41,57 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">Here's an overview of your operations</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Error Alerts Section - Highlighted for Dev/Admin */}
+        {canSeeErrors && errorAlerts.length > 0 && (
+          <Card className="border-destructive bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Active Error Alerts ({errorAlerts.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {errorAlerts.slice(0, 6).map(alert => (
+                  <div key={alert.id} className="p-3 rounded-lg bg-background border border-destructive/20">
+                    <p className="font-medium text-sm text-foreground truncate">{alert.title}</p>
+                    <p className="text-xs text-destructive mt-1 font-mono truncate">
+                      {(alert.details as any)?.error || 'Unknown error'}
+                    </p>
+                    {(alert.details as any)?.url && (
+                      <a 
+                        href={(alert.details as any).url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
+                      >
+                        View URL <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(alert.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {errorAlerts.length > 6 && (
+                <p className="text-sm text-muted-foreground mt-3">
+                  +{errorAlerts.length - 6} more error alerts
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <div className={`grid gap-4 sm:grid-cols-2 ${canSeeErrors ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
+          {canSeeErrors && (
+            <StatCard
+              title="Error Alerts"
+              value={errorAlerts.length}
+              icon={AlertTriangle}
+              className="border-l-4 border-l-destructive"
+            />
+          )}
           <StatCard
             title="Pending Approvals"
             value={pendingApprovals}

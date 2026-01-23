@@ -112,6 +112,42 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_access_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -252,7 +288,12 @@ export type Database = {
     }
     Enums: {
       task_status: "pending" | "done" | "approved" | "disapproved"
-      task_type: "lead-approval" | "lead-alert" | "lead-outreach" | "other"
+      task_type:
+        | "lead-approval"
+        | "lead-alert"
+        | "lead-outreach"
+        | "other"
+        | "error-alert"
       user_role: "admin" | "dev" | "ops"
     }
     CompositeTypes: {
@@ -382,7 +423,13 @@ export const Constants = {
   public: {
     Enums: {
       task_status: ["pending", "done", "approved", "disapproved"],
-      task_type: ["lead-approval", "lead-alert", "lead-outreach", "other"],
+      task_type: [
+        "lead-approval",
+        "lead-alert",
+        "lead-outreach",
+        "other",
+        "error-alert",
+      ],
       user_role: ["admin", "dev", "ops"],
     },
   },

@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -31,6 +31,7 @@ const adminNavItems = [
 // API Docs available to both admin and dev
 const devNavItems = [
   { title: 'API Docs', url: '/api-docs', icon: Code },
+  { title: 'Access Tokens', url: '/tokens', icon: Key },
 ];
 
 export function AppSidebar() {

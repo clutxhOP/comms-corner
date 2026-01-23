@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.record-lead-sent]
 verify_jwt = false
+
+[functions.manage-pat]
+verify_jwt = false
