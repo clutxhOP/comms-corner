@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useWebhooks } from './useWebhooks';
 
 export interface DbTask {
   id: string;
@@ -9,7 +10,7 @@ export interface DbTask {
   title: string;
   status: 'pending' | 'done' | 'approved' | 'disapproved';
   details: Record<string, unknown>;
-  assigned_to: string[] | null;  // Changed to array
+  assigned_to: string[] | null;
   created_by: string | null;
   actioned_by: string | null;
   actioned_at: string | null;
@@ -21,8 +22,16 @@ export interface DbTask {
 export function useTasks() {
   const [tasks, setTasks] = useState<DbTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { triggerWebhook, webhooks, fetchWebhooks } = useWebhooks();
+
+  // Ensure webhooks are loaded for triggering
+  useEffect(() => {
+    if (user && webhooks.length === 0) {
+      fetchWebhooks();
+    }
+  }, [user]);
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -35,7 +44,6 @@ export function useTasks() {
 
       if (error) throw error;
       
-      // Cast the data to our expected type
       const typedData = (data || []).map(task => ({
         ...task,
         type: task.type as DbTask['type'],
@@ -60,9 +68,11 @@ export function useTasks() {
     fetchTasks();
   }, [user]);
 
-  const approveTask = async (taskId: string) => {
+  const approveTask = useCallback(async (taskId: string) => {
     if (!user) return;
 
+    const task = tasks.find(t => t.id === taskId);
+    
     try {
       const { error } = await supabase
         .from('tasks')
@@ -81,6 +91,12 @@ export function useTasks() {
           : t
       ));
 
+      // Trigger webhook
+      await triggerWebhook('task_approve', {
+        task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
+        user: { id: user.id, name: profile?.full_name },
+      });
+
       toast({
         title: 'Task approved',
         description: 'The lead has been approved successfully.',
@@ -93,10 +109,12 @@ export function useTasks() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, profile, tasks, triggerWebhook, toast]);
 
-  const disapproveTask = async (taskId: string, reason: string) => {
+  const disapproveTask = useCallback(async (taskId: string, reason: string) => {
     if (!user) return;
+
+    const task = tasks.find(t => t.id === taskId);
 
     try {
       const { error } = await supabase
@@ -123,6 +141,12 @@ export function useTasks() {
           : t
       ));
 
+      // Trigger webhook
+      await triggerWebhook('task_disapprove', {
+        task: task ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason } : { id: taskId },
+        user: { id: user.id, name: profile?.full_name },
+      });
+
       toast({
         title: 'Task disapproved',
         description: 'The lead has been disapproved.',
@@ -135,10 +159,12 @@ export function useTasks() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, profile, tasks, triggerWebhook, toast]);
 
-  const markTaskDone = async (taskId: string) => {
+  const markTaskDone = useCallback(async (taskId: string) => {
     if (!user) return;
+
+    const task = tasks.find(t => t.id === taskId);
 
     try {
       const { error } = await supabase
@@ -158,6 +184,12 @@ export function useTasks() {
           : t
       ));
 
+      // Trigger webhook
+      await triggerWebhook('task_done', {
+        task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
+        user: { id: user.id, name: profile?.full_name },
+      });
+
       toast({
         title: 'Task completed',
         description: 'The task has been marked as done.',
@@ -170,9 +202,9 @@ export function useTasks() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, profile, tasks, triggerWebhook, toast]);
 
-  const createTask = async (task: Omit<DbTask, 'id' | 'created_at' | 'updated_at' | 'actioned_by' | 'actioned_at'>) => {
+  const createTask = useCallback(async (task: Omit<DbTask, 'id' | 'created_at' | 'updated_at' | 'actioned_by' | 'actioned_at'>) => {
     if (!user) return;
 
     try {
@@ -196,6 +228,12 @@ export function useTasks() {
 
       setTasks(prev => [typedTask, ...prev]);
 
+      // Trigger webhook
+      await triggerWebhook('task_created', {
+        task: { id: typedTask.id, title: typedTask.title, type: typedTask.type, details: typedTask.details },
+        user: { id: user.id, name: profile?.full_name },
+      });
+
       toast({
         title: 'Task created',
         description: 'The task has been created successfully.',
@@ -210,7 +248,7 @@ export function useTasks() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, profile, triggerWebhook, toast]);
 
   const deleteTask = async (taskId: string) => {
     try {
