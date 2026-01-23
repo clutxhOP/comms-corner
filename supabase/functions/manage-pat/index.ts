@@ -77,6 +77,13 @@ Deno.serve(async (req) => {
 
     // GET - List tokens
     if (method === "GET") {
+      // Consume request body if any to prevent issues
+      try {
+        await req.text();
+      } catch {
+        // Ignore - no body is fine
+      }
+
       let query = supabase
         .from("personal_access_tokens")
         .select("id, user_id, name, token_prefix, last_used_at, expires_at, revoked_at, created_at")
