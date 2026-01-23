@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface TaskPayload {
-  type: "lead-approval" | "lead-alert" | "lead-outreach" | "other";
+  type: "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "other";
   title: string;
   assigned_to?: string | string[]; // Can be email(s), profile ID(s), or department email
   details?: Record<string, unknown>;
@@ -17,6 +17,7 @@ const requiredFields: Record<string, string[]> = {
   "lead-approval": ["clientId", "category", "icp", "requirement", "contactInfo", "proofLink"],
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
+  "error-alert": ["error", "url"],
   "other": ["description"],
 };
 
@@ -194,7 +195,7 @@ Deno.serve(async (req) => {
       }
 
       // Validate task type
-      const validTypes = ["lead-approval", "lead-alert", "lead-outreach", "other"];
+      const validTypes = ["lead-approval", "lead-alert", "lead-outreach", "error-alert", "other"];
       if (!validTypes.includes(payload.type)) {
         return new Response(
           JSON.stringify({ 
@@ -230,6 +231,10 @@ Deno.serve(async (req) => {
             contactInfo: "string (required)",
             post: "string (required)",
             comment: "string (required)"
+          },
+          "error-alert": {
+            error: "string (required)",
+            url: "string (required)"
           },
           "other": {
             description: "string (required)",

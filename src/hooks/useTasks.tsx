@@ -5,7 +5,7 @@ import { useToast } from './use-toast';
 
 export interface DbTask {
   id: string;
-  type: 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'other';
+  type: 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'error-alert' | 'other';
   title: string;
   status: 'pending' | 'done' | 'approved' | 'disapproved';
   details: Record<string, unknown>;

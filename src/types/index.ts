@@ -1,4 +1,9 @@
-export type TaskType = 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'other';
+export type TaskType = 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'error-alert' | 'other';
+
+export interface ErrorAlertDetails {
+  error: string;
+  url: string;
+}
 
 export interface OtherTaskDetails {
   description: string;
@@ -37,7 +42,7 @@ export interface Task {
   title: string;
   status: 'pending' | 'done';
   createdAt: string;
-  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | OtherTaskDetails;
+  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails;
   disapprovalReason?: string;
 }
 

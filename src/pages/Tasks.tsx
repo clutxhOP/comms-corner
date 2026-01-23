@@ -4,12 +4,13 @@ import { LeadApprovalCard } from '@/components/tasks/LeadApprovalCard';
 import { LeadAlertCard } from '@/components/tasks/LeadAlertCard';
 import { LeadOutreachCard } from '@/components/tasks/LeadOutreachCard';
 import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
+import { ErrorAlertCard } from '@/components/tasks/ErrorAlertCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
 import { useTasks, DbTask } from '@/hooks/useTasks';
-import { Task, LeadApprovalDetails, LeadAlertDetails, LeadOutreachDetails, OtherTaskDetails } from '@/types';
+import { Task, LeadApprovalDetails, LeadAlertDetails, LeadOutreachDetails, OtherTaskDetails, ErrorAlertDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck, MoreHorizontal } from 'lucide-react';
+import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck, MoreHorizontal, AlertTriangle } from 'lucide-react';
 
 // Convert DbTask to Task for components
 function convertToTask(dbTask: DbTask): Task {
@@ -59,6 +60,7 @@ export default function Tasks() {
   const approvalTasks = filteredTasks.filter(t => t.type === 'lead-approval');
   const alertTasks = filteredTasks.filter(t => t.type === 'lead-alert');
   const outreachTasks = filteredTasks.filter(t => t.type === 'lead-outreach');
+  const errorAlertTasks = filteredTasks.filter(t => t.type === 'error-alert');
   const otherTasks = filteredTasks.filter(t => t.type === 'other');
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
@@ -113,6 +115,20 @@ export default function Tasks() {
             onMarkDone={handleMarkDone}
           />
         );
+      case 'error-alert':
+        return (
+          <ErrorAlertCard 
+            key={dbTask.id}
+            id={dbTask.id}
+            title={dbTask.title}
+            createdAt={dbTask.created_at}
+            details={dbTask.details as unknown as ErrorAlertDetails}
+            status={dbTask.status}
+            onMarkDone={handleMarkDone}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -170,6 +186,10 @@ export default function Tasks() {
               <Send className="h-4 w-4" />
               Outreach ({outreachTasks.length})
             </TabsTrigger>
+            <TabsTrigger value="errors" className="gap-1.5">
+              <AlertTriangle className="h-4 w-4" />
+              Errors ({errorAlertTasks.length})
+            </TabsTrigger>
             <TabsTrigger value="other" className="gap-1.5">
               <MoreHorizontal className="h-4 w-4" />
               Other ({otherTasks.length})
@@ -216,6 +236,17 @@ export default function Tasks() {
             {outreachTasks.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No outreach tasks
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="errors" className="mt-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {errorAlertTasks.map(renderTaskCard)}
+            </div>
+            {errorAlertTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No error alerts
               </div>
             )}
           </TabsContent>

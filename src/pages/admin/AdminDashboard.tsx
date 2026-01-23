@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useTasks } from '@/hooks/useTasks';
 import { useUsers } from '@/hooks/useUsers';
-import { CheckSquare, XCircle, Users, TrendingUp, CheckCircle2, ClipboardList, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckSquare, XCircle, Users, TrendingUp, CheckCircle2, ClipboardList, ChevronDown, ChevronRight, AlertTriangle, ExternalLink } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -18,6 +18,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const { tasks, loading: tasksLoading } = useTasks();
@@ -39,6 +40,7 @@ export default function AdminDashboard() {
   const approvedTasks = tasks.filter(t => t.status === 'approved');
   const disapprovedTasks = tasks.filter(t => t.status === 'disapproved');
   const pendingTasks = tasks.filter(t => t.status === 'pending');
+  const errorAlerts = tasks.filter(t => t.type === 'error-alert' && t.status === 'pending');
 
   // Get stats per user - actioned tasks
   const userActionStats = users.map(user => {
@@ -83,7 +85,55 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground mt-1">Team performance and statistics</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Error Alerts Section - Highlighted */}
+        {errorAlerts.length > 0 && (
+          <Card className="border-destructive bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Active Error Alerts ({errorAlerts.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {errorAlerts.slice(0, 6).map(alert => (
+                  <div key={alert.id} className="p-3 rounded-lg bg-background border border-destructive/20">
+                    <p className="font-medium text-sm text-foreground truncate">{alert.title}</p>
+                    <p className="text-xs text-destructive mt-1 font-mono truncate">
+                      {(alert.details as any)?.error || 'Unknown error'}
+                    </p>
+                    {(alert.details as any)?.url && (
+                      <a 
+                        href={(alert.details as any).url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
+                      >
+                        View URL <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(alert.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {errorAlerts.length > 6 && (
+                <p className="text-sm text-muted-foreground mt-3">
+                  +{errorAlerts.length - 6} more error alerts
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StatCard
+            title="Error Alerts"
+            value={errorAlerts.length}
+            icon={AlertTriangle}
+            className="border-l-4 border-l-destructive"
+          />
           <StatCard
             title="Total Approved"
             value={approvedTasks.length}
@@ -94,19 +144,19 @@ export default function AdminDashboard() {
             title="Total Disapproved"
             value={disapprovedTasks.length}
             icon={XCircle}
-            className="border-l-4 border-l-destructive"
+            className="border-l-4 border-l-warning"
           />
           <StatCard
             title="Pending Tasks"
             value={pendingTasks.length}
             icon={CheckSquare}
-            className="border-l-4 border-l-warning"
+            className="border-l-4 border-l-primary"
           />
           <StatCard
             title="Team Members"
             value={users.length}
             icon={Users}
-            className="border-l-4 border-l-primary"
+            className="border-l-4 border-l-muted-foreground"
           />
         </div>
 

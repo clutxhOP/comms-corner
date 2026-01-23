@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import CreateTask from "./pages/admin/CreateTask";
 import ApiDocs from "./pages/admin/ApiDocs";
+import TokenManagement from "./pages/admin/TokenManagement";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,11 @@ const App = () => (
             <Route path="/admin/create-task" element={
               <ProtectedRoute requireAdmin>
                 <CreateTask />
+              </ProtectedRoute>
+            } />
+            <Route path="/tokens" element={
+              <ProtectedRoute requireDevOrAdmin>
+                <TokenManagement />
               </ProtectedRoute>
             } />
             {/* Keep old route for backwards compatibility */}
