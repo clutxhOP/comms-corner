@@ -43,19 +43,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is admin
-    const { data: adminCheck } = await supabase
+    // Check if user is admin or dev
+    const { data: roleCheck } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "dev"])
+      .limit(1);
 
-    const isAdmin = !!adminCheck;
+    const isAdminOrDev = roleCheck && roleCheck.length > 0;
 
-    if (!isAdmin) {
+    if (!isAdminOrDev) {
       return new Response(
-        JSON.stringify({ error: "Only admins can manage customers" }),
+        JSON.stringify({ error: "Only admins and developers can manage customers" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

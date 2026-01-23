@@ -125,15 +125,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is admin
-    const { data: adminCheck } = await supabase
+    // Check if user is admin or dev
+    const { data: roleCheck } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "dev"])
+      .limit(1);
 
-    const isAdmin = !!adminCheck;
+    const isAdminOrDev = roleCheck && roleCheck.length > 0;
 
     const method = req.method;
     const url = new URL(req.url);
@@ -143,8 +143,8 @@ Deno.serve(async (req) => {
     if (method === "GET") {
       let query = supabase.from("tasks").select("*").order("created_at", { ascending: false });
 
-      // Non-admins can only see tasks assigned to them or unassigned
-      if (!isAdmin) {
+      // Non-admins/devs can only see tasks assigned to them or unassigned
+      if (!isAdminOrDev) {
         query = query.or(`assigned_to.cs.{${user.id}},assigned_to.is.null`);
       }
 
@@ -164,11 +164,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // POST - Create task (admin only)
+    // POST - Create task (admin or dev only)
     if (method === "POST") {
-      if (!isAdmin) {
+      if (!isAdminOrDev) {
         return new Response(
-          JSON.stringify({ error: "Only admins can create tasks" }),
+          JSON.stringify({ error: "Only admins and developers can create tasks" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -279,11 +279,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // PATCH - Update task assignment (admin only)
+    // PATCH - Update task assignment (admin or dev only)
     if (method === "PATCH") {
-      if (!isAdmin) {
+      if (!isAdminOrDev) {
         return new Response(
-          JSON.stringify({ error: "Only admins can update task assignments" }),
+          JSON.stringify({ error: "Only admins and developers can update task assignments" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -325,11 +325,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // DELETE - Delete task (admin only)
+    // DELETE - Delete task (admin or dev only)
     if (method === "DELETE") {
-      if (!isAdmin) {
+      if (!isAdminOrDev) {
         return new Response(
-          JSON.stringify({ error: "Only admins can delete tasks" }),
+          JSON.stringify({ error: "Only admins and developers can delete tasks" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
