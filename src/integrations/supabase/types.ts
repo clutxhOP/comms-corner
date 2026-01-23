@@ -279,7 +279,7 @@ export type Database = {
           enabled: boolean
           id: string
           name: string
-          trigger_action: string
+          trigger_action: string[]
           updated_at: string
           url: string
           user_id: string
@@ -289,7 +289,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           name: string
-          trigger_action: string
+          trigger_action: string[]
           updated_at?: string
           url: string
           user_id: string
@@ -299,7 +299,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           name?: string
-          trigger_action?: string
+          trigger_action?: string[]
           updated_at?: string
           url?: string
           user_id?: string

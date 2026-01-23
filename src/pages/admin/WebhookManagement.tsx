@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useWebhooks, TRIGGER_ACTIONS } from '@/hooks/useWebhooks';
 import { useUsers } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,13 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -54,21 +48,21 @@ export default function WebhookManagement() {
   
   const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
-  const [newTrigger, setNewTrigger] = useState('');
+  const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newUrl.trim() || !newTrigger) return;
+    if (!newName.trim() || !newUrl.trim() || selectedTriggers.length === 0) return;
     
     await createWebhook({
       name: newName.trim(),
       url: newUrl.trim(),
-      trigger_action: newTrigger,
+      trigger_actions: selectedTriggers,
       enabled: true,
     });
     
     setNewName('');
     setNewUrl('');
-    setNewTrigger('');
+    setSelectedTriggers([]);
     setCreateDialogOpen(false);
   };
 
@@ -84,13 +78,23 @@ export default function WebhookManagement() {
     await updateWebhook(id, { enabled });
   };
 
+  const handleTriggerToggle = (value: string) => {
+    setSelectedTriggers(prev => 
+      prev.includes(value)
+        ? prev.filter(t => t !== value)
+        : [...prev, value]
+    );
+  };
+
   const getUserName = (userId: string) => {
     const user = users.find(u => u.user_id === userId);
     return user?.full_name || 'Unknown User';
   };
 
-  const getTriggerLabel = (value: string) => {
-    return TRIGGER_ACTIONS.find(t => t.value === value)?.label || value;
+  const getTriggerLabels = (triggers: string[]) => {
+    return triggers.map(value => 
+      TRIGGER_ACTIONS.find(t => t.value === value)?.label || value
+    );
   };
 
   if (loading) {
@@ -123,7 +127,7 @@ export default function WebhookManagement() {
                 Add Webhook
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Webhook</DialogTitle>
                 <DialogDescription>
@@ -143,21 +147,26 @@ export default function WebhookManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="triggerAction" className="text-sm font-medium">
-                    Trigger On
+                  <label className="text-sm font-medium">
+                    Trigger On (select one or more)
                   </label>
-                  <Select value={newTrigger} onValueChange={setNewTrigger}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select trigger action" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRIGGER_ACTIONS.map(action => (
-                        <SelectItem key={action.value} value={action.value}>
+                  <div className="space-y-2 border rounded-lg p-3">
+                    {TRIGGER_ACTIONS.map(action => (
+                      <div key={action.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={action.value}
+                          checked={selectedTriggers.includes(action.value)}
+                          onCheckedChange={() => handleTriggerToggle(action.value)}
+                        />
+                        <label 
+                          htmlFor={action.value} 
+                          className="text-sm cursor-pointer"
+                        >
                           {action.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="webhookUrl" className="text-sm font-medium">
@@ -177,7 +186,7 @@ export default function WebhookManagement() {
                 </Button>
                 <Button 
                   onClick={handleCreate} 
-                  disabled={!newName.trim() || !newUrl.trim() || !newTrigger}
+                  disabled={!newName.trim() || !newUrl.trim() || selectedTriggers.length === 0}
                 >
                   Create Webhook
                 </Button>
@@ -205,7 +214,7 @@ export default function WebhookManagement() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     {isAdmin && <TableHead>Owner</TableHead>}
-                    <TableHead>Trigger</TableHead>
+                    <TableHead>Triggers</TableHead>
                     <TableHead>URL</TableHead>
                     <TableHead className="text-center">Enabled</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
@@ -221,9 +230,13 @@ export default function WebhookManagement() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {getTriggerLabel(webhook.trigger_action)}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {getTriggerLabels(webhook.trigger_actions).map((label, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {label}
+                            </Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="max-w-[200px]">
                         <a 
@@ -269,7 +282,7 @@ export default function WebhookManagement() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              Webhooks send a POST request to your specified URL when the selected action occurs.
+              Webhooks send a POST request to your specified URL when any of the selected actions occur.
             </p>
             <p>
               <strong className="text-foreground">Payload format:</strong>
