@@ -112,7 +112,15 @@ Deno.serve(async (req) => {
 
     // POST - Create new PAT
     if (method === "POST") {
-      const payload = await req.json();
+      let payload: { name?: string; expires_at?: string } = {};
+      try {
+        payload = await req.json();
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid JSON body" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       
       if (!payload.name) {
         return new Response(

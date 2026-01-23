@@ -8,7 +8,7 @@ export interface Webhook {
   user_id: string;
   name: string;
   url: string;
-  trigger_action: string;
+  trigger_actions: string[];
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -38,7 +38,13 @@ export function useWebhooks() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWebhooks((data || []) as Webhook[]);
+      
+      // Map the database field name to our interface
+      const mappedData = (data || []).map((w: any) => ({
+        ...w,
+        trigger_actions: w.trigger_action || [],
+      }));
+      setWebhooks(mappedData);
     } catch (error) {
       console.error('Error fetching webhooks:', error);
       toast({
@@ -55,14 +61,17 @@ export function useWebhooks() {
     fetchWebhooks();
   }, [user]);
 
-  const createWebhook = async (webhook: Omit<Webhook, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createWebhook = async (webhook: { name: string; url: string; trigger_actions: string[]; enabled: boolean }) => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
         .from('webhooks')
         .insert({
-          ...webhook,
+          name: webhook.name,
+          url: webhook.url,
+          trigger_action: webhook.trigger_actions, // DB column is trigger_action (array)
+          enabled: webhook.enabled,
           user_id: user.id,
         })
         .select()
@@ -70,12 +79,17 @@ export function useWebhooks() {
 
       if (error) throw error;
 
-      setWebhooks(prev => [data as Webhook, ...prev]);
+      const mappedData = {
+        ...data,
+        trigger_actions: data.trigger_action || [],
+      } as Webhook;
+      
+      setWebhooks(prev => [mappedData, ...prev]);
       toast({
         title: 'Webhook created',
         description: 'The webhook has been created successfully.',
       });
-      return data as Webhook;
+      return mappedData;
     } catch (error) {
       console.error('Error creating webhook:', error);
       toast({
@@ -86,11 +100,18 @@ export function useWebhooks() {
     }
   };
 
-  const updateWebhook = async (id: string, updates: Partial<Omit<Webhook, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
+  const updateWebhook = async (id: string, updates: Partial<{ name: string; url: string; trigger_actions: string[]; enabled: boolean }>) => {
     try {
+      // Map trigger_actions back to trigger_action for the DB
+      const dbUpdates: any = { ...updates };
+      if (updates.trigger_actions) {
+        dbUpdates.trigger_action = updates.trigger_actions;
+        delete dbUpdates.trigger_actions;
+      }
+
       const { error } = await supabase
         .from('webhooks')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id);
 
       if (error) throw error;
@@ -135,7 +156,10 @@ export function useWebhooks() {
   };
 
   const triggerWebhook = async (action: string, payload: Record<string, unknown>) => {
-    const matchingWebhooks = webhooks.filter(w => w.trigger_action === action && w.enabled);
+    // Find webhooks that have this action in their trigger_actions array
+    const matchingWebhooks = webhooks.filter(w => 
+      w.trigger_actions.includes(action) && w.enabled
+    );
     
     for (const webhook of matchingWebhooks) {
       try {
