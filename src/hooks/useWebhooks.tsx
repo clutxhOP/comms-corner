@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -14,6 +14,20 @@ export interface Webhook {
   updated_at: string;
 }
 
+export interface WebhookLog {
+  id: string;
+  webhook_id: string;
+  webhook_name: string;
+  trigger_action: string;
+  request_url: string;
+  request_payload: Record<string, unknown>;
+  response_status: number | null;
+  response_body: string | null;
+  error_message: string | null;
+  success: boolean;
+  executed_at: string;
+}
+
 export const TRIGGER_ACTIONS = [
   { value: 'task_approve', label: 'Task Approved' },
   { value: 'task_disapprove', label: 'Task Disapproved' },
@@ -24,7 +38,9 @@ export const TRIGGER_ACTIONS = [
 
 export function useWebhooks() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logsLoading, setLogsLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -54,6 +70,31 @@ export function useWebhooks() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWebhookLogs = async () => {
+    if (!user) return;
+
+    setLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('webhook_logs')
+        .select('*')
+        .order('executed_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setWebhookLogs((data || []) as WebhookLog[]);
+    } catch (error) {
+      console.error('Error fetching webhook logs:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load webhook logs',
+        variant: 'destructive',
+      });
+    } finally {
+      setLogsLoading(false);
     }
   };
 
@@ -155,35 +196,77 @@ export function useWebhooks() {
     }
   };
 
-  const triggerWebhook = async (action: string, payload: Record<string, unknown>) => {
+  // Trigger webhooks and log the results
+  const triggerWebhook = useCallback(async (action: string, payload: Record<string, unknown>) => {
     // Find webhooks that have this action in their trigger_actions array
     const matchingWebhooks = webhooks.filter(w => 
       w.trigger_actions.includes(action) && w.enabled
     );
     
+    console.log(`Triggering webhooks for action: ${action}, found ${matchingWebhooks.length} matching webhooks`);
+    
     for (const webhook of matchingWebhooks) {
+      const requestPayload = {
+        action,
+        timestamp: new Date().toISOString(),
+        ...payload,
+      };
+
+      let success = false;
+      let responseStatus: number | null = null;
+      let responseBody: string | null = null;
+      let errorMessage: string | null = null;
+
       try {
-        await fetch(webhook.url, {
+        console.log(`Triggering webhook: ${webhook.name} to ${webhook.url}`);
+        
+        const response = await fetch(webhook.url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action,
-            timestamp: new Date().toISOString(),
-            ...payload,
-          }),
-          mode: 'no-cors', // Allow cross-origin requests
+          body: JSON.stringify(requestPayload),
         });
-        console.log(`Webhook triggered: ${webhook.name} for action ${action}`);
-      } catch (error) {
+
+        responseStatus = response.status;
+        try {
+          responseBody = await response.text();
+        } catch {
+          responseBody = null;
+        }
+        success = response.ok;
+        
+        console.log(`Webhook ${webhook.name} response: ${responseStatus}`);
+      } catch (error: any) {
         console.error(`Failed to trigger webhook ${webhook.name}:`, error);
+        errorMessage = error.message || 'Unknown error';
+        success = false;
+      }
+
+      // Log the webhook execution
+      try {
+        await supabase.from('webhook_logs').insert({
+          webhook_id: webhook.id,
+          webhook_name: webhook.name,
+          trigger_action: action,
+          request_url: webhook.url,
+          request_payload: requestPayload,
+          response_status: responseStatus,
+          response_body: responseBody,
+          error_message: errorMessage,
+          success,
+        });
+      } catch (logError) {
+        console.error('Failed to log webhook execution:', logError);
       }
     }
-  };
+  }, [webhooks]);
 
   return {
     webhooks,
+    webhookLogs,
     loading,
+    logsLoading,
     fetchWebhooks,
+    fetchWebhookLogs,
     createWebhook,
     updateWebhook,
     deleteWebhook,

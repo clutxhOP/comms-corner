@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { LeadApprovalCard } from '@/components/tasks/LeadApprovalCard';
 import { LeadAlertCard } from '@/components/tasks/LeadAlertCard';
@@ -7,10 +7,21 @@ import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
 import { ErrorAlertCard } from '@/components/tasks/ErrorAlertCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
 import { useTasks, DbTask } from '@/hooks/useTasks';
-import { Task, LeadApprovalDetails, LeadAlertDetails, LeadOutreachDetails, OtherTaskDetails, ErrorAlertDetails } from '@/types';
+import { Task, ErrorAlertDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, CheckSquare, AlertCircle, Send, ClipboardCheck, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
+  Search, CheckSquare, AlertCircle, Send, ClipboardCheck, 
+  MoreHorizontal, AlertTriangle, ArrowUpDown, Filter 
+} from 'lucide-react';
 
 // Convert DbTask to Task for components
 function convertToTask(dbTask: DbTask): Task {
@@ -25,11 +36,16 @@ function convertToTask(dbTask: DbTask): Task {
   };
 }
 
+type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
+type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
+
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const handleApprove = async (taskId: string) => {
     await approveTask(taskId);
@@ -51,17 +67,48 @@ export default function Tasks() {
     await markTaskDone(taskId);
   };
 
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Apply filtering and sorting
+  const processedTasks = useMemo(() => {
+    let result = [...tasks];
 
-  const pendingTasks = filteredTasks.filter(t => t.status === 'pending');
+    // Filter by search query
+    if (searchQuery) {
+      result = result.filter(task => 
+        task.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      result = result.filter(task => task.status === statusFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'title-asc':
+          return a.title.localeCompare(b.title);
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [tasks, searchQuery, statusFilter, sortBy]);
+
+  const pendingTasks = processedTasks.filter(t => t.status === 'pending');
   
-  const approvalTasks = filteredTasks.filter(t => t.type === 'lead-approval');
-  const alertTasks = filteredTasks.filter(t => t.type === 'lead-alert');
-  const outreachTasks = filteredTasks.filter(t => t.type === 'lead-outreach');
-  const errorAlertTasks = filteredTasks.filter(t => t.type === 'error-alert');
-  const otherTasks = filteredTasks.filter(t => t.type === 'other');
+  const approvalTasks = processedTasks.filter(t => t.type === 'lead-approval');
+  const alertTasks = processedTasks.filter(t => t.type === 'lead-alert');
+  const outreachTasks = processedTasks.filter(t => t.type === 'lead-outreach');
+  const errorAlertTasks = processedTasks.filter(t => t.type === 'error-alert');
+  const otherTasks = processedTasks.filter(t => t.type === 'other');
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
@@ -158,21 +205,49 @@ export default function Tasks() {
           </div>
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Search and Filter Bar */}
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="disapproved">Disapproved</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-[160px]">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="title-asc">Title A-Z</SelectItem>
+              <SelectItem value="title-desc">Title Z-A</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="bg-muted/50">
             <TabsTrigger value="all" className="gap-1.5">
               <ClipboardCheck className="h-4 w-4" />
-              All ({filteredTasks.length})
+              All ({processedTasks.length})
             </TabsTrigger>
             <TabsTrigger value="approvals" className="gap-1.5">
               <CheckSquare className="h-4 w-4" />
@@ -198,9 +273,9 @@ export default function Tasks() {
 
           <TabsContent value="all" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTasks.map(renderTaskCard)}
+              {processedTasks.map(renderTaskCard)}
             </div>
-            {filteredTasks.length === 0 && (
+            {processedTasks.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No tasks found
               </div>
