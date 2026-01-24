@@ -7,10 +7,11 @@ import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
 import { ErrorAlertCard } from '@/components/tasks/ErrorAlertCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
 import { useTasks, DbTask } from '@/hooks/useTasks';
+import { useMentionedTasks } from '@/hooks/useTaskComments';
 import { Task, ErrorAlertDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { 
   Search, CheckSquare, AlertCircle, Send, ClipboardCheck, 
-  MoreHorizontal, AlertTriangle, ArrowUpDown, Filter 
+  MoreHorizontal, AlertTriangle, ArrowUpDown, Filter, AtSign
 } from 'lucide-react';
 
 // Convert DbTask to Task for components
@@ -41,6 +42,7 @@ type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone } = useTasks();
+  const { mentionedTaskIds } = useMentionedTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export default function Tasks() {
   }, [tasks, searchQuery, statusFilter, sortBy]);
 
   const pendingTasks = processedTasks.filter(t => t.status === 'pending');
+  const mentionedTasks = processedTasks.filter(t => mentionedTaskIds.includes(t.id));
   
   const approvalTasks = processedTasks.filter(t => t.type === 'lead-approval');
   const alertTasks = processedTasks.filter(t => t.type === 'lead-alert');
@@ -244,11 +247,20 @@ export default function Tasks() {
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="bg-muted/50">
+          <TabsList className="bg-muted/50 flex-wrap">
             <TabsTrigger value="all" className="gap-1.5">
               <ClipboardCheck className="h-4 w-4" />
               All ({processedTasks.length})
             </TabsTrigger>
+            {mentionedTasks.length > 0 && (
+              <TabsTrigger value="mentioned" className="gap-1.5">
+                <AtSign className="h-4 w-4" />
+                Mentioned
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {mentionedTasks.length}
+                </Badge>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="approvals" className="gap-1.5">
               <CheckSquare className="h-4 w-4" />
               Approvals ({approvalTasks.length})
@@ -278,6 +290,17 @@ export default function Tasks() {
             {processedTasks.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No tasks found
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mentioned" className="mt-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {mentionedTasks.map(renderTaskCard)}
+            </div>
+            {mentionedTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No tasks where you're mentioned
               </div>
             )}
           </TabsContent>

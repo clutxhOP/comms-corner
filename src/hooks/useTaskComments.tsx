@@ -10,6 +10,7 @@ export interface TaskComment {
   content: string;
   created_at: string;
   user_name?: string;
+  mentions?: string[];
 }
 
 export function useTaskComments(taskId: string | null) {
@@ -89,7 +90,7 @@ export function useTaskComments(taskId: string | null) {
     }
   }, [taskId]);
 
-  const addComment = async (content: string) => {
+  const addComment = async (content: string, mentions: string[] = []) => {
     if (!taskId || !user || !content.trim()) return;
 
     try {
@@ -99,6 +100,7 @@ export function useTaskComments(taskId: string | null) {
           task_id: taskId,
           user_id: user.id,
           content: content.trim(),
+          mentions: mentions,
         });
 
       if (error) throw error;
@@ -118,4 +120,65 @@ export function useTaskComments(taskId: string | null) {
     addComment,
     fetchComments,
   };
+}
+
+// Hook to get tasks where user is mentioned in comments
+export function useMentionedTasks() {
+  const [mentionedTaskIds, setMentionedTaskIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchMentionedTasks = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('task_comments')
+          .select('task_id')
+          .contains('mentions', [user.id]);
+
+        if (error) throw error;
+
+        const uniqueTaskIds = [...new Set((data || []).map(c => c.task_id))];
+        setMentionedTaskIds(uniqueTaskIds);
+      } catch (error) {
+        console.error('Error fetching mentioned tasks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentionedTasks();
+
+    // Subscribe to mentions
+    const channel = supabase
+      .channel('user-mentions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'task_comments',
+        },
+        (payload) => {
+          const comment = payload.new as TaskComment;
+          if (comment.mentions?.includes(user?.id || '')) {
+            setMentionedTaskIds(prev => 
+              prev.includes(comment.task_id) ? prev : [...prev, comment.task_id]
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  return { mentionedTaskIds, loading };
 }
