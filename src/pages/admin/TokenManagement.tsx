@@ -3,12 +3,10 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/hooks/useUsers';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Key, Plus, Trash2, Copy, Check, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Key, Plus, Trash2, Copy, Check, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -67,13 +65,13 @@ export default function TokenManagement() {
     
     try {
       // Use fetch directly with GET method to avoid body issues with supabase.functions.invoke
-      const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
       const res = await fetch(`${baseUrl}/manage-pat`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string,
         },
       });
 
@@ -100,13 +98,13 @@ export default function TokenManagement() {
     if (!newTokenName.trim() || !session?.access_token) return;
 
     try {
-      const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
       const res = await fetch(`${baseUrl}/manage-pat`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string,
         },
         body: JSON.stringify({ name: newTokenName.trim() }),
       });
@@ -131,13 +129,13 @@ export default function TokenManagement() {
     if (!tokenToRevoke || !session?.access_token) return;
 
     try {
-      const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
       const res = await fetch(`${baseUrl}/manage-pat?id=${tokenToRevoke.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string,
         },
       });
 
@@ -342,8 +340,9 @@ export default function TokenManagement() {
           <CardContent>
             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
               <code>{`curl -X GET \\
-  "${`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`}/manage-tasks" \\
-  -H "Authorization: Bearer <your_pat_token>"`}</code>
+  "${`${import.meta.env.VITE_SUPABASE_URL}/functions/v1`}/manage-tasks" \\
+  -H "Authorization: Bearer <your_pat_token>" \\
+  -H "apikey: ${'${YOUR_PROJECT_API_KEY}'}"`}</code>
             </pre>
           </CardContent>
         </Card>
