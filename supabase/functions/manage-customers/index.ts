@@ -5,6 +5,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sha256Hex(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function getAuthUserId(req: Request, supabase: any): Promise<{ userId: string; authType: "jwt" | "pat" } | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+
+  const token = authHeader.replace("Bearer ", "").trim();
+  if (!token) return null;
+
+  if (token.startsWith("pat_")) {
+    const tokenHash = await sha256Hex(token);
+    const nowIso = new Date().toISOString();
+
+    const { data: pat, error: patError } = await supabase
+      .from("personal_access_tokens")
+      .select("id, user_id, expires_at, revoked_at")
+      .eq("token_hash", tokenHash)
+      .is("revoked_at", null)
+      .maybeSingle();
+
+    if (patError || !pat) return null;
+    if (pat.expires_at && pat.expires_at <= nowIso) return null;
+
+    await supabase
+      .from("personal_access_tokens")
+      .update({ last_used_at: nowIso })
+      .eq("id", pat.id);
+
+    return { userId: pat.user_id as string, authType: "pat" };
+  }
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) return null;
+
+  return { userId: user.id, authType: "jwt" };
+}
+
 interface CustomerPayload {
   name: string;
   email: string;
@@ -23,31 +66,20 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify the user's JWT
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
+    const auth = await getAuthUserId(req, supabase);
+    if (!auth) {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    const userId = auth.userId;
 
     // Check if user is admin or dev
     const { data: roleCheck } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .in("role", ["admin", "dev"])
       .limit(1);
 
@@ -114,7 +146,7 @@ Deno.serve(async (req) => {
           email: payload.email,
           phone: payload.phone || null,
           company: payload.company || null,
-          created_by: user.id,
+          created_by: userId,
         })
         .select()
         .single();
@@ -127,7 +159,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log("Customer created:", data.id, "by user:", user.id);
+      console.log("Customer created:", data.id, "by user:", userId);
 
       return new Response(
         JSON.stringify({ data }),
@@ -154,7 +186,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log("Customer deleted:", customerId, "by user:", user.id);
+      console.log("Customer deleted:", customerId, "by user:", userId);
 
       return new Response(
         JSON.stringify({ success: true }),
