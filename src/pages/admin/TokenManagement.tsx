@@ -60,15 +60,29 @@ export default function TokenManagement() {
   const [tokenToRevoke, setTokenToRevoke] = useState<PAT | null>(null);
 
   const fetchTokens = async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setLoading(false);
+      return;
+    }
     
     try {
-      const response = await supabase.functions.invoke('manage-pat', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      // Use fetch directly with GET method to avoid body issues with supabase.functions.invoke
+      const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+      const res = await fetch(`${baseUrl}/manage-pat`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (response.error) throw response.error;
-      setTokens(response.data?.data || []);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch tokens');
+      }
+
+      const data = await res.json();
+      setTokens(data?.data || []);
     } catch (error: any) {
       console.error('Error fetching tokens:', error);
       toast.error('Failed to load tokens');
@@ -85,15 +99,23 @@ export default function TokenManagement() {
     if (!newTokenName.trim() || !session?.access_token) return;
 
     try {
-      const response = await supabase.functions.invoke('manage-pat', {
+      const baseUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+      const res = await fetch(`${baseUrl}/manage-pat`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { name: newTokenName.trim() },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newTokenName.trim() }),
       });
 
-      if (response.error) throw response.error;
-      
-      setNewToken(response.data?.data?.token);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create token');
+      }
+
+      const data = await res.json();
+      setNewToken(data?.data?.token);
       toast.success('Token created successfully');
       fetchTokens();
       setNewTokenName('');
