@@ -15,6 +15,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import logoImage from '@/assets/logo.png';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -51,9 +52,7 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-            <span className="text-sm font-bold text-primary-foreground">B</span>
-          </div>
+          <img src={logoImage} alt="BUDDY Logo" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
           <div>
             <h2 className="text-sm font-semibold text-sidebar-foreground">BUDDY</h2>
             <p className="text-xs text-muted-foreground">Internal Tools</p>
