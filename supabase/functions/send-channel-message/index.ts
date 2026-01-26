@@ -11,6 +11,87 @@ interface SendMessagePayload {
   sender: string;
 }
 
+async function verifyAdminOrDevAccess(supabase: any, authHeader: string): Promise<{ userId: string | null; error: string | null }> {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, error: "Missing or invalid Authorization header" };
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+
+  // Check if it's a PAT (Personal Access Token)
+  if (token.startsWith('pat_')) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const { data: patData, error: patError } = await supabase
+      .from('personal_access_tokens')
+      .select('user_id, expires_at, revoked_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+
+    if (patError || !patData) {
+      return { userId: null, error: "Invalid personal access token" };
+    }
+
+    if (patData.revoked_at) {
+      return { userId: null, error: "Token has been revoked" };
+    }
+
+    if (patData.expires_at && new Date(patData.expires_at) < new Date()) {
+      return { userId: null, error: "Token has expired" };
+    }
+
+    // Update last_used_at
+    await supabase
+      .from('personal_access_tokens')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('token_hash', tokenHash);
+
+    // Check if user has admin or dev role
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', patData.user_id);
+
+    const hasAdminOrDev = roles?.some((r: any) => r.role === 'admin' || r.role === 'dev');
+    if (!hasAdminOrDev) {
+      return { userId: null, error: "Access denied. Requires admin or dev role." };
+    }
+
+    return { userId: patData.user_id, error: null };
+  }
+
+  // JWT authentication
+  const supabaseWithAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: claimsData, error: claimsError } = await supabaseWithAuth.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims) {
+    return { userId: null, error: "Invalid JWT token" };
+  }
+
+  const userId = claimsData.claims.sub as string;
+
+  // Check if user has admin or dev role
+  const { data: roles } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId);
+
+  const hasAdminOrDev = roles?.some((r: any) => r.role === 'admin' || r.role === 'dev');
+  if (!hasAdminOrDev) {
+    return { userId: null, error: "Access denied. Requires admin or dev role." };
+  }
+
+  return { userId, error: null };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -26,6 +107,17 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: "Method not allowed. Use POST." }),
         { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify admin/dev access
+    const authHeader = req.headers.get("Authorization") || "";
+    const { userId, error: authError } = await verifyAdminOrDevAccess(supabase, authHeader);
+
+    if (authError) {
+      return new Response(
+        JSON.stringify({ success: false, error: authError }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -94,50 +186,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create a system message by using a special format
-    // Since we don't have a user_id for external sources, we'll create a system user
-    // or use the service role to insert directly with a formatted message
-    
-    // First, check if we have a system user for external messages
-    let systemUserId: string;
-    
-    const { data: systemProfile } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("email", "system@backendglamor.com")
-      .maybeSingle();
-
-    if (systemProfile) {
-      systemUserId = systemProfile.user_id;
-    } else {
-      // Use service role to insert - we'll format the message with sender prefix
-      // For now, we'll need to create a workaround by using a special format
-      // that includes the sender name in the message content
-      
-      // Get any admin user to use as the system sender
-      const { data: adminRole } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin")
-        .limit(1)
-        .maybeSingle();
-
-      if (!adminRole) {
-        return new Response(
-          JSON.stringify({ success: false, error: "No admin user found for system messages" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      systemUserId = adminRole.user_id;
-    }
-
-    // Insert the message with sender_name stored separately
-    // This preserves the original message content for proper markdown/HTML/URL rendering
+    // Use the authenticated user's ID as the sender
     const { data: messageData, error: insertError } = await supabase
       .from("chat_messages")
       .insert({
         channel_id: channelId,
-        user_id: systemUserId,
+        user_id: userId,
         content: payload.message,
         sender_name: payload.sender,
       })
@@ -152,7 +206,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Channel message sent:", messageData.id, "to channel:", channelId, "from:", payload.sender);
+    console.log("Channel message sent:", messageData.id, "to channel:", channelId, "from:", payload.sender, "by user:", userId);
 
     return new Response(
       JSON.stringify({
