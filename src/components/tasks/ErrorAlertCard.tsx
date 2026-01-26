@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface ErrorAlertDetails {
   description?: string;
@@ -60,6 +62,8 @@ export function ErrorAlertCard({
             <p className="text-sm font-medium text-destructive mb-2">Error Details</p>
             <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none [&_a]:text-primary [&_a]:underline [&_a]:break-all [&_p]:my-1 [&_hr]:my-2 [&_hr]:border-destructive/30">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   a: ({ href, children }) => (
                     <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
