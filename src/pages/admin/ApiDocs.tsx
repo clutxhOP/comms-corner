@@ -2,7 +2,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff } from 'lucide-react';
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -207,7 +207,7 @@ export default function ApiDocs() {
 
         {/* Endpoints */}
         <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Tasks
@@ -219,6 +219,10 @@ export default function ApiDocs() {
             <TabsTrigger value="leads" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
               Leads
+            </TabsTrigger>
+            <TabsTrigger value="channels" className="flex items-center gap-2">
+              <Hash className="h-4 w-4" />
+              Channels
             </TabsTrigger>
           </TabsList>
 
@@ -515,6 +519,66 @@ export default function ApiDocs() {
   "message": "Lead recorded. Total leads sent: 16"
 }`}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Channels API */}
+          <TabsContent value="channels" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Hash className="h-5 w-5" />
+                  Channels API
+                </CardTitle>
+                <CardDescription>
+                  Send messages to chat channels from external sources. No authentication required.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Endpoint
+                  method="POST"
+                  path="/send-channel-message"
+                  description="Send a message to a chat channel from webhooks or automations. No authentication required."
+                  auth="None (public endpoint)"
+                  requestBody={`{
+  "channelId": "main",  // Use slug (main, dev, ops) or full UUID
+  "message": "Hello from automation!\\n\\n**Bold text** and [links](https://example.com) work too!",
+  "sender": "Daily Report Bot"  // Display name for the sender
+}`}
+                  responseExample={`{
+  "success": true,
+  "messageId": "generated-uuid",
+  "channelId": "channel-uuid",
+  "sender": "Daily Report Bot",
+  "createdAt": "2026-01-26T10:00:00Z"
+}`}
+                />
+
+                {/* Available Channels */}
+                <div className="border rounded-lg p-4 space-y-4 bg-primary/5 border-primary/20">
+                  <h4 className="font-medium text-foreground">Available Channel Slugs</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use these slugs in the <code className="text-primary">channelId</code> field:
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="font-mono">main</Badge>
+                      <span className="text-sm text-muted-foreground">Main channel - accessible by all roles</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="font-mono">dev</Badge>
+                      <span className="text-sm text-muted-foreground">Developers channel - admin and dev only</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="font-mono">ops</Badge>
+                      <span className="text-sm text-muted-foreground">Operations channel - admin and ops only</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 View all channels with their IDs at <a href="/channels" className="text-primary hover:underline">/channels</a>
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
