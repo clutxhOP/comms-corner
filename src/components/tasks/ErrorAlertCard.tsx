@@ -8,8 +8,8 @@ import rehypeRaw from "rehype-raw";
 
 interface ErrorAlertDetails {
   description?: string;
-  error?: string;
-  url?: string;
+  error?: string; // Legacy field
+  url?: string; // Legacy field
 }
 
 interface ErrorAlertCardProps {
@@ -23,6 +23,8 @@ interface ErrorAlertCardProps {
 
 export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDone }: ErrorAlertCardProps) {
   const isPending = status === "pending";
+
+  // Support both new 'description' field and legacy 'error' field
   const description = details.description || details.error || "";
 
   return (
@@ -38,7 +40,7 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
             className={
               isPending
                 ? "bg-destructive/10 text-destructive border-destructive/20"
-                : "bg-green-50 text-green-700 border-green-200"
+                : "bg-success/10 text-success border-success/20"
             }
           >
             {status}
@@ -50,25 +52,23 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
         <div className="space-y-3">
           <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
             <p className="text-sm font-medium text-destructive mb-2">Error Details</p>
-            <div className="text-sm text-foreground break-words">
+            <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none [&_a]:text-primary [&_a]:underline [&_a]:break-all [&_p]:my-1 [&_hr]:my-2 [&_hr]:border-destructive/30">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                  a: ({ href, children, ...props }) => (
+                  a: ({ href, children }) => (
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:text-primary/80 underline break-all inline-block max-w-full"
-                      {...props}
+                      className="text-primary hover:underline break-all"
                     >
                       {children}
                     </a>
                   ),
-                  p: ({ children }) => <p className="my-1 break-words">{children}</p>,
+                  p: ({ children }) => <p className="my-1">{children}</p>,
                   hr: () => <hr className="my-2 border-destructive/30" />,
-                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                 }}
               >
                 {description}
@@ -76,6 +76,7 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
             </div>
           </div>
 
+          {/* Legacy URL support */}
           {details.url && !details.description && (
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">URL</p>
@@ -90,6 +91,7 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
             </div>
           )}
         </div>
+
         {isPending && onMarkDone && (
           <div className="flex gap-2 pt-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => onMarkDone(id)}>
