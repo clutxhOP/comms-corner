@@ -41,7 +41,7 @@ type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 
 export default function Tasks() {
-  const { tasks, loading, approveTask, disapproveTask, markTaskDone } = useTasks();
+  const { tasks, loading, approveTask, disapproveTask, markTaskDone, deleteTask } = useTasks();
   const { mentionedTaskIds } = useMentionedTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
@@ -67,6 +67,12 @@ export default function Tasks() {
 
   const handleMarkDone = async (taskId: string) => {
     await markTaskDone(taskId);
+  };
+
+  const handleDelete = async (taskId: string) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      await deleteTask(taskId);
+    }
   };
 
   // Apply filtering and sorting
@@ -130,6 +136,7 @@ export default function Tasks() {
             }} 
             onApprove={handleApprove}
             onDisapprove={handleDisapproveClick}
+            onDelete={handleDelete}
           />
         );
       case 'lead-alert':
@@ -141,6 +148,7 @@ export default function Tasks() {
               status: isActioned ? 'done' : 'pending',
             }} 
             onMarkDone={handleMarkDone}
+            onDelete={handleDelete}
           />
         );
       case 'lead-outreach':
@@ -152,6 +160,7 @@ export default function Tasks() {
               status: isActioned ? 'done' : 'pending',
             }} 
             onMarkDone={handleMarkDone}
+            onDelete={handleDelete}
           />
         );
       case 'other':
@@ -163,6 +172,7 @@ export default function Tasks() {
               status: isActioned ? 'done' : 'pending',
             }} 
             onMarkDone={handleMarkDone}
+            onDelete={handleDelete}
           />
         );
       case 'error-alert':

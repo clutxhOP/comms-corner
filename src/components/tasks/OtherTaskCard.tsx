@@ -1,22 +1,28 @@
 import { useState } from "react";
 import { Task, OtherTaskDetails } from "@/types";
-import { CheckCircle2, MoreHorizontal, MessageCircle } from "lucide-react";
+import { CheckCircle2, MoreHorizontal, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TaskCommentsDialog } from "./TaskCommentsDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface OtherTaskCardProps {
   task: Task;
   onMarkDone?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-export function OtherTaskCard({ task, onMarkDone }: OtherTaskCardProps) {
+export function OtherTaskCard({ task, onMarkDone, onDelete }: OtherTaskCardProps) {
   const details = task.details as OtherTaskDetails;
   const isCompleted = task.status === "done";
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const { user } = useAuth();
+  const { roles } = useUserRoles(user?.id);
+  const canDelete = roles.includes("admin") || roles.includes("dev");
 
   return (
     <>
@@ -27,12 +33,22 @@ export function OtherTaskCard({ task, onMarkDone }: OtherTaskCardProps) {
         )}
       >
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground">
-              {new Date(task.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              {new Date(task.createdAt).toLocaleString()}
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {canDelete && onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => onDelete(task.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setCommentsOpen(true)}>
               <MessageCircle className="h-4 w-4" />
             </Button>
