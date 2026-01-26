@@ -19,6 +19,7 @@ export interface ChannelMessage {
   content: string;
   created_at: string;
   user_name?: string;
+  sender_name?: string;
 }
 
 export function useChatChannels() {
