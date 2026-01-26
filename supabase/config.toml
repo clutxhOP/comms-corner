@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.manage-pat]
 verify_jwt = false
+
+[functions.send-channel-message]
+verify_jwt = false

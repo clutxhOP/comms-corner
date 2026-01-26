@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive, ScrollText } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive, ScrollText, Hash } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -31,6 +31,7 @@ const adminNavItems = [
   { title: 'Access Tokens', url: '/tokens', icon: Key },
   { title: 'Webhooks', url: '/webhooks', icon: Webhook },
   { title: 'Webhook Logs', url: '/webhook-logs', icon: ScrollText },
+  { title: 'Channels', url: '/channels', icon: Hash },
 ];
 
 // Items accessible by dev (non-admin)
@@ -39,6 +40,7 @@ const devNavItems = [
   { title: 'Access Tokens', url: '/tokens', icon: Key },
   { title: 'Webhooks', url: '/webhooks', icon: Webhook },
   { title: 'Webhook Logs', url: '/webhook-logs', icon: ScrollText },
+  { title: 'Channels', url: '/channels', icon: Hash },
 ];
 
 export function AppSidebar() {

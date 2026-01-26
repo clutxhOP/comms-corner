@@ -18,6 +18,7 @@ import TokenManagement from "./pages/admin/TokenManagement";
 import WebhookManagement from "./pages/admin/WebhookManagement";
 import WebhookLogs from "./pages/admin/WebhookLogs";
 import CompletedTasks from "./pages/admin/CompletedTasks";
+import ChannelManagement from "./pages/admin/ChannelManagement";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,11 @@ const App = () => (
             <Route path="/webhook-logs" element={
               <ProtectedRoute requireDevOrAdmin>
                 <WebhookLogs />
+              </ProtectedRoute>
+            } />
+            <Route path="/channels" element={
+              <ProtectedRoute requireDevOrAdmin>
+                <ChannelManagement />
               </ProtectedRoute>
             } />
             {/* Keep old route for backwards compatibility */}
