@@ -167,24 +167,32 @@ export function useTasks() {
     if (!user) return;
 
     const task = tasks.find(t => t.id === taskId);
+    
+    // Optimistically update UI first
+    setTasks(prev => prev.map(t => 
+      t.id === taskId 
+        ? { ...t, status: 'done' as const, actioned_by: user.id, actioned_at: new Date().toISOString() }
+        : t
+    ));
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .update({
           status: 'done',
           actioned_by: user.id,
           actioned_at: new Date().toISOString(),
         })
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .select()
+        .maybeSingle();
 
       if (error) throw error;
-
-      setTasks(prev => prev.map(t => 
-        t.id === taskId 
-          ? { ...t, status: 'done' as const, actioned_by: user.id, actioned_at: new Date().toISOString() }
-          : t
-      ));
+      
+      // Check if update actually affected a row (RLS might silently block)
+      if (!data) {
+        throw new Error('Update failed - you may not have permission to modify this task');
+      }
 
       // Trigger webhook
       await triggerWebhook('task_done', {
@@ -198,13 +206,15 @@ export function useTasks() {
       });
     } catch (error) {
       console.error('Error completing task:', error);
+      // Revert optimistic update on failure
+      await fetchTasks();
       toast({
         title: 'Error',
-        description: 'Failed to complete task',
+        description: error instanceof Error ? error.message : 'Failed to complete task',
         variant: 'destructive',
       });
     }
-  }, [user, profile, tasks, triggerWebhook, toast]);
+  }, [user, profile, tasks, triggerWebhook, toast, fetchTasks]);
 
   const createTask = useCallback(async (task: Omit<DbTask, 'id' | 'created_at' | 'updated_at' | 'actioned_by' | 'actioned_at'>) => {
     if (!user) return;
