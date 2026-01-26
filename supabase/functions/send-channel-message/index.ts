@@ -131,16 +131,15 @@ Deno.serve(async (req) => {
       systemUserId = adminRole.user_id;
     }
 
-    // Format message with sender prefix for external messages
-    const formattedMessage = `[${payload.sender}] ${payload.message}`;
-
-    // Insert the message
+    // Insert the message with sender_name stored separately
+    // This preserves the original message content for proper markdown/HTML/URL rendering
     const { data: messageData, error: insertError } = await supabase
       .from("chat_messages")
       .insert({
         channel_id: channelId,
         user_id: systemUserId,
-        content: formattedMessage,
+        content: payload.message,
+        sender_name: payload.sender,
       })
       .select("id, channel_id, created_at")
       .single();
