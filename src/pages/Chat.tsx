@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 export default function Chat() {
   const { channels, loading: channelsLoading } = useChatChannels();
@@ -140,7 +143,32 @@ export default function Chat() {
                             {!isOwn && (
                               <p className="text-xs font-medium mb-1 opacity-70">{message.user_name}</p>
                             )}
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <div className={cn(
+                              'text-sm prose prose-sm max-w-none',
+                              isOwn 
+                                ? 'prose-invert [&_a]:text-primary-foreground [&_a]:underline' 
+                                : 'dark:prose-invert [&_a]:text-primary [&_a]:underline'
+                            )}>
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeRaw]}
+                                components={{
+                                  a: ({ href, children }) => (
+                                    <a
+                                      href={href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:opacity-80 break-all"
+                                    >
+                                      {children}
+                                    </a>
+                                  ),
+                                  p: ({ children }) => <p className="my-0.5">{children}</p>,
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
                             <p className={cn(
                               'text-xs mt-1',
                               isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
