@@ -63,7 +63,7 @@ const requiredFields: Record<string, string[]> = {
   "lead-approval": ["clientId", "category", "icp", "requirement", "contactInfo", "proofLink"],
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
-  "error-alert": ["error", "url"],
+  "error-alert": ["description"], // description is required, supports plain text, HTML, and Markdown
   "other": ["description"],
 };
 
@@ -268,8 +268,7 @@ Deno.serve(async (req) => {
             comment: "string (required)"
           },
           "error-alert": {
-            error: "string (required)",
-            url: "string (required)"
+            description: "string (required) - accepts plain text, HTML, and Markdown formatting"
           },
           "other": {
             description: "string (required)",
