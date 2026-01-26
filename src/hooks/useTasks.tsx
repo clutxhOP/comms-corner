@@ -33,7 +33,7 @@ export function useTasks() {
     }
   }, [user]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -62,11 +62,13 @@ export function useTasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [user]);
+    if (user) {
+      fetchTasks();
+    }
+  }, [user, fetchTasks]);
 
   const approveTask = useCallback(async (taskId: string) => {
     if (!user) return;
@@ -250,16 +252,21 @@ export function useTasks() {
     }
   }, [user, profile, triggerWebhook, toast]);
 
-  const deleteTask = async (taskId: string) => {
+  const deleteTask = useCallback(async (taskId: string) => {
+    // Optimistically remove from UI first
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    
     try {
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId);
 
-      if (error) throw error;
-
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      if (error) {
+        // Revert on error - refetch to get actual state
+        await fetchTasks();
+        throw error;
+      }
 
       toast({
         title: 'Task deleted',
@@ -273,7 +280,7 @@ export function useTasks() {
         variant: 'destructive',
       });
     }
-  };
+  }, [fetchTasks, toast]);
 
   const updateTaskAssignment = async (taskId: string, assignees: string[]) => {
     try {
