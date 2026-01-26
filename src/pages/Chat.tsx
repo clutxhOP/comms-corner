@@ -1,30 +1,28 @@
-import { useState, useRef, useEffect } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useChatChannels, useChannelMessages } from '@/hooks/useChatChannels';
-import { useAuth } from '@/hooks/useAuth';
-import { Search, Hash, Send } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import { useState, useRef, useEffect } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
+import { useAuth } from "@/hooks/useAuth";
+import { Search, Hash, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 export default function Chat() {
   const { channels, loading: channelsLoading } = useChatChannels();
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const { messages, loading: messagesLoading, sendMessage } = useChannelMessages(selectedChannelId);
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [newMessage, setNewMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const selectedChannel = channels.find(c => c.id === selectedChannelId);
+  const selectedChannel = channels.find((c) => c.id === selectedChannelId);
 
-  const filteredChannels = channels.filter(channel =>
-    channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   // Auto-select first channel
   useEffect(() => {
@@ -43,9 +41,9 @@ export default function Chat() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    
+
     await sendMessage(newMessage);
-    setNewMessage('');
+    setNewMessage("");
   };
 
   return (
@@ -77,8 +75,8 @@ export default function Chat() {
                     key={channel.id}
                     onClick={() => setSelectedChannelId(channel.id)}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50',
-                      selectedChannelId === channel.id && 'bg-muted'
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
+                      selectedChannelId === channel.id && "bg-muted",
                     )}
                   >
                     <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -127,53 +125,74 @@ export default function Chat() {
                     messages.map((message) => {
                       const isOwn = message.user_id === user?.id;
                       return (
-                        <div
-                          key={message.id}
-                          className={cn(
-                            'flex',
-                            isOwn ? 'justify-end' : 'justify-start'
-                          )}
-                        >
-                          <div className={cn(
-                            'max-w-[70%] rounded-2xl px-4 py-2',
-                            isOwn 
-                              ? 'bg-primary text-primary-foreground rounded-br-md' 
-                              : 'bg-muted rounded-bl-md'
-                          )}>
-                            {!isOwn && (
-                              <p className="text-xs font-medium mb-1 opacity-70">{message.user_name}</p>
+                        <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                          <div
+                            className={cn(
+                              "max-w-[70%] rounded-2xl px-4 py-2",
+                              isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md",
                             )}
-                            <div className={cn(
-                              'text-sm prose prose-sm max-w-none',
-                              isOwn 
-                                ? 'prose-invert [&_a]:text-primary-foreground [&_a]:underline' 
-                                : 'dark:prose-invert [&_a]:text-primary [&_a]:underline'
-                            )}>
+                          >
+                            {!isOwn && (
+                              <p className="text-xs font-medium mb-1 opacity-70">
+                                {message.sender_name || message.user_name}
+                              </p>
+                            )}
+                            <div className={cn("text-sm break-words")}>
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeRaw]}
                                 components={{
+                                  p: ({ children }) => <p className="my-0.5 break-words leading-relaxed">{children}</p>,
+                                  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                                  em: ({ children }) => <em className="italic">{children}</em>,
+                                  ul: ({ children }) => (
+                                    <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
+                                  ),
+                                  ol: ({ children }) => (
+                                    <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
+                                  ),
+                                  li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
                                   a: ({ href, children }) => (
                                     <a
                                       href={href}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="hover:opacity-80 break-all"
+                                      className={cn(
+                                        "hover:opacity-80 break-all underline",
+                                        isOwn ? "text-primary-foreground" : "text-primary",
+                                      )}
                                     >
                                       {children}
                                     </a>
                                   ),
-                                  p: ({ children }) => <p className="my-0.5">{children}</p>,
+                                  code: ({ children }) => (
+                                    <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
+                                      {children}
+                                    </code>
+                                  ),
+                                  pre: ({ children }) => (
+                                    <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
+                                      {children}
+                                    </pre>
+                                  ),
+                                  h1: ({ children }) => <h1 className="text-base font-bold my-2">{children}</h1>,
+                                  h2: ({ children }) => <h2 className="text-sm font-bold my-1.5">{children}</h2>,
+                                  h3: ({ children }) => <h3 className="text-sm font-semibold my-1">{children}</h3>,
                                 }}
                               >
                                 {message.content}
                               </ReactMarkdown>
                             </div>
-                            <p className={cn(
-                              'text-xs mt-1',
-                              isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            )}>
-                              {new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            <p
+                              className={cn(
+                                "text-xs mt-1",
+                                isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
+                              )}
+                            >
+                              {new Date(message.created_at).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
                             </p>
                           </div>
                         </div>
