@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, ExternalLink, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface ErrorAlertDetails {
-  error: string;
-  url: string;
+  description?: string;
+  error?: string; // Legacy field
+  url?: string;   // Legacy field
 }
 
 interface ErrorAlertCardProps {
@@ -26,6 +28,9 @@ export function ErrorAlertCard({
   onMarkDone,
 }: ErrorAlertCardProps) {
   const isPending = status === 'pending';
+  
+  // Support both new 'description' field and legacy 'error' field
+  const description = details.description || details.error || '';
 
   return (
     <Card className="border-l-4 border-l-destructive bg-destructive/5 shadow-sm hover:shadow-md transition-shadow">
@@ -52,11 +57,26 @@ export function ErrorAlertCard({
       <CardContent className="space-y-4">
         <div className="space-y-3">
           <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-            <p className="text-sm font-medium text-destructive mb-1">Error</p>
-            <p className="text-sm text-foreground font-mono break-all">{details.error}</p>
+            <p className="text-sm font-medium text-destructive mb-2">Error Details</p>
+            <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none [&_a]:text-primary [&_a]:underline [&_a]:break-all [&_p]:my-1 [&_hr]:my-2 [&_hr]:border-destructive/30">
+              <ReactMarkdown
+                components={{
+                  a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                      {children}
+                    </a>
+                  ),
+                  p: ({ children }) => <p className="my-1">{children}</p>,
+                  hr: () => <hr className="my-2 border-destructive/30" />,
+                }}
+              >
+                {description}
+              </ReactMarkdown>
+            </div>
           </div>
           
-          {details.url && (
+          {/* Legacy URL support */}
+          {details.url && !details.description && (
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">URL</p>
               <a
@@ -66,7 +86,6 @@ export function ErrorAlertCard({
                 className="text-sm text-primary hover:underline flex items-center gap-1 break-all"
               >
                 {details.url}
-                <ExternalLink className="h-3 w-3 flex-shrink-0" />
               </a>
             </div>
           )}

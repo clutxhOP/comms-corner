@@ -352,6 +352,18 @@ export default function ApiDocs() {
                     </div>
 
                     <div>
+                      <Badge className="mb-2 bg-destructive/10 text-destructive border-destructive/20">error-alert</Badge>
+                      <CodeBlock code={`{
+  "description": "string - accepts plain text, HTML, and Markdown formatting"
+}
+
+// Example with Markdown:
+{
+  "description": "**Error:** Forbidden - perhaps check your credentials?\\n\\nhttps://n8n.example.com/workflow/abc123\\n\\n--------------------------------------------------------------"
+}`} />
+                    </div>
+
+                    <div>
                       <Badge className="mb-2">other</Badge>
                       <CodeBlock code={`{
   "description": "string"
