@@ -4,15 +4,16 @@ import { useToast } from './use-toast';
 
 export interface Customer {
   id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  company: string | null;
-  total_leads_sent: number;
-  last_lead_sent_at: string | null;
-  human_mode_status: boolean;
-  created_at: string;
-  updated_at: string;
+  name: string | null;
+  category: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  status: string | null;
+  num_of_leads: number | null;
+  lastleadsentat: string | null;
+  human_mode: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export type CustomerFilter = 'all' | 'human_mode' | 'buddy_mode' | 'recent_activity';
@@ -26,12 +27,10 @@ export function useCustomers() {
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .order('last_lead_sent_at', { ascending: false, nullsFirst: false });
-
-      const { data, error } = await query;
+        .order('lastleadsentat', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
 
@@ -70,14 +69,14 @@ export function useCustomers() {
             
             // Show toast for human mode changes
             const oldCustomer = payload.old as Customer;
-            if (oldCustomer.human_mode_status !== updatedCustomer.human_mode_status) {
+            if (oldCustomer.human_mode !== updatedCustomer.human_mode) {
               toast({
-                title: updatedCustomer.human_mode_status
+                title: updatedCustomer.human_mode
                   ? 'Human Mode Enabled'
                   : 'Buddy Resumed',
-                description: updatedCustomer.human_mode_status
-                  ? `Human Mode enabled for ${updatedCustomer.name}`
-                  : `Buddy resumed for ${updatedCustomer.name}`,
+                description: updatedCustomer.human_mode
+                  ? `Human Mode enabled for ${updatedCustomer.name || 'Customer'}`
+                  : `Buddy resumed for ${updatedCustomer.name || 'Customer'}`,
               });
             }
           } else if (payload.eventType === 'INSERT') {
@@ -97,12 +96,12 @@ export function useCustomers() {
   const filteredCustomers = customers.filter((customer) => {
     switch (filter) {
       case 'human_mode':
-        return customer.human_mode_status === true;
+        return customer.human_mode === true;
       case 'buddy_mode':
-        return customer.human_mode_status === false;
+        return customer.human_mode === false || customer.human_mode === null;
       case 'recent_activity':
-        if (!customer.last_lead_sent_at) return false;
-        const lastLeadDate = new Date(customer.last_lead_sent_at);
+        if (!customer.lastleadsentat) return false;
+        const lastLeadDate = new Date(customer.lastleadsentat);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         return lastLeadDate > twentyFourHoursAgo;
       default:
@@ -110,17 +109,17 @@ export function useCustomers() {
     }
   });
 
-  const toggleHumanMode = async (customerId: string, currentStatus: boolean) => {
+  const toggleHumanMode = async (customerId: string, currentStatus: boolean | null) => {
     const customer = customers.find((c) => c.id === customerId);
     if (!customer) return { success: false };
 
-    const newStatus = !currentStatus;
+    const newStatus = !(currentStatus ?? false);
     const action = newStatus ? 'enable_human_mode' : 'disable_human_mode';
 
     // Optimistic update
     setCustomers((prev) =>
       prev.map((c) =>
-        c.id === customerId ? { ...c, human_mode_status: newStatus } : c
+        c.id === customerId ? { ...c, human_mode: newStatus } : c
       )
     );
 
@@ -129,7 +128,7 @@ export function useCustomers() {
       const { error: dbError } = await supabase
         .from('customers')
         .update({
-          human_mode_status: newStatus,
+          human_mode: newStatus,
           updated_at: new Date().toISOString(),
         })
         .eq('id', customerId);
@@ -139,7 +138,7 @@ export function useCustomers() {
       // Send webhook with retry logic
       const webhookPayload = {
         business_id: customerId,
-        business_name: customer.name,
+        business_name: customer.name || 'Unknown',
         human_mode_status: newStatus,
         action,
         timestamp: new Date().toISOString(),
@@ -180,7 +179,6 @@ export function useCustomers() {
 
       if (!webhookSuccess) {
         console.error('Webhook failed after retries');
-        // Don't revert - database update was successful
         toast({
           title: 'Warning',
           description: 'Status updated but webhook notification failed',
@@ -195,7 +193,7 @@ export function useCustomers() {
       // Revert optimistic update
       setCustomers((prev) =>
         prev.map((c) =>
-          c.id === customerId ? { ...c, human_mode_status: currentStatus } : c
+          c.id === customerId ? { ...c, human_mode: currentStatus } : c
         )
       );
 

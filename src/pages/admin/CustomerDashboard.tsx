@@ -24,17 +24,17 @@ import { useCustomers, CustomerFilter } from '@/hooks/useCustomers';
 import { Bot, User, Search, RefreshCw, Loader2, ArrowUpDown } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
-type SortField = 'name' | 'total_leads_sent' | 'last_lead_sent_at' | 'human_mode_status';
+type SortField = 'name' | 'num_of_leads' | 'lastleadsentat' | 'human_mode';
 type SortDirection = 'asc' | 'desc';
 
 export default function CustomerDashboard() {
   const { customers, loading, filter, setFilter, toggleHumanMode, refetch } = useCustomers();
   const [search, setSearch] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('last_lead_sent_at');
+  const [sortField, setSortField] = useState<SortField>('lastleadsentat');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const handleToggle = async (customerId: string, currentStatus: boolean) => {
+  const handleToggle = async (customerId: string, currentStatus: boolean | null) => {
     setTogglingId(customerId);
     await toggleHumanMode(customerId, currentStatus);
     setTogglingId(null);
@@ -50,28 +50,31 @@ export default function CustomerDashboard() {
   };
 
   const filteredAndSortedCustomers = customers
-    .filter((customer) =>
-      customer.name.toLowerCase().includes(search.toLowerCase()) ||
-      customer.email.toLowerCase().includes(search.toLowerCase()) ||
-      (customer.company?.toLowerCase().includes(search.toLowerCase()) ?? false)
-    )
+    .filter((customer) => {
+      const searchLower = search.toLowerCase();
+      return (
+        (customer.name?.toLowerCase().includes(searchLower) ?? false) ||
+        (customer.category?.toLowerCase().includes(searchLower) ?? false) ||
+        (customer.whatsapp?.toLowerCase().includes(searchLower) ?? false)
+      );
+    })
     .sort((a, b) => {
       let comparison = 0;
       
       switch (sortField) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          comparison = (a.name || '').localeCompare(b.name || '');
           break;
-        case 'total_leads_sent':
-          comparison = a.total_leads_sent - b.total_leads_sent;
+        case 'num_of_leads':
+          comparison = (a.num_of_leads || 0) - (b.num_of_leads || 0);
           break;
-        case 'last_lead_sent_at':
-          const dateA = a.last_lead_sent_at ? new Date(a.last_lead_sent_at).getTime() : 0;
-          const dateB = b.last_lead_sent_at ? new Date(b.last_lead_sent_at).getTime() : 0;
+        case 'lastleadsentat':
+          const dateA = a.lastleadsentat ? new Date(a.lastleadsentat).getTime() : 0;
+          const dateB = b.lastleadsentat ? new Date(b.lastleadsentat).getTime() : 0;
           comparison = dateA - dateB;
           break;
-        case 'human_mode_status':
-          comparison = Number(a.human_mode_status) - Number(b.human_mode_status);
+        case 'human_mode':
+          comparison = Number(a.human_mode ?? false) - Number(b.human_mode ?? false);
           break;
       }
 
@@ -118,7 +121,7 @@ export default function CustomerDashboard() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, email, or company..."
+                  placeholder="Search by name, category, or whatsapp..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -160,9 +163,9 @@ export default function CustomerDashboard() {
                   <TableHeader>
                     <TableRow>
                       <SortableHeader field="name">Business Name</SortableHeader>
-                      <SortableHeader field="total_leads_sent">Total Leads Sent</SortableHeader>
-                      <SortableHeader field="last_lead_sent_at">Last Lead Sent</SortableHeader>
-                      <SortableHeader field="human_mode_status">Mode Status</SortableHeader>
+                      <SortableHeader field="num_of_leads">Total Leads Sent</SortableHeader>
+                      <SortableHeader field="lastleadsentat">Last Lead Sent</SortableHeader>
+                      <SortableHeader field="human_mode">Mode Status</SortableHeader>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -171,26 +174,28 @@ export default function CustomerDashboard() {
                       <TableRow key={customer.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{customer.name}</p>
-                            <p className="text-sm text-muted-foreground">{customer.email}</p>
-                            {customer.company && (
-                              <p className="text-xs text-muted-foreground">{customer.company}</p>
+                            <p className="font-medium">{customer.name || 'Unnamed'}</p>
+                            {customer.category && (
+                              <p className="text-sm text-muted-foreground">{customer.category}</p>
+                            )}
+                            {customer.whatsapp && (
+                              <p className="text-xs text-muted-foreground">{customer.whatsapp}</p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">{customer.total_leads_sent}</span>
+                          <span className="font-medium">{customer.num_of_leads || 0}</span>
                         </TableCell>
                         <TableCell>
-                          {customer.last_lead_sent_at ? (
+                          {customer.lastleadsentat ? (
                             <div>
                               <p className="text-sm">
-                                {formatDistanceToNow(new Date(customer.last_lead_sent_at), {
+                                {formatDistanceToNow(new Date(customer.lastleadsentat), {
                                   addSuffix: true,
                                 })}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(customer.last_lead_sent_at), 'MMM d, yyyy HH:mm')}
+                                {format(new Date(customer.lastleadsentat), 'MMM d, yyyy HH:mm')}
                               </p>
                             </div>
                           ) : (
@@ -198,7 +203,7 @@ export default function CustomerDashboard() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {customer.human_mode_status ? (
+                          {customer.human_mode ? (
                             <Badge className="bg-warning/10 text-warning border border-warning/30">
                               <User className="h-3 w-3 mr-1" />
                               Manual (Human)
@@ -213,8 +218,8 @@ export default function CustomerDashboard() {
                         <TableCell>
                           <Button
                             size="sm"
-                            variant={customer.human_mode_status ? 'default' : 'destructive'}
-                            onClick={() => handleToggle(customer.id, customer.human_mode_status)}
+                            variant={customer.human_mode ? 'default' : 'destructive'}
+                            onClick={() => handleToggle(customer.id, customer.human_mode)}
                             disabled={togglingId === customer.id}
                             className="min-w-[140px]"
                           >
@@ -223,7 +228,7 @@ export default function CustomerDashboard() {
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Updating...
                               </>
-                            ) : customer.human_mode_status ? (
+                            ) : customer.human_mode ? (
                               <>
                                 <Bot className="h-4 w-4 mr-2" />
                                 Resume Buddy
