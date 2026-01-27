@@ -34,6 +34,7 @@ export const TRIGGER_ACTIONS = [
   { value: 'task_done', label: 'Task Marked Done' },
   { value: 'task_created', label: 'Task Created' },
   { value: 'lead_sent', label: 'Lead Sent' },
+  { value: 'human_mode_toggle', label: 'Human Mode Toggle' },
 ] as const;
 
 export function useWebhooks() {
