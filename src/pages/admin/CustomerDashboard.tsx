@@ -20,23 +20,24 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCustomers, CustomerFilter } from '@/hooks/useCustomers';
+import { useBusinesses, BusinessFilter } from '@/hooks/useBusinesses';
 import { Bot, User, Search, RefreshCw, Loader2, ArrowUpDown } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import React from 'react';
 
-type SortField = 'name' | 'num_of_leads' | 'lastleadsendat' | 'human_mode';
+type SortField = 'name' | 'num_of_leads' | 'lastLeadsendat' | 'human_mode';
 type SortDirection = 'asc' | 'desc';
 
 export default function CustomerDashboard() {
-  const { customers, loading, filter, setFilter, toggleHumanMode, refetch } = useCustomers();
+  const { businesses, loading, filter, setFilter, toggleHumanMode, refetch } = useBusinesses();
   const [search, setSearch] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('lastleadsendat');
+  const [sortField, setSortField] = useState<SortField>('lastLeadsendat');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const handleToggle = async (customerId: string, currentStatus: boolean | null) => {
-    setTogglingId(customerId);
-    await toggleHumanMode(customerId, currentStatus);
+  const handleToggle = async (businessId: string, currentStatus: boolean | null) => {
+    setTogglingId(businessId);
+    await toggleHumanMode(businessId, currentStatus);
     setTogglingId(null);
   };
 
@@ -49,13 +50,13 @@ export default function CustomerDashboard() {
     }
   };
 
-  const filteredAndSortedCustomers = customers
-    .filter((customer) => {
+  const filteredAndSortedBusinesses = businesses
+    .filter((business) => {
       const searchLower = search.toLowerCase();
       return (
-        (customer.name?.toLowerCase().includes(searchLower) ?? false) ||
-        (customer.category?.toLowerCase().includes(searchLower) ?? false) ||
-        (customer.whatsapp?.toLowerCase().includes(searchLower) ?? false)
+        (business.name?.toLowerCase().includes(searchLower) ?? false) ||
+        (business.category?.toLowerCase().includes(searchLower) ?? false) ||
+        (business.whatsapp?.toLowerCase().includes(searchLower) ?? false)
       );
     })
     .sort((a, b) => {
@@ -68,9 +69,9 @@ export default function CustomerDashboard() {
         case 'num_of_leads':
           comparison = (a.num_of_leads || 0) - (b.num_of_leads || 0);
           break;
-        case 'lastleadsendat':
-          const dateA = a.lastleadsendat ? new Date(a.lastleadsendat).getTime() : 0;
-          const dateB = b.lastleadsendat ? new Date(b.lastleadsendat).getTime() : 0;
+        case 'lastLeadsendat':
+          const dateA = a.lastLeadsendat ? new Date(a.lastLeadsendat).getTime() : 0;
+          const dateB = b.lastLeadsendat ? new Date(b.lastLeadsendat).getTime() : 0;
           comparison = dateA - dateB;
           break;
         case 'human_mode':
@@ -81,8 +82,12 @@ export default function CustomerDashboard() {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
-  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+  const SortableHeader = React.forwardRef<
+    HTMLTableCellElement,
+    { field: SortField; children: React.ReactNode }
+  >(({ field, children }, ref) => (
     <TableHead 
+      ref={ref}
       className="cursor-pointer hover:bg-muted/50 transition-colors"
       onClick={() => handleSort(field)}
     >
@@ -91,16 +96,17 @@ export default function CustomerDashboard() {
         <ArrowUpDown className={`h-4 w-4 ${sortField === field ? 'text-primary' : 'text-muted-foreground'}`} />
       </div>
     </TableHead>
-  );
+  ));
+  SortableHeader.displayName = 'SortableHeader';
 
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Customer Dashboard</h1>
+            <h1 className="text-2xl font-bold text-foreground">Business Dashboard</h1>
             <p className="text-muted-foreground">
-              Manage Human-in-the-Loop controls for customer communications
+              Manage Human-in-the-Loop controls for business communications
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
@@ -111,9 +117,9 @@ export default function CustomerDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Customers</CardTitle>
+            <CardTitle>All Businesses</CardTitle>
             <CardDescription>
-              Toggle between Buddy (auto-reply) and Human (manual) mode for each customer
+              Toggle between Buddy (auto-reply) and Human (manual) mode for each business
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -129,13 +135,13 @@ export default function CustomerDashboard() {
               </div>
               <Select
                 value={filter}
-                onValueChange={(value) => setFilter(value as CustomerFilter)}
+                onValueChange={(value) => setFilter(value as BusinessFilter)}
               >
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
+                  <SelectItem value="all">All Businesses</SelectItem>
                   <SelectItem value="human_mode">Human Mode Active</SelectItem>
                   <SelectItem value="buddy_mode">Buddy Active</SelectItem>
                   <SelectItem value="recent_activity">Recent Activity (24h)</SelectItem>
@@ -149,10 +155,10 @@ export default function CustomerDashboard() {
                   <Skeleton key={i} className="h-16 w-full" />
                 ))}
               </div>
-            ) : filteredAndSortedCustomers.length === 0 ? (
+            ) : filteredAndSortedBusinesses.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No customers found</p>
+                <p>No businesses found</p>
                 {search && (
                   <p className="text-sm mt-1">Try adjusting your search or filter</p>
                 )}
@@ -164,38 +170,38 @@ export default function CustomerDashboard() {
                     <TableRow>
                       <SortableHeader field="name">Business Name</SortableHeader>
                       <SortableHeader field="num_of_leads">Total Leads Sent</SortableHeader>
-                      <SortableHeader field="lastleadsendat">Last Lead Sent</SortableHeader>
+                      <SortableHeader field="lastLeadsendat">Last Lead Sent</SortableHeader>
                       <SortableHeader field="human_mode">Mode Status</SortableHeader>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAndSortedCustomers.map((customer) => (
-                      <TableRow key={customer.id}>
+                    {filteredAndSortedBusinesses.map((business) => (
+                      <TableRow key={business.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{customer.name || 'Unnamed'}</p>
-                            {customer.category && (
-                              <p className="text-sm text-muted-foreground">{customer.category}</p>
+                            <p className="font-medium">{business.name || 'Unnamed'}</p>
+                            {business.category && (
+                              <p className="text-sm text-muted-foreground">{business.category}</p>
                             )}
-                            {customer.whatsapp && (
-                              <p className="text-xs text-muted-foreground">{customer.whatsapp}</p>
+                            {business.whatsapp && (
+                              <p className="text-xs text-muted-foreground">{business.whatsapp}</p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">{customer.num_of_leads || 0}</span>
+                          <span className="font-medium">{business.num_of_leads || 0}</span>
                         </TableCell>
                         <TableCell>
-                          {customer.lastleadsendat ? (
+                          {business.lastLeadsendat ? (
                             <div>
                               <p className="text-sm">
-                                {formatDistanceToNow(new Date(customer.lastleadsendat), {
+                                {formatDistanceToNow(new Date(business.lastLeadsendat), {
                                   addSuffix: true,
                                 })}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(customer.lastleadsendat), 'MMM d, yyyy HH:mm')}
+                                {format(new Date(business.lastLeadsendat), 'MMM d, yyyy HH:mm')}
                               </p>
                             </div>
                           ) : (
@@ -203,7 +209,7 @@ export default function CustomerDashboard() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {customer.human_mode ? (
+                          {business.human_mode ? (
                             <Badge className="bg-warning/10 text-warning border border-warning/30">
                               <User className="h-3 w-3 mr-1" />
                               Manual (Human)
@@ -218,17 +224,17 @@ export default function CustomerDashboard() {
                         <TableCell>
                           <Button
                             size="sm"
-                            variant={customer.human_mode ? 'default' : 'destructive'}
-                            onClick={() => handleToggle(customer.id, customer.human_mode)}
-                            disabled={togglingId === customer.id}
+                            variant={business.human_mode ? 'default' : 'destructive'}
+                            onClick={() => handleToggle(business.id, business.human_mode)}
+                            disabled={togglingId === business.id}
                             className="min-w-[140px]"
                           >
-                            {togglingId === customer.id ? (
+                            {togglingId === business.id ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Updating...
                               </>
-                            ) : customer.human_mode ? (
+                            ) : business.human_mode ? (
                               <>
                                 <Bot className="h-4 w-4 mr-2" />
                                 Resume Buddy
@@ -249,7 +255,7 @@ export default function CustomerDashboard() {
             )}
 
             <div className="mt-4 text-sm text-muted-foreground">
-              Showing {filteredAndSortedCustomers.length} of {customers.length} customers
+              Showing {filteredAndSortedBusinesses.length} of {businesses.length} businesses
             </div>
           </CardContent>
         </Card>
