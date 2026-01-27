@@ -27,7 +27,7 @@ export function ChatMessageActions({ isOwn, onEdit, onDelete, onReact }: ChatMes
   const [emojiOpen, setEmojiOpen] = useState(false);
 
   return (
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
       <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
         <PopoverTrigger asChild>
           <Button
