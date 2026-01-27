@@ -318,11 +318,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // PATCH - Update task assignment (admin or dev only)
+    // PATCH - Update task (admin or dev only)
     if (method === "PATCH") {
       if (!isAdminOrDev) {
         return new Response(
-          JSON.stringify({ error: "Only admins and developers can update task assignments" }),
+          JSON.stringify({ error: "Only admins and developers can update tasks" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -336,31 +336,112 @@ Deno.serve(async (req) => {
 
       const payload = await req.json();
       
-      // Resolve assignees from emails/IDs/department emails
-      const resolvedAssignees = await resolveAssignees(supabase, payload.assigned_to);
+      // Check if this is a lead-alert details update
+      if (payload.timeSinceLastLead !== undefined || payload.alertLevel !== undefined) {
+        // Fetch the existing task
+        const { data: existingTask, error: fetchError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("id", taskId)
+          .single();
 
-      const { data, error } = await supabase
-        .from("tasks")
-        .update({
-          assigned_to: resolvedAssignees.length > 0 ? resolvedAssignees : null,
-        })
-        .eq("id", taskId)
-        .select()
-        .single();
+        if (fetchError || !existingTask) {
+          return new Response(
+            JSON.stringify({ error: "Task not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
-      if (error) {
-        console.error("Error updating task:", error);
+        // Validate task type
+        if (existingTask.type !== "lead-alert") {
+          return new Response(
+            JSON.stringify({ 
+              error: "This endpoint only supports updating lead-alert tasks",
+              task_type: existingTask.type
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Validate alertLevel if provided
+        if (payload.alertLevel !== undefined && !["yellow", "red"].includes(payload.alertLevel)) {
+          return new Response(
+            JSON.stringify({ 
+              error: "Invalid alertLevel. Must be 'yellow' or 'red'",
+              provided: payload.alertLevel
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Build updated details
+        const updatedDetails = {
+          ...existingTask.details,
+          ...(payload.timeSinceLastLead !== undefined && { timeSinceLastLead: payload.timeSinceLastLead }),
+          ...(payload.alertLevel !== undefined && { alertLevel: payload.alertLevel }),
+        };
+
+        const { data, error } = await supabase
+          .from("tasks")
+          .update({ details: updatedDetails })
+          .eq("id", taskId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error updating lead-alert:", error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log("Lead-alert updated:", taskId, "by user:", userId);
+
         return new Response(
-          JSON.stringify({ error: error.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ data }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      console.log("Task updated:", taskId, "assigned_to:", resolvedAssignees);
+      // Handle assignment update (existing functionality)
+      if (payload.assigned_to !== undefined) {
+        const resolvedAssignees = await resolveAssignees(supabase, payload.assigned_to);
+
+        const { data, error } = await supabase
+          .from("tasks")
+          .update({
+            assigned_to: resolvedAssignees.length > 0 ? resolvedAssignees : null,
+          })
+          .eq("id", taskId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error updating task:", error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log("Task updated:", taskId, "assigned_to:", resolvedAssignees);
+
+        return new Response(
+          JSON.stringify({ data }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       return new Response(
-        JSON.stringify({ data }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          error: "No valid update fields provided",
+          supported_fields: {
+            lead_alert_update: ["timeSinceLastLead", "alertLevel"],
+            assignment_update: ["assigned_to"]
+          }
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
