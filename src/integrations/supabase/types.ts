@@ -170,43 +170,76 @@ export type Database = {
       }
       customers: {
         Row: {
-          company: string | null
-          created_at: string
-          created_by: string | null
-          email: string
-          human_mode_status: boolean
+          category: string | null
+          created_at: string | null
+          feedback_status: string | null
+          human_mode: boolean | null
+          icp: string | null
           id: string
-          last_lead_sent_at: string | null
-          name: string
-          phone: string | null
-          total_leads_sent: number
-          updated_at: string
+          info_confirmed: string | null
+          lastleadsendat: string | null
+          lastmessaged: string | null
+          location: string | null
+          name: string | null
+          notes: string | null
+          num_of_leads: number | null
+          offering: string | null
+          slack_groupid: string | null
+          status: string | null
+          sub_status: string | null
+          tags: string | null
+          updated_at: string | null
+          usp: string | null
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
-          company?: string | null
-          created_at?: string
-          created_by?: string | null
-          email: string
-          human_mode_status?: boolean
+          category?: string | null
+          created_at?: string | null
+          feedback_status?: string | null
+          human_mode?: boolean | null
+          icp?: string | null
           id?: string
-          last_lead_sent_at?: string | null
-          name: string
-          phone?: string | null
-          total_leads_sent?: number
-          updated_at?: string
+          info_confirmed?: string | null
+          lastleadsendat?: string | null
+          lastmessaged?: string | null
+          location?: string | null
+          name?: string | null
+          notes?: string | null
+          num_of_leads?: number | null
+          offering?: string | null
+          slack_groupid?: string | null
+          status?: string | null
+          sub_status?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          usp?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
-          company?: string | null
-          created_at?: string
-          created_by?: string | null
-          email?: string
-          human_mode_status?: boolean
+          category?: string | null
+          created_at?: string | null
+          feedback_status?: string | null
+          human_mode?: boolean | null
+          icp?: string | null
           id?: string
-          last_lead_sent_at?: string | null
-          name?: string
-          phone?: string | null
-          total_leads_sent?: number
-          updated_at?: string
+          info_confirmed?: string | null
+          lastleadsendat?: string | null
+          lastmessaged?: string | null
+          location?: string | null
+          name?: string | null
+          notes?: string | null
+          num_of_leads?: number | null
+          offering?: string | null
+          slack_groupid?: string | null
+          status?: string | null
+          sub_status?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          usp?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
