@@ -1,5 +1,6 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { MentionsCard } from '@/components/dashboard/MentionsCard';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -82,6 +83,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Mentions / Tags */}
+        <MentionsCard />
 
         <div className={`grid gap-4 sm:grid-cols-2 ${canSeeErrors ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
           {canSeeErrors && (
@@ -205,3 +209,4 @@ export default function Dashboard() {
     </MainLayout>
   );
 }
+

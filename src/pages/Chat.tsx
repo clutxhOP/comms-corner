@@ -35,6 +35,7 @@ export default function Chat() {
   const [editContent, setEditContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
+  const targetMessageId = searchParams.get('message');
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
 
@@ -55,19 +56,43 @@ export default function Chat() {
     }
   }, [channels, selectedChannelId, searchParams]);
 
-  // Scroll to bottom on new messages
+  // Scroll behavior:
+  // - If we have a target message in the URL, scroll to it once it's rendered
+  // - Otherwise keep the chat pinned to the bottom on new messages
   useEffect(() => {
+    if (targetMessageId) {
+      const el = document.getElementById(`chat-message-${targetMessageId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, targetMessageId]);
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const extractMentionIdsFromText = (text: string): string[] => {
+    if (!text || profiles.length === 0) return [];
+
+    const found: string[] = [];
+    for (const p of profiles) {
+      const pattern = new RegExp(`@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\\n|!)`, 'i');
+      if (pattern.test(text)) found.push(p.user_id);
+    }
+    return found;
+  };
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!newMessage.trim() || !selectedChannelId) return;
 
     const messageContent = newMessage;
-    const messageMentions = [...mentions];
+    // Compute mentions at send-time to avoid missing tags due to async state updates.
+    const messageMentions = extractMentionIdsFromText(messageContent);
     
     // Send the message with mentions
     const messageId = await sendMessage(messageContent, messageMentions);
@@ -260,23 +285,16 @@ export default function Chat() {
                       const isOwn = message.user_id === user?.id;
                       const isEditing = editingMessageId === message.id;
 
-                      return (
-                        <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                          <div className="flex items-start gap-2 max-w-[70%] group">
-                            {isOwn && (
-                              <ChatMessageActions
-                                isOwn={isOwn}
-                                onEdit={() => handleStartEdit(message.id, message.content)}
-                                onDelete={() => handleDelete(message.id)}
-                                onReact={(emoji) => toggleReaction(message.id, emoji)}
-                              />
-                            )}
-                            <div
-                              className={cn(
-                                "rounded-2xl px-4 py-2",
-                                isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md",
-                              )}
-                            >
+                       return (
+                         <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                           <div className="flex items-start gap-2 max-w-[70%] group">
+                             <div
+                               id={`chat-message-${message.id}`}
+                               className={cn(
+                                 "rounded-2xl px-4 py-2",
+                                 isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md",
+                               )}
+                             >
                               {!isOwn && (
                                 <p className="text-xs font-medium mb-1 opacity-70">
                                   {message.sender_name || message.user_name}
@@ -382,14 +400,14 @@ export default function Chat() {
                                 isOwn={isOwn}
                               />
                             </div>
-                            {!isOwn && (
-                              <ChatMessageActions
-                                isOwn={isOwn}
-                                onEdit={() => {}}
-                                onDelete={() => {}}
-                                onReact={(emoji) => toggleReaction(message.id, emoji)}
-                              />
-                            )}
+
+                             {/* Actions (reactions + edit/delete menu for own messages) */}
+                             <ChatMessageActions
+                               isOwn={isOwn}
+                               onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
+                               onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
+                               onReact={(emoji) => toggleReaction(message.id, emoji)}
+                             />
                           </div>
                         </div>
                       );
