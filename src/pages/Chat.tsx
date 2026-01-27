@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,19 @@ import { ChatMentionInput } from "@/components/chat/ChatMentionInput";
 import { NotificationBell } from "@/components/chat/NotificationBell";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+
+const DEPARTMENTS = [
+  { id: 'dept_admin', name: 'Admin Team', role: 'admin' },
+  { id: 'dept_dev', name: 'Dev Team', role: 'dev' },
+  { id: 'dept_ops', name: 'Ops Team', role: 'ops' },
+];
+
+interface UserWithRole {
+  user_id: string;
+  full_name: string;
+  roles: string[];
+}
 
 export default function Chat() {
   const { channels, loading: channelsLoading } = useChatChannels();
@@ -28,6 +41,7 @@ export default function Chat() {
   const { user, profile } = useAuth();
   const { createMentionNotifications } = useChatNotifications();
   const { profiles } = useProfilesDisplay();
+  const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [mentions, setMentions] = useState<string[]>([]);
@@ -38,8 +52,31 @@ export default function Chat() {
   const targetMessageId = searchParams.get('message');
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
-
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // Fetch user roles for department mention expansion
+  useEffect(() => {
+    const fetchUsersWithRoles = async () => {
+      if (profiles.length === 0) return;
+      
+      const userIds = profiles.map(p => p.user_id);
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      const usersData: UserWithRole[] = profiles.map(p => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        roles: roles?.filter(r => r.user_id === p.user_id).map(r => r.role) || [],
+      }));
+
+      setUsersWithRoles(usersData);
+    };
+
+    fetchUsersWithRoles();
+  }, [profiles]);
+
 
   // Handle channel from URL or auto-select first channel
   useEffect(() => {
@@ -79,10 +116,27 @@ export default function Chat() {
     if (!text || profiles.length === 0) return [];
 
     const found: string[] = [];
+    
+    // Check for individual user mentions
     for (const p of profiles) {
       const pattern = new RegExp(`@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\\n|!)`, 'i');
-      if (pattern.test(text)) found.push(p.user_id);
+      if (pattern.test(text)) {
+        if (!found.includes(p.user_id)) found.push(p.user_id);
+      }
     }
+    
+    // Check for department mentions and expand to all users with that role
+    for (const dept of DEPARTMENTS) {
+      const pattern = new RegExp(`@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\\n|!)`, 'i');
+      if (pattern.test(text)) {
+        // Find all users with this role and add them
+        const deptUsers = usersWithRoles.filter(u => u.roles?.includes(dept.role));
+        for (const u of deptUsers) {
+          if (!found.includes(u.user_id)) found.push(u.user_id);
+        }
+      }
+    }
+    
     return found;
   };
 
@@ -112,24 +166,28 @@ export default function Chat() {
     setMentions([]);
   };
 
-  // Helper to render mentions in message content
-  const renderMessageContent = (content: string, isOwn: boolean) => {
-    // Replace @mentions with styled spans
-    const mentionRegex = /@([A-Za-z0-9\s]+?)(?=\s|$|,|\.|\n)/g;
+  // Helper to render mentions in message content with styled spans
+  const renderMessageContent = (content: string, isOwn: boolean): string => {
+    if (!content) return content;
+    
     let processedContent = content;
     
-    const matches = content.matchAll(mentionRegex);
-    for (const match of matches) {
-      const mentionName = match[1].trim();
-      const profile = profiles.find(p => 
-        p.full_name.toLowerCase() === mentionName.toLowerCase()
-      );
-      if (profile) {
-        processedContent = processedContent.replace(
-          match[0],
-          `**@${mentionName}**`
-        );
-      }
+    // Sort profiles by name length (longest first) to avoid partial replacements
+    const sortedProfiles = [...profiles].sort((a, b) => b.full_name.length - a.full_name.length);
+    
+    for (const p of sortedProfiles) {
+      const escapedName = p.full_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, 'gi');
+      // Replace with styled markdown that will be rendered as bold
+      processedContent = processedContent.replace(mentionPattern, `**@${p.full_name}**`);
+    }
+    
+    // Also style department mentions
+    const deptNames = ['Admin Team', 'Dev Team', 'Ops Team'];
+    for (const deptName of deptNames) {
+      const escapedName = deptName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, 'gi');
+      processedContent = processedContent.replace(mentionPattern, `**@${deptName}**`);
     }
     
     return processedContent;
@@ -286,8 +344,8 @@ export default function Chat() {
                       const isEditing = editingMessageId === message.id;
 
                        return (
-                         <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                           <div className="flex items-start gap-2 max-w-[70%] group">
+                         <div key={message.id} className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
+                           <div className="group flex items-start gap-1 max-w-[70%]">
                              <div
                                id={`chat-message-${message.id}`}
                                className={cn(
@@ -335,7 +393,23 @@ export default function Chat() {
                                     rehypePlugins={[rehypeRaw, rehypeSanitize]}
                                     components={{
                                       p: ({ children }) => <p className="my-0.5 break-words leading-relaxed">{children}</p>,
-                                      strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                                      strong: ({ children }) => {
+                                        // Check if this is a mention (starts with @)
+                                        const text = String(children);
+                                        if (text.startsWith('@')) {
+                                          return (
+                                            <span className={cn(
+                                              "font-semibold px-1 py-0.5 rounded",
+                                              isOwn 
+                                                ? "bg-primary-foreground/20 text-primary-foreground" 
+                                                : "bg-primary/10 text-primary"
+                                            )}>
+                                              {children}
+                                            </span>
+                                          );
+                                        }
+                                        return <strong className="font-bold">{children}</strong>;
+                                      },
                                       em: ({ children }) => <em className="italic">{children}</em>,
                                       ul: ({ children }) => (
                                         <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
@@ -372,7 +446,7 @@ export default function Chat() {
                                       h3: ({ children }) => <h3 className="text-sm font-semibold my-1">{children}</h3>,
                                     }}
                                   >
-                                    {message.content}
+                                    {renderMessageContent(message.content, isOwn)}
                                   </ReactMarkdown>
                                 </div>
                               )}
