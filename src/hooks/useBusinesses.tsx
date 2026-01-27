@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { externalSupabase } from '@/integrations/supabase/externalClient';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { useWebhooks } from './useWebhooks';
 
 export interface Business {
   id: string;
@@ -23,6 +23,7 @@ export function useBusinesses() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BusinessFilter>('all');
   const { toast } = useToast();
+  const { triggerWebhook } = useWebhooks();
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -135,36 +136,20 @@ export function useBusinesses() {
 
       if (dbError) throw dbError;
 
-      // Send webhook via edge function proxy
-      const webhookPayload = {
+      // Trigger webhook using the webhook system
+      await triggerWebhook('human_mode_toggle', {
         business_id: businessId,
         business_name: business.name || 'Unknown',
         human_mode: newStatus,
         action,
         timestamp: new Date().toISOString(),
-      };
-
-      try {
-        const { error: webhookError } = await supabase.functions.invoke('hitl-webhook', {
-          body: webhookPayload,
-        });
-        
-        if (webhookError) {
-          console.error('Webhook failed:', webhookError);
-          toast({
-            title: 'Warning',
-            description: 'Status updated but webhook notification failed',
-            variant: 'destructive',
-          });
-        }
-      } catch (webhookError) {
-        console.error('Webhook failed:', webhookError);
-        toast({
-          title: 'Warning',
-          description: 'Status updated but webhook notification failed',
-          variant: 'destructive',
-        });
-      }
+        business: {
+          id: businessId,
+          name: business.name,
+          category: business.category,
+          whatsapp: business.whatsapp,
+        },
+      });
 
       return { success: true };
     } catch (error) {
