@@ -1,45 +1,53 @@
-import { useState } from 'react';
-import { Task, LeadAlertDetails } from '@/types';
-import { AlertCircle, Phone, CheckCircle2, MessageCircle, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { TaskCommentsDialog } from './TaskCommentsDialog';
-import { DevCloseAlertDialog } from './DevCloseAlertDialog';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRoles } from '@/hooks/useUserRoles';
+import { useState } from "react";
+import { Task, LeadAlertDetails } from "@/types";
+import { AlertCircle, Phone, CheckCircle2, MessageCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { TaskCommentsDialog } from "./TaskCommentsDialog";
+import { DevCloseAlertDialog } from "./DevCloseAlertDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface LeadAlertCardProps {
   task: Task;
-  onMarkDone?: (taskId: string, devCloseResponse?: {
-    hadIssue: boolean;
-    wasFixed?: boolean;
-    sendToOps: boolean;
-    reason: string;
-  }) => void;
+  onMarkDone?: (
+    taskId: string,
+    devCloseResponse?: {
+      hadIssue: boolean;
+      wasFixed?: boolean;
+      sendToOps: boolean;
+      reason: string;
+    },
+  ) => void;
   onDelete?: (taskId: string) => void;
 }
 
 export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps) {
   const details = task.details as LeadAlertDetails;
-  const isCompleted = task.status === 'done';
+  const isCompleted = task.status === "done";
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [devCloseDialogOpen, setDevCloseDialogOpen] = useState(false);
   const { user } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles(user?.id);
-  const isDev = roles.includes('dev');
-  const canDelete = roles.includes('admin') || roles.includes('dev');
+  const isDev = roles.includes("dev");
+  const canDelete = roles.includes("admin") || roles.includes("dev");
+
+  // Generate dynamic alert title based on alertLevel
+  const getAlertTitle = () => {
+    return details.alertLevel === "red" ? "🚨 ALERT (72+ hours)" : "⚠️ ALERT (48+ hours)";
+  };
 
   return (
     <>
-      <div className={cn(
-        'rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md',
-        isCompleted && 'opacity-60'
-      )}>
+      <div
+        className={cn(
+          "rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
+          isCompleted && "opacity-60",
+        )}
+      >
         <div className="flex items-start justify-between mb-4">
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">
-              {new Date(task.createdAt).toLocaleString()}
-            </span>
+            <span className="text-xs text-muted-foreground">{new Date(task.createdAt).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2">
             {canDelete && onDelete && (
@@ -52,33 +60,26 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2"
-              onClick={() => setCommentsOpen(true)}
-            >
+            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setCommentsOpen(true)}>
               <MessageCircle className="h-4 w-4" />
             </Button>
-            <span className={cn(
-              'text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1',
-              details.alertLevel === 'red' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
-            )}>
-              <span className={cn(
-                'h-2 w-2 rounded-full',
-                details.alertLevel === 'red' ? 'bg-destructive' : 'bg-warning'
-              )} />
+            <span
+              className={cn(
+                "text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1",
+                details.alertLevel === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+              )}
+            >
+              <span
+                className={cn("h-2 w-2 rounded-full", details.alertLevel === "red" ? "bg-destructive" : "bg-warning")}
+              />
               Alert
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mb-4">
-          <AlertCircle className={cn(
-            'h-5 w-5',
-            details.alertLevel === 'red' ? 'text-destructive' : 'text-warning'
-          )} />
-          <h3 className="font-semibold text-foreground">{task.title}</h3>
+          <AlertCircle className={cn("h-5 w-5", details.alertLevel === "red" ? "text-destructive" : "text-warning")} />
+          <h3 className="font-semibold text-foreground">{getAlertTitle()}</h3>
         </div>
 
         <div className="space-y-3 text-sm">
@@ -100,21 +101,14 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
             </span>
           </div>
 
-          <div className={cn(
-            'p-3 rounded-lg',
-            details.alertLevel === 'red' ? 'bg-destructive/5' : 'bg-warning/5'
-          )}>
+          <div className={cn("p-3 rounded-lg", details.alertLevel === "red" ? "bg-destructive/5" : "bg-warning/5")}>
             <p className="text-xs font-medium flex items-center gap-1">
-              <span className={cn(
-                'h-2 w-2 rounded-full',
-                details.alertLevel === 'red' ? 'bg-destructive' : 'bg-warning'
-              )} />
-              Alert Level: REVIEW ALERT ({details.alertLevel === 'red' ? '72+' : '48+'} hours)
+              <span
+                className={cn("h-2 w-2 rounded-full", details.alertLevel === "red" ? "bg-destructive" : "bg-warning")}
+              />
+              Alert Level: REVIEW ALERT ({details.alertLevel === "red" ? "72+" : "48+"} hours)
             </p>
-            <p className={cn(
-              'text-xs mt-1',
-              details.alertLevel === 'red' ? 'text-destructive' : 'text-warning'
-            )}>
+            <p className={cn("text-xs mt-1", details.alertLevel === "red" ? "text-destructive" : "text-warning")}>
               <span className="font-medium">Issue:</span> {details.issue}
             </p>
           </div>
@@ -134,8 +128,8 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
         </div>
 
         {!isCompleted && (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="w-full mt-4"
             disabled={rolesLoading}
             onClick={() => {
@@ -149,7 +143,7 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
             }}
           >
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            {rolesLoading ? 'Loading...' : 'Mark as Reviewed'}
+            {rolesLoading ? "Loading..." : "Mark as Reviewed"}
           </Button>
         )}
 
@@ -160,12 +154,7 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
         )}
       </div>
 
-      <TaskCommentsDialog
-        open={commentsOpen}
-        onOpenChange={setCommentsOpen}
-        taskId={task.id}
-        taskTitle={task.title}
-      />
+      <TaskCommentsDialog open={commentsOpen} onOpenChange={setCommentsOpen} taskId={task.id} taskTitle={task.title} />
 
       <DevCloseAlertDialog
         open={devCloseDialogOpen}
