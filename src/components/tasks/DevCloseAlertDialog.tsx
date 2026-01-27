@@ -33,6 +33,11 @@ export function DevCloseAlertDialog({
   const [step, setStep] = useState<Step>('issue');
   const [hadIssue, setHadIssue] = useState<boolean | null>(null);
 
+  const resetState = () => {
+    setStep('issue');
+    setHadIssue(null);
+  };
+
   const handleIssueResponse = (hasIssue: boolean) => {
     setHadIssue(hasIssue);
     if (hasIssue) {
@@ -44,7 +49,8 @@ export function DevCloseAlertDialog({
         sendToOps: true,
         reason: 'no_issue_found',
       });
-      resetDialog();
+      resetState();
+      onOpenChange(false);
     }
   };
 
@@ -66,21 +72,24 @@ export function DevCloseAlertDialog({
         reason: 'issue_not_fixed',
       });
     }
-    resetDialog();
-  };
-
-  const resetDialog = () => {
-    setStep('issue');
-    setHadIssue(null);
+    resetState();
     onOpenChange(false);
   };
 
   const handleCancel = () => {
-    resetDialog();
+    resetState();
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleCancel}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Only reset state when the dialog is being closed.
+        if (!nextOpen) handleCancel();
+        else onOpenChange(true);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
