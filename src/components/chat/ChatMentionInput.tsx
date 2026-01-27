@@ -94,10 +94,12 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
       ;
   }, [mentionOptions, mentionSearch]);
 
-  // Find the current mention being typed
+  // Find the current mention being typed - supports multi-word names
   const findMentionContext = (text: string, pos: number) => {
     const beforeCursor = text.slice(0, pos);
-    const match = beforeCursor.match(/@(\w*)$/);
+    // Match @ followed by any characters (including spaces) that look like a partial mention
+    // Stop at certain delimiters that indicate end of mention attempt
+    const match = beforeCursor.match(/@([A-Za-z0-9\s]*)$/);
     return match ? { start: beforeCursor.length - match[0].length, search: match[1] } : null;
   };
 
