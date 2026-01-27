@@ -197,19 +197,23 @@ export function useChannelMessages(channelId: string | null) {
     }
   }, [channelId]);
 
-  const sendMessage = async (content: string) => {
-    if (!channelId || !user || !content.trim()) return;
+  const sendMessage = async (content: string, mentions: string[] = []): Promise<string | null> => {
+    if (!channelId || !user || !content.trim()) return null;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('chat_messages')
         .insert({
           channel_id: channelId,
           user_id: user.id,
           content: content.trim(),
-        });
+          mentions: mentions.length > 0 ? mentions : [],
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+      return data?.id || null;
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -217,6 +221,7 @@ export function useChannelMessages(channelId: string | null) {
         description: 'Failed to send message',
         variant: 'destructive',
       });
+      return null;
     }
   };
 

@@ -70,8 +70,16 @@ export default function Tasks() {
     }
   };
 
-  const handleMarkDone = async (taskId: string) => {
-    await markTaskDone(taskId);
+  const handleMarkDone = async (
+    taskId: string, 
+    devCloseResponse?: {
+      hadIssue: boolean;
+      wasFixed?: boolean;
+      sendToOps: boolean;
+      reason: string;
+    }
+  ) => {
+    await markTaskDone(taskId, devCloseResponse);
   };
 
   const handleDelete = async (taskId: string) => {
