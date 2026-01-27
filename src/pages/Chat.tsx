@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { MessageReactions } from "@/components/chat/MessageReactions";
@@ -253,9 +254,9 @@ export default function Chat() {
                                 </div>
                               ) : (
                                 <div className={cn("text-sm break-words")}>
-                                  <ReactMarkdown
+                                <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
-                                    rehypePlugins={[rehypeRaw]}
+                                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
                                     components={{
                                       p: ({ children }) => <p className="my-0.5 break-words leading-relaxed">{children}</p>,
                                       strong: ({ children }) => <strong className="font-bold">{children}</strong>,

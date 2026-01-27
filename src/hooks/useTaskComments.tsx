@@ -32,10 +32,10 @@ export function useTaskComments(taskId: string | null) {
 
       if (error) throw error;
 
-      // Fetch user names for comments
+      // Fetch user names for comments using the safe display view
       const userIds = [...new Set((data || []).map(c => c.user_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_display')
         .select('user_id, full_name')
         .in('user_id', userIds);
 
@@ -69,9 +69,9 @@ export function useTaskComments(taskId: string | null) {
           },
           async (payload) => {
             const newComment = payload.new as TaskComment;
-            // Fetch user name
+            // Fetch user name from the safe display view
             const { data: profile } = await supabase
-              .from('profiles')
+              .from('profiles_display')
               .select('full_name')
               .eq('user_id', newComment.user_id)
               .maybeSingle();

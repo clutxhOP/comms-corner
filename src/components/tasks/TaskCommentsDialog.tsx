@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTaskComments } from '@/hooks/useTaskComments';
 import { useAuth } from '@/hooks/useAuth';
-import { useUsers } from '@/hooks/useUsers';
+import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ interface TaskCommentsDialogProps {
 export function TaskCommentsDialog({ open, onOpenChange, taskId, taskTitle }: TaskCommentsDialogProps) {
   const { comments, loading, addComment } = useTaskComments(taskId);
   const { user } = useAuth();
-  const { users } = useUsers();
+  const { profiles } = useProfilesDisplay();
   const [message, setMessage] = useState('');
   const [mentions, setMentions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -150,7 +150,7 @@ export function TaskCommentsDialog({ open, onOpenChange, taskId, taskTitle }: Ta
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span>Mentioning:</span>
             {mentions.slice(0, 3).map(id => {
-              const mentionedUser = users.find(u => u.user_id === id);
+              const mentionedUser = profiles.find(u => u.user_id === id);
               return (
                 <Badge key={id} variant="outline" className="text-xs py-0">
                   {mentionedUser?.full_name || 'Unknown'}

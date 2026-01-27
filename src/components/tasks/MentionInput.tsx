@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useUsers } from '@/hooks/useUsers';
+import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { User, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MentionInputProps {
   value: string;
@@ -18,6 +19,12 @@ interface MentionOption {
   type: 'user' | 'department';
 }
 
+interface UserWithRole {
+  user_id: string;
+  full_name: string;
+  roles: string[];
+}
+
 const DEPARTMENTS = [
   { id: 'dept_admin', name: 'Admin Team', role: 'admin' },
   { id: 'dept_dev', name: 'Dev Team', role: 'dev' },
@@ -25,7 +32,8 @@ const DEPARTMENTS = [
 ];
 
 export function MentionInput({ value, onChange, placeholder, className, onSubmit }: MentionInputProps) {
-  const { users } = useUsers();
+  const { profiles } = useProfilesDisplay();
+  const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [mentionSearch, setMentionSearch] = useState('');
@@ -33,9 +41,32 @@ export function MentionInput({ value, onChange, placeholder, className, onSubmit
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Fetch user roles for department mentions
+  useEffect(() => {
+    const fetchUsersWithRoles = async () => {
+      if (profiles.length === 0) return;
+      
+      const userIds = profiles.map(p => p.user_id);
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      const usersData: UserWithRole[] = profiles.map(p => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        roles: roles?.filter(r => r.user_id === p.user_id).map(r => r.role) || [],
+      }));
+
+      setUsersWithRoles(usersData);
+    };
+
+    fetchUsersWithRoles();
+  }, [profiles]);
+
   // Build mention options from users and departments
   const mentionOptions = useMemo<MentionOption[]>(() => {
-    const userOptions: MentionOption[] = users.map(u => ({
+    const userOptions: MentionOption[] = usersWithRoles.map(u => ({
       id: u.user_id,
       name: u.full_name,
       type: 'user' as const,
@@ -48,7 +79,7 @@ export function MentionInput({ value, onChange, placeholder, className, onSubmit
     }));
 
     return [...deptOptions, ...userOptions];
-  }, [users]);
+  }, [usersWithRoles]);
 
   // Filter suggestions based on search
   const filteredSuggestions = useMemo(() => {
@@ -100,7 +131,7 @@ export function MentionInput({ value, onChange, placeholder, className, onSubmit
           // For departments, add all user IDs with that role
           const dept = DEPARTMENTS.find(d => d.id === option.id);
           if (dept) {
-            const deptUsers = users.filter(u => u.roles?.includes(dept.role as any));
+            const deptUsers = usersWithRoles.filter(u => u.roles?.includes(dept.role));
             deptUsers.forEach(u => {
               if (!mentions.includes(u.user_id)) mentions.push(u.user_id);
             });
@@ -128,7 +159,7 @@ export function MentionInput({ value, onChange, placeholder, className, onSubmit
     if (option.type === 'department') {
       const dept = DEPARTMENTS.find(d => d.id === option.id);
       if (dept) {
-        const deptUsers = users.filter(u => u.roles?.includes(dept.role as any));
+        const deptUsers = usersWithRoles.filter(u => u.roles?.includes(dept.role));
         deptUsers.forEach(u => {
           if (!mentions.includes(u.user_id)) mentions.push(u.user_id);
         });

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-task-notifications]
 verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = false

@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 
 interface ErrorAlertDetails {
   description?: string;
@@ -55,7 +56,7 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
             <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none [&_a]:text-primary [&_a]:underline [&_a]:break-all [&_p]:my-1 [&_hr]:my-2 [&_hr]:border-destructive/30">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
+                rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 components={{
                   a: ({ href, children }) => (
                     <a
