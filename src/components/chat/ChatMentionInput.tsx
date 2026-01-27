@@ -92,12 +92,32 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
     return [...userOptions, ...deptOptions];
   }, [usersWithRoles, profiles]);
 
+  // DEBUG: Log profiles and mention options
+  useEffect(() => {
+    console.log("🔍 DEBUG - profiles:", profiles);
+    console.log("🔍 DEBUG - profiles.length:", profiles.length);
+    console.log("🔍 DEBUG - usersWithRoles:", usersWithRoles);
+    console.log("🔍 DEBUG - usersWithRoles.length:", usersWithRoles.length);
+    console.log("🔍 DEBUG - mentionOptions:", mentionOptions);
+    console.log("🔍 DEBUG - mentionOptions.length:", mentionOptions.length);
+  }, [profiles, usersWithRoles, mentionOptions]);
+
   // Filter suggestions based on search
   const filteredSuggestions = useMemo(() => {
     if (!mentionSearch) return mentionOptions;
     const search = mentionSearch.toLowerCase();
     return mentionOptions.filter((opt) => opt.name.toLowerCase().includes(search));
   }, [mentionOptions, mentionSearch]);
+
+  // DEBUG: Log filtered suggestions when dropdown shows
+  useEffect(() => {
+    if (showSuggestions) {
+      console.log("🔍 DEBUG - showSuggestions:", showSuggestions);
+      console.log("🔍 DEBUG - mentionSearch:", mentionSearch);
+      console.log("🔍 DEBUG - filteredSuggestions:", filteredSuggestions);
+      console.log("🔍 DEBUG - filteredSuggestions.length:", filteredSuggestions.length);
+    }
+  }, [showSuggestions, mentionSearch, filteredSuggestions]);
 
   // Find the current mention being typed - supports multi-word names
   const findMentionContext = (text: string, pos: number) => {
@@ -115,6 +135,7 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
 
     const mentionContext = findMentionContext(newValue, pos);
     if (mentionContext) {
+      console.log("🔍 DEBUG - mentionContext found:", mentionContext);
       setMentionSearch(mentionContext.search);
       setShowSuggestions(true);
       setSuggestionIndex(0);
