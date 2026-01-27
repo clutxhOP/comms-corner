@@ -25,7 +25,7 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [devCloseDialogOpen, setDevCloseDialogOpen] = useState(false);
   const { user } = useAuth();
-  const { roles } = useUserRoles(user?.id);
+  const { roles, loading: rolesLoading } = useUserRoles(user?.id);
   const isDev = roles.includes('dev');
   const canDelete = roles.includes('admin') || roles.includes('dev');
 
@@ -137,16 +137,19 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
           <Button 
             size="sm" 
             className="w-full mt-4"
+            disabled={rolesLoading}
             onClick={() => {
+              // Dev users get the close dialog workflow
               if (isDev) {
                 setDevCloseDialogOpen(true);
               } else {
+                // Non-dev users (ops, admin) just mark as done directly
                 onMarkDone?.(task.id);
               }
             }}
           >
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Mark as Reviewed
+            {rolesLoading ? 'Loading...' : 'Mark as Reviewed'}
           </Button>
         )}
 
