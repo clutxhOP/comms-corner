@@ -163,7 +163,15 @@ export function useTasks() {
     }
   }, [user, profile, tasks, triggerWebhook, toast]);
 
-  const markTaskDone = useCallback(async (taskId: string) => {
+  const markTaskDone = useCallback(async (
+    taskId: string, 
+    devCloseResponse?: {
+      hadIssue: boolean;
+      wasFixed?: boolean;
+      sendToOps: boolean;
+      reason: string;
+    }
+  ) => {
     if (!user) return;
 
     const task = tasks.find(t => t.id === taskId);
@@ -176,13 +184,23 @@ export function useTasks() {
     ));
 
     try {
+      const updateData: Record<string, unknown> = {
+        status: 'done',
+        actioned_by: user.id,
+        actioned_at: new Date().toISOString(),
+      };
+
+      // Add dev close response data if provided
+      if (devCloseResponse) {
+        updateData.closed_by_dev = user.id;
+        updateData.sent_to_ops = devCloseResponse.sendToOps;
+        updateData.ops_reason = devCloseResponse.reason;
+        updateData.dev_close_response = devCloseResponse;
+      }
+
       const { data, error } = await supabase
         .from('tasks')
-        .update({
-          status: 'done',
-          actioned_by: user.id,
-          actioned_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', taskId)
         .select()
         .maybeSingle();
@@ -196,13 +214,22 @@ export function useTasks() {
 
       // Trigger webhook
       await triggerWebhook('task_done', {
-        task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
+        task: task ? { 
+          id: task.id, 
+          title: task.title, 
+          type: task.type, 
+          details: task.details,
+          sent_to_ops: devCloseResponse?.sendToOps,
+          ops_reason: devCloseResponse?.reason,
+        } : { id: taskId },
         user: { id: user.id, name: profile?.full_name },
       });
 
       toast({
-        title: 'Task completed',
-        description: 'The task has been marked as done.',
+        title: devCloseResponse?.sendToOps ? 'Alert sent to OPS' : 'Task completed',
+        description: devCloseResponse?.sendToOps 
+          ? `The alert has been forwarded to OPS for review. Reason: ${devCloseResponse.reason === 'no_issue_found' ? 'No issue found' : 'Issue not fixed'}`
+          : 'The task has been marked as done.',
       });
     } catch (error) {
       console.error('Error completing task:', error);

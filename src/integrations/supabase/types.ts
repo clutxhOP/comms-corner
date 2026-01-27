@@ -81,6 +81,7 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          mentions: string[] | null
           sender_name: string | null
           user_id: string
         }
@@ -91,6 +92,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          mentions?: string[] | null
           sender_name?: string | null
           user_id: string
         }
@@ -101,6 +103,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          mentions?: string[] | null
           sender_name?: string | null
           user_id?: string
         }
@@ -110,6 +113,57 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_notifications: {
+        Row: {
+          channel_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          message_preview: string
+          read_at: string | null
+          sender_id: string
+          sender_name: string
+          user_id: string
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          message_preview: string
+          read_at?: string | null
+          sender_id: string
+          sender_name: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          message_preview?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_notifications_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_notifications_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -256,11 +310,15 @@ export type Database = {
           actioned_at: string | null
           actioned_by: string | null
           assigned_to: string[] | null
+          closed_by_dev: string | null
           created_at: string
           created_by: string | null
           details: Json
+          dev_close_response: Json | null
           disapproval_reason: string | null
           id: string
+          ops_reason: string | null
+          sent_to_ops: boolean | null
           status: Database["public"]["Enums"]["task_status"]
           title: string
           type: Database["public"]["Enums"]["task_type"]
@@ -270,11 +328,15 @@ export type Database = {
           actioned_at?: string | null
           actioned_by?: string | null
           assigned_to?: string[] | null
+          closed_by_dev?: string | null
           created_at?: string
           created_by?: string | null
           details?: Json
+          dev_close_response?: Json | null
           disapproval_reason?: string | null
           id?: string
+          ops_reason?: string | null
+          sent_to_ops?: boolean | null
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           type: Database["public"]["Enums"]["task_type"]
@@ -284,11 +346,15 @@ export type Database = {
           actioned_at?: string | null
           actioned_by?: string | null
           assigned_to?: string[] | null
+          closed_by_dev?: string | null
           created_at?: string
           created_by?: string | null
           details?: Json
+          dev_close_response?: Json | null
           disapproval_reason?: string | null
           id?: string
+          ops_reason?: string | null
+          sent_to_ops?: boolean | null
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           type?: Database["public"]["Enums"]["task_type"]

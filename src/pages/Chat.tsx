@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
+import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
 import { Search, Hash, Send, X, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,29 +16,44 @@ import rehypeSanitize from "rehype-sanitize";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { MessageReactions } from "@/components/chat/MessageReactions";
+import { ChatMentionInput } from "@/components/chat/ChatMentionInput";
+import { NotificationBell } from "@/components/chat/NotificationBell";
 import { format, isSameDay, parseISO } from "date-fns";
+import { useSearchParams } from "react-router-dom";
 
 export default function Chat() {
   const { channels, loading: channelsLoading } = useChatChannels();
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const { messages, loading: messagesLoading, sendMessage, editMessage, deleteMessage, toggleReaction } = useChannelMessages(selectedChannelId);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { createMentionNotifications } = useChatNotifications();
+  const { profiles } = useProfilesDisplay();
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
+  const [mentions, setMentions] = useState<string[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
 
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Auto-select first channel
+  // Handle channel from URL or auto-select first channel
   useEffect(() => {
+    const channelParam = searchParams.get('channel');
+    if (channelParam && channels.length > 0) {
+      const channel = channels.find(c => c.id === channelParam);
+      if (channel) {
+        setSelectedChannelId(channel.id);
+        return;
+      }
+    }
     if (channels.length > 0 && !selectedChannelId) {
       setSelectedChannelId(channels[0].id);
     }
-  }, [channels, selectedChannelId]);
+  }, [channels, selectedChannelId, searchParams]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -45,12 +62,52 @@ export default function Chat() {
     }
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!newMessage.trim() || !selectedChannelId) return;
 
-    await sendMessage(newMessage);
+    const messageContent = newMessage;
+    const messageMentions = [...mentions];
+    
+    // Send the message with mentions
+    const messageId = await sendMessage(messageContent, messageMentions);
+    
+    // Create notifications for mentioned users
+    if (messageId && messageMentions.length > 0) {
+      await createMentionNotifications(
+        messageMentions,
+        messageId,
+        selectedChannelId,
+        profile?.full_name || 'Someone',
+        messageContent
+      );
+    }
+    
     setNewMessage("");
+    setMentions([]);
+  };
+
+  // Helper to render mentions in message content
+  const renderMessageContent = (content: string, isOwn: boolean) => {
+    // Replace @mentions with styled spans
+    const mentionRegex = /@([A-Za-z0-9\s]+?)(?=\s|$|,|\.|\n)/g;
+    let processedContent = content;
+    
+    const matches = content.matchAll(mentionRegex);
+    for (const match of matches) {
+      const mentionName = match[1].trim();
+      const profile = profiles.find(p => 
+        p.full_name.toLowerCase() === mentionName.toLowerCase()
+      );
+      if (profile) {
+        processedContent = processedContent.replace(
+          match[0],
+          `**@${mentionName}**`
+        );
+      }
+    }
+    
+    return processedContent;
   };
 
   const handleStartEdit = (messageId: string, content: string) => {
@@ -179,6 +236,7 @@ export default function Chat() {
                     )}
                   </div>
                 </div>
+                <NotificationBell />
               </div>
 
               {/* Messages */}
@@ -340,17 +398,17 @@ export default function Chat() {
                 </div>
               </ScrollArea>
 
-              {/* Input */}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2 border-t bg-card p-4">
-                <Input
+              {/* Input with Mentions */}
+              <form onSubmit={handleSendMessage} className="border-t bg-card p-4">
+                <ChatMentionInput
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Message #${selectedChannel.name.toLowerCase()}`}
-                  className="flex-1 bg-muted border-0"
+                  onChange={(value, newMentions) => {
+                    setNewMessage(value);
+                    setMentions(newMentions);
+                  }}
+                  placeholder={`Message #${selectedChannel.name.toLowerCase()} (use @ to mention)`}
+                  onSubmit={() => handleSendMessage()}
                 />
-                <Button type="submit" size="icon" disabled={!newMessage.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
               </form>
             </>
           ) : (

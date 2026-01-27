@@ -4,12 +4,18 @@ import { AlertCircle, Phone, CheckCircle2, MessageCircle, Trash2 } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TaskCommentsDialog } from './TaskCommentsDialog';
+import { DevCloseAlertDialog } from './DevCloseAlertDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface LeadAlertCardProps {
   task: Task;
-  onMarkDone?: (taskId: string) => void;
+  onMarkDone?: (taskId: string, devCloseResponse?: {
+    hadIssue: boolean;
+    wasFixed?: boolean;
+    sendToOps: boolean;
+    reason: string;
+  }) => void;
   onDelete?: (taskId: string) => void;
 }
 
@@ -17,8 +23,10 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
   const details = task.details as LeadAlertDetails;
   const isCompleted = task.status === 'done';
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [devCloseDialogOpen, setDevCloseDialogOpen] = useState(false);
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
+  const isDev = roles.includes('dev');
   const canDelete = roles.includes('admin') || roles.includes('dev');
 
   return (
@@ -129,7 +137,13 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
           <Button 
             size="sm" 
             className="w-full mt-4"
-            onClick={() => onMarkDone?.(task.id)}
+            onClick={() => {
+              if (isDev) {
+                setDevCloseDialogOpen(true);
+              } else {
+                onMarkDone?.(task.id);
+              }
+            }}
           >
             <CheckCircle2 className="h-4 w-4 mr-1" />
             Mark as Reviewed
@@ -148,6 +162,15 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
         onOpenChange={setCommentsOpen}
         taskId={task.id}
         taskTitle={task.title}
+      />
+
+      <DevCloseAlertDialog
+        open={devCloseDialogOpen}
+        onOpenChange={setDevCloseDialogOpen}
+        alertDetails={`${details.issue} - ${details.clientName}`}
+        onClose={(response) => {
+          onMarkDone?.(task.id, response);
+        }}
       />
     </>
   );
