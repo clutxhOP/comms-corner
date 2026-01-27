@@ -10,7 +10,7 @@ export interface Customer {
   website: string | null;
   status: string | null;
   num_of_leads: number | null;
-  lastleadsentat: string | null;
+  lastleadsendat: string | null;
   human_mode: boolean | null;
   created_at: string | null;
   updated_at: string | null;
@@ -30,7 +30,7 @@ export function useCustomers() {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .order('lastleadsentat', { ascending: false, nullsFirst: false });
+        .order('lastleadsendat', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
 
@@ -100,8 +100,8 @@ export function useCustomers() {
       case 'buddy_mode':
         return customer.human_mode === false || customer.human_mode === null;
       case 'recent_activity':
-        if (!customer.lastleadsentat) return false;
-        const lastLeadDate = new Date(customer.lastleadsentat);
+        if (!customer.lastleadsendat) return false;
+        const lastLeadDate = new Date(customer.lastleadsendat);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         return lastLeadDate > twentyFourHoursAgo;
       default:
