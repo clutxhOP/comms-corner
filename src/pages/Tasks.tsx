@@ -6,8 +6,11 @@ import { LeadOutreachCard } from '@/components/tasks/LeadOutreachCard';
 import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
 import { ErrorAlertCard } from '@/components/tasks/ErrorAlertCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
+import { BulkTaskActions } from '@/components/tasks/BulkTaskActions';
+import { SelectableTaskCard } from '@/components/tasks/SelectableTaskCard';
 import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useMentionedTasks } from '@/hooks/useTaskComments';
+import { useAuth } from '@/hooks/useAuth';
 import { Task, ErrorAlertDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -43,11 +46,13 @@ type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone, deleteTask } = useTasks();
   const { mentionedTaskIds } = useMentionedTasks();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
 
   const handleApprove = async (taskId: string) => {
     await approveTask(taskId);
@@ -72,7 +77,45 @@ export default function Tasks() {
   const handleDelete = async (taskId: string) => {
     if (confirm('Are you sure you want to delete this task?')) {
       await deleteTask(taskId);
+      // Remove from selection if selected
+      setSelectedTasks(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
     }
+  };
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (taskIds: string[]) => {
+    const allSelected = taskIds.every(id => selectedTasks.has(id));
+    if (allSelected) {
+      setSelectedTasks(prev => {
+        const next = new Set(prev);
+        taskIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedTasks(prev => new Set([...prev, ...taskIds]));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    for (const taskId of selectedTasks) {
+      await deleteTask(taskId);
+    }
+    setSelectedTasks(new Set());
   };
 
   // Apply filtering and sorting
@@ -125,71 +168,80 @@ export default function Tasks() {
     const task = convertToTask(dbTask);
     const isActioned = dbTask.status === 'approved' || dbTask.status === 'disapproved' || dbTask.status === 'done';
     
-    switch (dbTask.type) {
-      case 'lead-approval':
-        return (
-          <LeadApprovalCard 
-            key={dbTask.id} 
-            task={{
-              ...task,
-              status: isActioned ? 'done' : 'pending',
-            }} 
-            onApprove={handleApprove}
-            onDisapprove={handleDisapproveClick}
-            onDelete={handleDelete}
-          />
-        );
-      case 'lead-alert':
-        return (
-          <LeadAlertCard 
-            key={dbTask.id} 
-            task={{
-              ...task,
-              status: isActioned ? 'done' : 'pending',
-            }} 
-            onMarkDone={handleMarkDone}
-            onDelete={handleDelete}
-          />
-        );
-      case 'lead-outreach':
-        return (
-          <LeadOutreachCard 
-            key={dbTask.id} 
-            task={{
-              ...task,
-              status: isActioned ? 'done' : 'pending',
-            }} 
-            onMarkDone={handleMarkDone}
-            onDelete={handleDelete}
-          />
-        );
-      case 'other':
-        return (
-          <OtherTaskCard 
-            key={dbTask.id} 
-            task={{
-              ...task,
-              status: isActioned ? 'done' : 'pending',
-            }} 
-            onMarkDone={handleMarkDone}
-            onDelete={handleDelete}
-          />
-        );
-      case 'error-alert':
-        return (
-          <ErrorAlertCard 
-            key={dbTask.id}
-            id={dbTask.id}
-            title={dbTask.title}
-            createdAt={dbTask.created_at}
-            details={dbTask.details as unknown as ErrorAlertDetails}
-            status={dbTask.status}
-            onMarkDone={handleMarkDone}
-          />
-        );
-      default:
-        return null;
-    }
+    const cardContent = (() => {
+      switch (dbTask.type) {
+        case 'lead-approval':
+          return (
+            <LeadApprovalCard 
+              task={{
+                ...task,
+                status: isActioned ? 'done' : 'pending',
+              }} 
+              onApprove={handleApprove}
+              onDisapprove={handleDisapproveClick}
+              onDelete={handleDelete}
+            />
+          );
+        case 'lead-alert':
+          return (
+            <LeadAlertCard 
+              task={{
+                ...task,
+                status: isActioned ? 'done' : 'pending',
+              }} 
+              onMarkDone={handleMarkDone}
+              onDelete={handleDelete}
+            />
+          );
+        case 'lead-outreach':
+          return (
+            <LeadOutreachCard 
+              task={{
+                ...task,
+                status: isActioned ? 'done' : 'pending',
+              }} 
+              onMarkDone={handleMarkDone}
+              onDelete={handleDelete}
+            />
+          );
+        case 'other':
+          return (
+            <OtherTaskCard 
+              task={{
+                ...task,
+                status: isActioned ? 'done' : 'pending',
+              }} 
+              onMarkDone={handleMarkDone}
+              onDelete={handleDelete}
+            />
+          );
+        case 'error-alert':
+          return (
+            <ErrorAlertCard 
+              id={dbTask.id}
+              title={dbTask.title}
+              createdAt={dbTask.created_at}
+              details={dbTask.details as unknown as ErrorAlertDetails}
+              status={dbTask.status}
+              onMarkDone={handleMarkDone}
+            />
+          );
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <SelectableTaskCard
+        key={dbTask.id}
+        taskId={dbTask.id}
+        isSelected={selectedTasks.has(dbTask.id)}
+        isSelectionMode={isAdmin}
+        onToggleSelection={toggleTaskSelection}
+      >
+        {cardContent}
+      </SelectableTaskCard>
+    );
   };
 
   if (loading) {
@@ -255,6 +307,18 @@ export default function Tasks() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Bulk Actions - Admin Only */}
+        {isAdmin && (
+          <BulkTaskActions
+            selectedCount={selectedTasks.size}
+            totalCount={processedTasks.length}
+            isAllSelected={processedTasks.length > 0 && processedTasks.every(t => selectedTasks.has(t.id))}
+            onToggleSelectAll={() => toggleSelectAll(processedTasks.map(t => t.id))}
+            onClearSelection={() => setSelectedTasks(new Set())}
+            onBulkDelete={handleBulkDelete}
+          />
+        )}
 
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="bg-muted/50 flex-wrap">
