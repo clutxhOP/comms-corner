@@ -174,6 +174,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string
+          human_mode_status: boolean
           id: string
           last_lead_sent_at: string | null
           name: string
@@ -186,6 +187,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email: string
+          human_mode_status?: boolean
           id?: string
           last_lead_sent_at?: string | null
           name: string
@@ -198,6 +200,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string
+          human_mode_status?: boolean
           id?: string
           last_lead_sent_at?: string | null
           name?: string

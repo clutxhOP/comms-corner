@@ -6,9 +6,10 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requireDevOrAdmin?: boolean;
+  requireOpsOrAdmin?: boolean;
 }
 
-export function ProtectedRoute({ children, requireAdmin = false, requireDevOrAdmin = false }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireAdmin = false, requireDevOrAdmin = false, requireOpsOrAdmin = false }: ProtectedRouteProps) {
   const { user, isAdmin, loading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles(user?.id);
 
@@ -29,6 +30,10 @@ export function ProtectedRoute({ children, requireAdmin = false, requireDevOrAdm
   }
 
   if (requireDevOrAdmin && !isAdmin && !roles.includes('dev')) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireOpsOrAdmin && !isAdmin && !roles.includes('ops')) {
     return <Navigate to="/" replace />;
   }
 
