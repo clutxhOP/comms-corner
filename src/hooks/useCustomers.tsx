@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { useWebhooks } from './useWebhooks';
 
 export interface Customer {
   id: string;
@@ -23,6 +24,7 @@ export function useCustomers() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<CustomerFilter>('all');
   const { toast } = useToast();
+  const { triggerWebhook } = useWebhooks();
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -135,56 +137,19 @@ export function useCustomers() {
 
       if (dbError) throw dbError;
 
-      // Send webhook with retry logic
-      const webhookPayload = {
+      // Trigger webhook using the webhook system
+      await triggerWebhook('human_mode_toggle', {
         business_id: customerId,
         business_name: customer.name || 'Unknown',
         human_mode_status: newStatus,
         action,
-        timestamp: new Date().toISOString(),
-      };
-
-      let webhookSuccess = false;
-      let retryCount = 0;
-      const maxRetries = 2;
-
-      while (!webhookSuccess && retryCount < maxRetries) {
-        try {
-          const response = await fetch(
-            'https://n8n.srv1252597.hstgr.cloud/webhook/hitl-dashboard',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(webhookPayload),
-            }
-          );
-
-          if (response.ok) {
-            webhookSuccess = true;
-          } else {
-            retryCount++;
-            if (retryCount < maxRetries) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-        } catch {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-      }
-
-      if (!webhookSuccess) {
-        console.error('Webhook failed after retries');
-        toast({
-          title: 'Warning',
-          description: 'Status updated but webhook notification failed',
-          variant: 'destructive',
-        });
-      }
+        customer: {
+          id: customerId,
+          name: customer.name,
+          category: customer.category,
+          whatsapp: customer.whatsapp,
+        },
+      });
 
       return { success: true };
     } catch (error) {
