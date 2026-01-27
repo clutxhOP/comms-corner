@@ -119,15 +119,12 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
 
   const extractMentionIds = (text: string): string[] => {
     const mentions: string[] = [];
-    // Find all @Name patterns and match them to users/departments
-    const regex = /@([A-Za-z0-9\s]+?)(?:\s|$|,|\.|\n)/g;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      const name = match[1].trim();
-      const option = mentionOptions.find(o => 
-        o.name.toLowerCase() === name.toLowerCase()
-      );
-      if (option) {
+    
+    // Look for @mentions - match name that starts after @ and continues until we hit common delimiters
+    // Match names by looking for exact matches in our mention options
+    mentionOptions.forEach(option => {
+      const mentionPattern = new RegExp(`@${option.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$|,|\\.|\\n|!)`, 'gi');
+      if (mentionPattern.test(text)) {
         if (option.type === 'department') {
           const dept = DEPARTMENTS.find(d => d.id === option.id);
           if (dept) {
@@ -140,7 +137,8 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
           if (!mentions.includes(option.id)) mentions.push(option.id);
         }
       }
-    }
+    });
+    
     return mentions;
   };
 
@@ -152,23 +150,20 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
     const after = value.slice(cursorPosition);
     const newValue = `${before}@${option.name} ${after}`;
     
+    // Get mentions from the new value
     const mentions = extractMentionIds(newValue);
-    
-    if (option.type === 'department') {
-      const dept = DEPARTMENTS.find(d => d.id === option.id);
-      if (dept) {
-        const deptUsers = usersWithRoles.filter(u => u.roles?.includes(dept.role));
-        deptUsers.forEach(u => {
-          if (!mentions.includes(u.user_id)) mentions.push(u.user_id);
-        });
-      }
-    } else {
-      if (!mentions.includes(option.id)) mentions.push(option.id);
-    }
 
     onChange(newValue, mentions);
     setShowSuggestions(false);
-    inputRef.current?.focus();
+    
+    // Focus back and set cursor position after the inserted mention
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newPos = mentionContext.start + option.name.length + 2; // +2 for @ and space
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

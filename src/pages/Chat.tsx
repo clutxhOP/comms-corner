@@ -261,8 +261,8 @@ export default function Chat() {
                       const isEditing = editingMessageId === message.id;
 
                       return (
-                        <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
-                          <div className="flex items-start gap-2 max-w-[70%]">
+                        <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                          <div className="flex items-start gap-2 max-w-[70%] group">
                             {isOwn && (
                               <ChatMessageActions
                                 isOwn={isOwn}
