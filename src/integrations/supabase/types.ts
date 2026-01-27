@@ -402,7 +402,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      personal_access_tokens_safe: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          last_used_at: string | null
+          name: string | null
+          revoked_at: string | null
+          token_prefix: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          last_used_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+          token_prefix?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          last_used_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+          token_prefix?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles_display: {
+        Row: {
+          full_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

@@ -7,6 +7,7 @@ import { TaskCommentsDialog } from "./TaskCommentsDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
@@ -67,7 +68,7 @@ export function OtherTaskCard({ task, onMarkDone, onDelete }: OtherTaskCardProps
             <div className="text-muted-foreground text-xs mt-1 break-words overflow-hidden">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
+                rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 components={{
                   a: ({ href, children }) => (
                     <a

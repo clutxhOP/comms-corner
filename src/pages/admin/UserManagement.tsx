@@ -91,32 +91,21 @@ export default function UserManagement() {
     setAddLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          data: {
-            full_name: newFullName,
-          },
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('manage-users', {
+        method: 'POST',
+        body: {
+          email: newEmail,
+          password: newPassword,
+          fullName: newFullName,
+          roles: newRoles,
         },
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Update the profile with the full name
-        await supabase
-          .from('profiles')
-          .update({ full_name: newFullName })
-          .eq('user_id', data.user.id);
-
-        // Set roles
-        for (const role of newRoles) {
-          await supabase
-            .from('user_roles')
-            .insert({ user_id: data.user.id, role });
-        }
-      }
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
       toast({
         title: 'User created',
@@ -159,10 +148,23 @@ export default function UserManagement() {
     setResetLoading(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('manage-users', {
+        method: 'PATCH',
+        body: {
+          userId: resetUserId,
+          newPassword: newPasswordForReset,
+        },
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
       toast({
         title: 'Password Reset',
-        description: 'Password reset requires admin backend API. Contact your system administrator.',
-        variant: 'default',
+        description: 'Password has been successfully reset.',
       });
 
       setResetDialogOpen(false);
@@ -172,7 +174,7 @@ export default function UserManagement() {
       console.error('Error resetting password:', error);
       toast({
         title: 'Error',
-        description: 'Failed to reset password',
+        description: error instanceof Error ? error.message : 'Failed to reset password',
         variant: 'destructive',
       });
     } finally {
@@ -229,12 +231,20 @@ export default function UserManagement() {
     }
 
     try {
-      await supabase.from('user_roles').delete().eq('user_id', userId);
-      await supabase.from('profiles').delete().eq('user_id', userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('manage-users', {
+        method: 'DELETE',
+        body: { userId },
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
       toast({
         title: 'User removed',
-        description: `${email} has been removed from the team.`,
+        description: `${email} has been completely removed from the team.`,
       });
 
       fetchUsers();
@@ -242,7 +252,7 @@ export default function UserManagement() {
       console.error('Error deleting user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to remove user. The auth account may still exist.',
+        description: error instanceof Error ? error.message : 'Failed to remove user',
         variant: 'destructive',
       });
     }
