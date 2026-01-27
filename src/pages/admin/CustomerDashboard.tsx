@@ -24,14 +24,14 @@ import { useCustomers, CustomerFilter } from '@/hooks/useCustomers';
 import { Bot, User, Search, RefreshCw, Loader2, ArrowUpDown } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
-type SortField = 'name' | 'num_of_leads' | 'lastleadsentat' | 'human_mode';
+type SortField = 'name' | 'num_of_leads' | 'lastleadsendat' | 'human_mode';
 type SortDirection = 'asc' | 'desc';
 
 export default function CustomerDashboard() {
   const { customers, loading, filter, setFilter, toggleHumanMode, refetch } = useCustomers();
   const [search, setSearch] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('lastleadsentat');
+  const [sortField, setSortField] = useState<SortField>('lastleadsendat');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const handleToggle = async (customerId: string, currentStatus: boolean | null) => {
@@ -68,9 +68,9 @@ export default function CustomerDashboard() {
         case 'num_of_leads':
           comparison = (a.num_of_leads || 0) - (b.num_of_leads || 0);
           break;
-        case 'lastleadsentat':
-          const dateA = a.lastleadsentat ? new Date(a.lastleadsentat).getTime() : 0;
-          const dateB = b.lastleadsentat ? new Date(b.lastleadsentat).getTime() : 0;
+        case 'lastleadsendat':
+          const dateA = a.lastleadsendat ? new Date(a.lastleadsendat).getTime() : 0;
+          const dateB = b.lastleadsendat ? new Date(b.lastleadsendat).getTime() : 0;
           comparison = dateA - dateB;
           break;
         case 'human_mode':
@@ -164,7 +164,7 @@ export default function CustomerDashboard() {
                     <TableRow>
                       <SortableHeader field="name">Business Name</SortableHeader>
                       <SortableHeader field="num_of_leads">Total Leads Sent</SortableHeader>
-                      <SortableHeader field="lastleadsentat">Last Lead Sent</SortableHeader>
+                      <SortableHeader field="lastleadsendat">Last Lead Sent</SortableHeader>
                       <SortableHeader field="human_mode">Mode Status</SortableHeader>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -187,15 +187,15 @@ export default function CustomerDashboard() {
                           <span className="font-medium">{customer.num_of_leads || 0}</span>
                         </TableCell>
                         <TableCell>
-                          {customer.lastleadsentat ? (
+                          {customer.lastleadsendat ? (
                             <div>
                               <p className="text-sm">
-                                {formatDistanceToNow(new Date(customer.lastleadsentat), {
+                                {formatDistanceToNow(new Date(customer.lastleadsendat), {
                                   addSuffix: true,
                                 })}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(customer.lastleadsentat), 'MMM d, yyyy HH:mm')}
+                                {format(new Date(customer.lastleadsendat), 'MMM d, yyyy HH:mm')}
                               </p>
                             </div>
                           ) : (
