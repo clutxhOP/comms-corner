@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { externalSupabase } from '@/integrations/supabase/externalClient';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
 export interface Business {
@@ -134,7 +135,7 @@ export function useBusinesses() {
 
       if (dbError) throw dbError;
 
-      // Send webhook
+      // Send webhook via edge function proxy
       const webhookPayload = {
         business_id: businessId,
         business_name: business.name || 'Unknown',
@@ -144,13 +145,18 @@ export function useBusinesses() {
       };
 
       try {
-        await fetch('https://n8n.srv1252597.hstgr.cloud/webhook/hitl-dashboard', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookPayload),
+        const { error: webhookError } = await supabase.functions.invoke('hitl-webhook', {
+          body: webhookPayload,
         });
+        
+        if (webhookError) {
+          console.error('Webhook failed:', webhookError);
+          toast({
+            title: 'Warning',
+            description: 'Status updated but webhook notification failed',
+            variant: 'destructive',
+          });
+        }
       } catch (webhookError) {
         console.error('Webhook failed:', webhookError);
         toast({
