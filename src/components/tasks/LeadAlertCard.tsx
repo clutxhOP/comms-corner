@@ -78,7 +78,9 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
             'h-5 w-5',
             details.alertLevel === 'red' ? 'text-destructive' : 'text-warning'
           )} />
-          <h3 className="font-semibold text-foreground">{task.title}</h3>
+          <h3 className="font-semibold text-foreground">
+            {details.alertLevel === 'red' ? '🚨' : '⚠️'} {task.title}
+          </h3>
         </div>
 
         <div className="space-y-3 text-sm">
@@ -109,7 +111,7 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
                 'h-2 w-2 rounded-full',
                 details.alertLevel === 'red' ? 'bg-destructive' : 'bg-warning'
               )} />
-              Alert Level: REVIEW ALERT ({details.alertLevel === 'red' ? '72+' : '48+'} hours)
+              Alert Level: {task.title}
             </p>
             <p className={cn(
               'text-xs mt-1',
