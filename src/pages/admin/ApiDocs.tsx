@@ -379,8 +379,8 @@ export default function ApiDocs() {
                 <Endpoint
                   method="PATCH"
                   path="/manage-tasks?id=<task_uuid>"
-                  description="Update task assignment. Admin only."
-                  auth="Admin only"
+                  description="Update task assignment. Admin or Dev only."
+                  auth="Admin or Dev (JWT or PAT)"
                   queryParams={[
                     { name: 'id', type: 'uuid', description: 'The task ID to update' }
                   ]}
@@ -392,6 +392,38 @@ export default function ApiDocs() {
     "id": "task-uuid",
     "assigned_to": ["user-uuid-1", "user-uuid-2"],
     ...
+  }
+}`}
+                />
+
+                <Endpoint
+                  method="PATCH"
+                  path="/manage-tasks?id=<task_uuid>"
+                  description="Update lead-alert task details (timeSinceLastLead, alertLevel). Only works for lead-alert type tasks."
+                  auth="Admin or Dev (JWT or PAT)"
+                  queryParams={[
+                    { name: 'id', type: 'uuid', description: 'The lead-alert task ID to update' }
+                  ]}
+                  requestBody={`{
+  "timeSinceLastLead": "96 hours",  // Optional - update time since last lead
+  "alertLevel": "red"               // Optional - must be "yellow" or "red"
+}`}
+                  responseExample={`{
+  "data": {
+    "id": "task-uuid",
+    "type": "lead-alert",
+    "title": "Lead Alert: Client Name",
+    "status": "pending",
+    "details": {
+      "clientName": "Acme Corp",
+      "category": "Tech",
+      "whatsapp": "+1234567890",
+      "clientStatus": "Active",
+      "alertLevel": "red",
+      "issue": "No leads sent recently",
+      "timeSinceLastLead": "96 hours"
+    },
+    "updated_at": "2026-01-27T10:00:00Z"
   }
 }`}
                 />
