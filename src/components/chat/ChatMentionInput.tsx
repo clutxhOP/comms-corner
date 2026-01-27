@@ -67,7 +67,9 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
 
   // Build mention options from users and departments
   const mentionOptions = useMemo<MentionOption[]>(() => {
-    const userOptions: MentionOption[] = usersWithRoles.map(u => ({
+    const userOptions: MentionOption[] = [...usersWithRoles]
+      .sort((a, b) => a.full_name.localeCompare(b.full_name))
+      .map((u) => ({
       id: u.user_id,
       name: u.full_name,
       type: 'user' as const,
@@ -79,16 +81,17 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
       type: 'department' as const,
     }));
 
-    return [...deptOptions, ...userOptions];
+    // Put users first so the dropdown shows the full user list immediately.
+    return [...userOptions, ...deptOptions];
   }, [usersWithRoles]);
 
   // Filter suggestions based on search
   const filteredSuggestions = useMemo(() => {
-    if (!mentionSearch) return mentionOptions.slice(0, 8);
+    if (!mentionSearch) return mentionOptions;
     const search = mentionSearch.toLowerCase();
     return mentionOptions
       .filter(opt => opt.name.toLowerCase().includes(search))
-      .slice(0, 8);
+      ;
   }, [mentionOptions, mentionSearch]);
 
   // Find the current mention being typed
@@ -213,7 +216,7 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div
             ref={suggestionsRef}
-            className="absolute bottom-full mb-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+            className="absolute bottom-full mb-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
           >
             {filteredSuggestions.map((option, index) => (
               <button

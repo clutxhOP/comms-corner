@@ -22,8 +22,11 @@ export function NotificationBell() {
       await markAsRead(notification.id);
     }
     setOpen(false);
-    // Navigate to chat with the channel
-    navigate(`/chat?channel=${notification.channel_id}`);
+    // Navigate to chat, deep-linking to the mentioned message when possible
+    const params = new URLSearchParams();
+    if (notification.channel_id) params.set('channel', notification.channel_id);
+    if (notification.message_id) params.set('message', notification.message_id);
+    navigate(`/chat?${params.toString()}`);
   };
 
   return (
