@@ -62,22 +62,20 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
                 <span className="font-semibold">Client Name:</span> {details.clientName}
               </p>
             )}
-            <p className="text-muted-foreground text-xs mt-2">
+            <p className={cn("text-muted-foreground text-xs", details.clientName ? "mt-2" : "mt-1")}>
               <span className="font-semibold">Client ID:</span> {details.clientId}
             </p>
-            {details.whatsapp && (
-              <p className="text-muted-foreground text-xs mt-2">
-                <span className="font-semibold">WhatsApp:</span> {details.whatsapp}
-              </p>
-            )}
+            <p className="text-muted-foreground text-xs mt-2">
+              <span className="font-semibold">WhatsApp:</span> {details.whatsapp}
+            </p>
             {details.website && (
               <p className="text-muted-foreground text-xs mt-2">
                 <span className="font-semibold">Website:</span>{" "}
-                <a
+                
                   href={details.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
+                  className="text-primary hover:underline inline-flex items-center gap-1 break-all"
                 >
                   {details.website}
                   <ExternalLink className="h-3 w-3 shrink-0" />
@@ -100,7 +98,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            <a
+            
               href={details.contactInfo}
               target="_blank"
               rel="noopener noreferrer"
@@ -113,7 +111,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            <a
+            
               href={details.proofLink}
               target="_blank"
               rel="noopener noreferrer"
