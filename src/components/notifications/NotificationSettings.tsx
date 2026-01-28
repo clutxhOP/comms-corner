@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, BellOff, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Bell, BellOff, Settings, Volume2, VolumeX, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function NotificationSettings() {
   const { preferences, loading, updatePreferences } = useNotificationPreferences();
-  const { isSupported, permissionStatus, requestPermission } = useBrowserNotifications();
+  const { isSupported, permissionStatus, requestPermission, showTestNotification } = useBrowserNotifications();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -49,6 +49,22 @@ export function NotificationSettings() {
   const handleToggleSound = async () => {
     if (!preferences) return;
     await updatePreferences({ sound_enabled: !preferences.sound_enabled });
+  };
+
+  const handleTestNotification = () => {
+    const notification = showTestNotification();
+    if (notification) {
+      toast({
+        title: 'Test notification sent',
+        description: 'Check your system notification tray/center.',
+      });
+    } else {
+      toast({
+        title: 'Failed to send test notification',
+        description: 'Check the browser console for errors.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getPermissionStatusDisplay = () => {
@@ -179,6 +195,17 @@ export function NotificationSettings() {
                   disabled={permissionStatus !== 'granted'}
                 />
               </div>
+
+              <Separator />
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleTestNotification}
+              >
+                <TestTube className="h-4 w-4 mr-2" />
+                Send Test Notification
+              </Button>
             </div>
           )}
 
