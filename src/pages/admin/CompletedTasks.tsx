@@ -83,6 +83,38 @@ export default function CompletedTasks() {
     return user?.full_name || 'Unknown';
   };
 
+  const formatTimeToComplete = (createdAt: string, completedAt: string | null): string => {
+    if (!completedAt) return '-';
+    
+    const created = new Date(createdAt);
+    const completed = new Date(completedAt);
+    const diffMs = completed.getTime() - created.getTime();
+    
+    if (diffMs < 0) return '-';
+    
+    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (totalMinutes < 60) {
+      return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
+    } else if (totalHours < 24) {
+      const hours = totalHours;
+      const minutes = totalMinutes % 60;
+      if (minutes === 0) {
+        return `${hours} hour${hours !== 1 ? 's' : ''}`;
+      }
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      const days = totalDays;
+      const hours = totalHours % 24;
+      if (hours === 0) {
+        return `${days} day${days !== 1 ? 's' : ''}`;
+      }
+      return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -173,6 +205,7 @@ export default function CompletedTasks() {
                     <TableHead>Status</TableHead>
                     <TableHead>Actioned By</TableHead>
                     <TableHead>Completed At</TableHead>
+                    <TableHead>Time to Complete</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -209,6 +242,12 @@ export default function CompletedTasks() {
                           ? new Date(task.actioned_at).toLocaleString()
                           : new Date(task.updated_at).toLocaleString()
                         }
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatTimeToComplete(
+                          task.created_at, 
+                          task.actioned_at || task.updated_at
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
