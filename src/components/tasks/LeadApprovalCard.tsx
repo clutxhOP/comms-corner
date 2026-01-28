@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Task, LeadApprovalDetails } from '@/types';
-import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { TaskCommentsDialog } from './TaskCommentsDialog';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRoles } from '@/hooks/useUserRoles';
+import { useState } from "react";
+import { Task, LeadApprovalDetails } from "@/types";
+import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { TaskCommentsDialog } from "./TaskCommentsDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface LeadApprovalCardProps {
   task: Task;
@@ -16,23 +16,23 @@ interface LeadApprovalCardProps {
 
 export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: LeadApprovalCardProps) {
   const details = task.details as LeadApprovalDetails;
-  const isCompleted = task.status === 'done';
+  const isCompleted = task.status === "done";
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
-  const canDelete = roles.includes('admin') || roles.includes('dev');
+  const canDelete = roles.includes("admin") || roles.includes("dev");
 
   return (
     <>
-      <div className={cn(
-        'rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md',
-        isCompleted && 'opacity-60'
-      )}>
+      <div
+        className={cn(
+          "rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
+          isCompleted && "opacity-60",
+        )}
+      >
         <div className="flex items-start justify-between mb-4">
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">
-              {new Date(task.createdAt).toLocaleString()}
-            </span>
+            <span className="text-xs text-muted-foreground">{new Date(task.createdAt).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2">
             {canDelete && onDelete && (
@@ -45,17 +45,10 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2"
-              onClick={() => setCommentsOpen(true)}
-            >
+            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setCommentsOpen(true)}>
               <MessageCircle className="h-4 w-4" />
             </Button>
-            <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
-              Approval
-            </span>
+            <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">Approval</span>
           </div>
         </div>
 
@@ -64,9 +57,15 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         <div className="space-y-3 text-sm">
           <div>
             <p className="font-medium text-foreground">Client Details</p>
-            <p className="text-muted-foreground text-xs mt-1">Client ID: {details.clientId}</p>
-            <p className="text-muted-foreground text-xs">Category: {details.category}</p>
-            <p className="text-muted-foreground text-xs">ICP: {details.icp}</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              <span className="font-semibold">Client ID:</span> {details.clientId}
+            </p>
+            <p className="text-muted-foreground text-xs mt-2">
+              <span className="font-semibold">Category:</span> {details.category}
+            </p>
+            <p className="text-muted-foreground text-xs mt-2">
+              <span className="font-semibold">ICP:</span> {details.icp}
+            </p>
           </div>
 
           <div className="border-t border-dashed pt-3">
@@ -77,9 +76,9 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            <a 
-              href={details.contactInfo} 
-              target="_blank" 
+            <a
+              href={details.contactInfo}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary text-xs hover:underline flex items-center gap-1 break-all"
             >
@@ -90,9 +89,9 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            <a 
-              href={details.proofLink} 
-              target="_blank" 
+            <a
+              href={details.proofLink}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary text-xs hover:underline flex items-center gap-1 break-all"
             >
@@ -106,20 +105,11 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
         {!isCompleted && (
           <div className="flex gap-2 mt-4">
-            <Button 
-              size="sm" 
-              className="flex-1 bg-success hover:bg-success/90"
-              onClick={() => onApprove?.(task.id)}
-            >
+            <Button size="sm" className="flex-1 bg-success hover:bg-success/90" onClick={() => onApprove?.(task.id)}>
               <CheckCircle2 className="h-4 w-4 mr-1" />
               Approve
             </Button>
-            <Button 
-              size="sm" 
-              variant="destructive"
-              className="flex-1"
-              onClick={() => onDisapprove?.(task.id)}
-            >
+            <Button size="sm" variant="destructive" className="flex-1" onClick={() => onDisapprove?.(task.id)}>
               <XCircle className="h-4 w-4 mr-1" />
               Disapprove
             </Button>
@@ -133,12 +123,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         )}
       </div>
 
-      <TaskCommentsDialog
-        open={commentsOpen}
-        onOpenChange={setCommentsOpen}
-        taskId={task.id}
-        taskTitle={task.title}
-      />
+      <TaskCommentsDialog open={commentsOpen} onOpenChange={setCommentsOpen} taskId={task.id} taskTitle={task.title} />
     </>
   );
 }
