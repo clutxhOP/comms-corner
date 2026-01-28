@@ -13,7 +13,6 @@ import {
   ListOrdered,
   Code,
   FileCode,
-  Plus,
   Type,
   Smile,
   AtSign,
@@ -29,6 +28,7 @@ interface ChatRichTextInputProps {
   placeholder?: string;
   className?: string;
   onSubmit: () => void;
+  onAttachmentClick?: () => void;
 }
 
 interface MentionOption {
@@ -49,7 +49,7 @@ const DEPARTMENTS = [
   { id: "dept_ops", name: "Ops Team", role: "ops" },
 ];
 
-export function ChatRichTextInput({ value, onChange, placeholder, className, onSubmit }: ChatRichTextInputProps) {
+export function ChatRichTextInput({ value, onChange, placeholder, className, onSubmit, onAttachmentClick }: ChatRichTextInputProps) {
   const { profiles } = useProfilesDisplay();
   const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -385,9 +385,6 @@ export function ChatRichTextInput({ value, onChange, placeholder, className, onS
         {/* Bottom Action Bar */}
         <div className="flex items-center justify-between px-2 py-1.5 border-t border-border">
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Add attachment">
-              <Plus className="h-4 w-4" />
-            </Button>
             <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Format text">
               <Type className="h-4 w-4" />
             </Button>
@@ -407,7 +404,7 @@ export function ChatRichTextInput({ value, onChange, placeholder, className, onS
           </div>
 
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Attach file">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Attach file" onClick={onAttachmentClick}>
               <Paperclip className="h-4 w-4" />
             </Button>
             <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Voice message">
