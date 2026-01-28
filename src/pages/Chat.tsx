@@ -570,6 +570,7 @@ export default function Chat() {
                         }}
                         placeholder={`Message #${selectedChannel.name.toLowerCase()}`}
                         onSubmit={() => handleSendMessage()}
+                        onAttachmentClick={() => fileInputRef.current?.click()}
                       />
 
                       <Button
