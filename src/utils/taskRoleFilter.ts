@@ -16,6 +16,14 @@ export const ROLE_VISIBLE_TABS: Record<UserRole, string[]> = {
   ops: ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'other'], // No errors
 };
 
+// Define which status filter options each role can see
+// Approved/Disapproved only make sense for roles that can see lead-approval tasks
+export const ROLE_STATUS_FILTERS: Record<UserRole, string[]> = {
+  admin: ['all', 'pending', 'done', 'approved', 'disapproved'],
+  dev: ['all', 'pending', 'done'], // No approved/disapproved since they can't see approval tasks
+  ops: ['all', 'pending', 'done', 'approved', 'disapproved'],
+};
+
 /**
  * Get the allowed task types for a user based on their roles
  * If user has admin role, they see everything
@@ -77,4 +85,81 @@ export function getVisibleTabs(roles: UserRole[]): string[] {
 export function isTabVisible(tabId: string, roles: UserRole[]): boolean {
   const visibleTabs = getVisibleTabs(roles);
   return visibleTabs.includes(tabId);
+}
+
+/**
+ * Get allowed status filter options based on user roles
+ */
+export function getAllowedStatusFilters(roles: UserRole[]): string[] {
+  // Admin sees all statuses
+  if (roles.includes('admin')) {
+    return ROLE_STATUS_FILTERS.admin;
+  }
+
+  // If user has ops role, they can see approved/disapproved
+  if (roles.includes('ops')) {
+    return ROLE_STATUS_FILTERS.ops;
+  }
+
+  // Dev only sees basic statuses
+  if (roles.includes('dev')) {
+    return ROLE_STATUS_FILTERS.dev;
+  }
+
+  // Fallback
+  return ROLE_STATUS_FILTERS.admin;
+}
+
+/**
+ * Check if an "Other" task should be visible to a user based on assignment
+ * @param assignedTo - Array of user IDs the task is assigned to
+ * @param userId - Current user's ID
+ * @param isAdmin - Whether the user is an admin
+ * @returns Whether the task should be visible
+ */
+export function isOtherTaskVisibleToUser(
+  assignedTo: string[] | null,
+  userId: string,
+  isAdmin: boolean
+): boolean {
+  // Admins see all tasks
+  if (isAdmin) {
+    return true;
+  }
+
+  // If task is unassigned (null), only admins can see it
+  if (!assignedTo || assignedTo.length === 0) {
+    return false;
+  }
+
+  // Check if user is directly assigned
+  return assignedTo.includes(userId);
+}
+
+/**
+ * Filter tasks based on role and assignment
+ * This applies both task type filtering and assignment-based filtering for "Other" tasks
+ */
+export function filterTasksForUser<T extends { type: string; assigned_to: string[] | null }>(
+  tasks: T[],
+  roles: UserRole[],
+  userId: string
+): T[] {
+  const isAdmin = roles.includes('admin');
+  const allowedTypes = getAllowedTaskTypes(roles);
+
+  return tasks.filter(task => {
+    // First check if the task type is allowed for this role
+    if (!allowedTypes.includes(task.type as TaskType)) {
+      return false;
+    }
+
+    // For "Other" tasks, apply assignment-based filtering
+    if (task.type === 'other') {
+      return isOtherTaskVisibleToUser(task.assigned_to, userId, isAdmin);
+    }
+
+    // All other task types pass through if type is allowed
+    return true;
+  });
 }
