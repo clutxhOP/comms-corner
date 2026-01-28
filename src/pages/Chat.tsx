@@ -17,7 +17,7 @@ import rehypeSanitize from "rehype-sanitize";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { MessageReactions } from "@/components/chat/MessageReactions";
-import { ChatRichTextInput } from "@/components/chat/ChatRichTextInput";
+import { ChatRichTextInput } from "@/components/chat/ChatMentionInput";
 import { NotificationBell } from "@/components/chat/NotificationBell";
 import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
 import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
