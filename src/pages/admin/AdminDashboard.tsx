@@ -42,6 +42,49 @@ export default function AdminDashboard() {
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const errorAlerts = tasks.filter(t => t.type === 'error-alert' && t.status === 'pending');
 
+  const formatDuration = (totalMs: number): string => {
+    if (totalMs <= 0) return '-';
+    
+    const totalMinutes = Math.floor(totalMs / (1000 * 60));
+    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
+    const totalDays = Math.floor(totalMs / (1000 * 60 * 60 * 24));
+    
+    if (totalMinutes < 60) {
+      return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
+    } else if (totalHours < 24) {
+      const hours = totalHours;
+      const minutes = totalMinutes % 60;
+      if (minutes === 0) {
+        return `${hours} hour${hours !== 1 ? 's' : ''}`;
+      }
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} min`;
+    } else {
+      const days = totalDays;
+      const hours = totalHours % 24;
+      if (hours === 0) {
+        return `${days} day${days !== 1 ? 's' : ''}`;
+      }
+      return `${days} day${days !== 1 ? 's' : ''} ${hours} hr`;
+    }
+  };
+
+  const calculateAvgTimeToComplete = (userId: string): string => {
+    const completedTasks = tasks.filter(
+      t => t.actioned_by === userId && t.status === 'done' && t.actioned_at
+    );
+    
+    if (completedTasks.length === 0) return '-';
+    
+    const totalMs = completedTasks.reduce((sum, task) => {
+      const created = new Date(task.created_at).getTime();
+      const completed = new Date(task.actioned_at!).getTime();
+      return sum + (completed - created);
+    }, 0);
+    
+    const avgMs = totalMs / completedTasks.length;
+    return formatDuration(avgMs);
+  };
+
   // Get stats per user - actioned tasks
   const userActionStats = users.map(user => {
     const actionedTasks = tasks.filter(t => t.actioned_by === user.user_id);
@@ -50,6 +93,7 @@ export default function AdminDashboard() {
       approved: actionedTasks.filter(t => t.status === 'approved').length,
       disapproved: actionedTasks.filter(t => t.status === 'disapproved').length,
       completed: actionedTasks.filter(t => t.status === 'done').length,
+      avgTimeToComplete: calculateAvgTimeToComplete(user.user_id),
     };
   });
 
@@ -289,6 +333,7 @@ export default function AdminDashboard() {
                   <TableHead className="text-center">Approved</TableHead>
                   <TableHead className="text-center">Disapproved</TableHead>
                   <TableHead className="text-center">Completed</TableHead>
+                  <TableHead className="text-center">Avg. Time to Complete</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -315,11 +360,14 @@ export default function AdminDashboard() {
                         {user.completed}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-center text-sm text-muted-foreground">
+                      {user.avgTimeToComplete}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {userActionStats.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No team members found
                     </TableCell>
                   </TableRow>
