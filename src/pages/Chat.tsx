@@ -4,7 +4,8 @@ import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
-import { Search, Hash, Send, X, Check } from "lucide-react";
+import { useChatAttachments, fetchMessageAttachments, UploadedAttachment } from "@/hooks/useChatAttachments";
+import { Search, Hash, Send, X, Check, Paperclip, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +19,9 @@ import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { MessageReactions } from "@/components/chat/MessageReactions";
 import { ChatMentionInput } from "@/components/chat/ChatMentionInput";
 import { NotificationBell } from "@/components/chat/NotificationBell";
+import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
+import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
+import { ChatDropZone } from "@/components/chat/ChatDropZone";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,13 +45,17 @@ export default function Chat() {
   const { user, profile } = useAuth();
   const { createMentionNotifications } = useChatNotifications();
   const { profiles } = useProfilesDisplay();
+  const { attachments, isUploading, addFiles, removeAttachment, clearAttachments, uploadAttachments } = useChatAttachments();
   const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [mentions, setMentions] = useState<string[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [messageAttachments, setMessageAttachments] = useState<Record<string, UploadedAttachment[]>>({});
+  const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get('message');
 
@@ -140,30 +148,71 @@ export default function Chat() {
     return found;
   };
 
+  // Fetch attachments when messages change
+  useEffect(() => {
+    const fetchAttachments = async () => {
+      if (messages.length === 0) return;
+      const messageIds = messages.map(m => m.id);
+      const attachmentsMap = await fetchMessageAttachments(messageIds);
+      setMessageAttachments(attachmentsMap);
+    };
+    fetchAttachments();
+  }, [messages]);
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!newMessage.trim() || !selectedChannelId) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !selectedChannelId) return;
+    if (isSending) return;
 
+    setIsSending(true);
     const messageContent = newMessage;
     // Compute mentions at send-time to avoid missing tags due to async state updates.
     const messageMentions = extractMentionIdsFromText(messageContent);
     
-    // Send the message with mentions
-    const messageId = await sendMessage(messageContent, messageMentions);
-    
-    // Create notifications for mentioned users
-    if (messageId && messageMentions.length > 0) {
-      await createMentionNotifications(
-        messageMentions,
-        messageId,
-        selectedChannelId,
-        profile?.full_name || 'Someone',
-        messageContent
-      );
+    try {
+      // Send the message with mentions
+      const messageId = await sendMessage(messageContent || '📎 Attachment', messageMentions);
+      
+      // Upload attachments if any
+      if (messageId && attachments.length > 0) {
+        const uploaded = await uploadAttachments(messageId);
+        if (uploaded.length > 0) {
+          // Update local state with new attachments
+          setMessageAttachments(prev => ({
+            ...prev,
+            [messageId]: uploaded,
+          }));
+        }
+        clearAttachments();
+      }
+      
+      // Create notifications for mentioned users
+      if (messageId && messageMentions.length > 0) {
+        await createMentionNotifications(
+          messageMentions,
+          messageId,
+          selectedChannelId,
+          profile?.full_name || 'Someone',
+          messageContent
+        );
+      }
+      
+      setNewMessage("");
+      setMentions([]);
+    } finally {
+      setIsSending(false);
     }
-    
-    setNewMessage("");
-    setMentions([]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(e.target.files);
+      e.target.value = '';
+    }
+  };
+
+  const handleFilesDropped = (files: FileList) => {
+    addFiles(files);
   };
 
   // Helper to render mentions in message content with styled spans
@@ -307,7 +356,7 @@ export default function Chat() {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col bg-background">
           {selectedChannel ? (
-            <>
+            <ChatDropZone onFilesDropped={handleFilesDropped}>
               {/* Chat Header */}
               <div className="flex items-center justify-between border-b bg-card px-4 py-3">
                 <div className="flex items-center gap-3">
@@ -451,6 +500,14 @@ export default function Chat() {
                                 </div>
                               )}
                               
+                              {/* Attachments Display */}
+                              {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
+                                <ChatAttachmentDisplay
+                                  attachments={messageAttachments[message.id]}
+                                  isOwn={isOwn}
+                                />
+                              )}
+                              
                               <div className="flex items-center gap-2 mt-1">
                                 <p
                                   className={cn(
@@ -490,19 +547,60 @@ export default function Chat() {
                 </div>
               </ScrollArea>
 
-              {/* Input with Mentions */}
-              <form onSubmit={handleSendMessage} className="border-t bg-card p-4">
-                <ChatMentionInput
-                  value={newMessage}
-                  onChange={(value, newMentions) => {
-                    setNewMessage(value);
-                    setMentions(newMentions);
-                  }}
-                  placeholder={`Message #${selectedChannel.name.toLowerCase()} (use @ to mention)`}
-                  onSubmit={() => handleSendMessage()}
+              {/* Input with Mentions and File Attachments */}
+              <div className="border-t bg-card">
+                {/* File Preview */}
+                <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf,audio/mpeg,audio/wav,audio/x-m4a,audio/ogg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,video/mp4,video/quicktime,video/webm"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
-              </form>
-            </>
+                
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 p-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground shrink-0 hover:text-foreground"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSending}
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  
+                  <div className="flex-1">
+                    <ChatMentionInput
+                      value={newMessage}
+                      onChange={(value, newMentions) => {
+                        setNewMessage(value);
+                        setMentions(newMentions);
+                      }}
+                      placeholder={`Message #${selectedChannel.name.toLowerCase()} (use @ to mention)`}
+                      onSubmit={() => handleSendMessage()}
+                    />
+                  </div>
+                  
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="shrink-0"
+                    disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </ChatDropZone>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
