@@ -11,7 +11,10 @@ export interface OtherTaskDetails {
 }
 
 export interface LeadApprovalDetails {
+  clientName?: string | null;
   clientId: string;
+  whatsapp: string;
+  website?: string | null;
   category: string;
   icp: string;
   requirement: string;

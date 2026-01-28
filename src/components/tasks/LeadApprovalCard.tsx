@@ -57,9 +57,33 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         <div className="space-y-3 text-sm">
           <div>
             <p className="font-medium text-foreground">Client Details</p>
-            <p className="text-muted-foreground text-xs mt-1">
+            {details.clientName && (
+              <p className="text-muted-foreground text-xs mt-1">
+                <span className="font-semibold">Client Name:</span> {details.clientName}
+              </p>
+            )}
+            <p className="text-muted-foreground text-xs mt-2">
               <span className="font-semibold">Client ID:</span> {details.clientId}
             </p>
+            {details.whatsapp && (
+              <p className="text-muted-foreground text-xs mt-2">
+                <span className="font-semibold">WhatsApp:</span> {details.whatsapp}
+              </p>
+            )}
+            {details.website && (
+              <p className="text-muted-foreground text-xs mt-2">
+                <span className="font-semibold">Website:</span>{" "}
+                <a
+                  href={details.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  {details.website}
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>
+              </p>
+            )}
             <p className="text-muted-foreground text-xs mt-2">
               <span className="font-semibold">Category:</span> {details.category}
             </p>

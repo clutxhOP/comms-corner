@@ -8,7 +8,10 @@ export const mockTasks: Task[] = [
     status: 'pending',
     createdAt: '2026-01-22T09:19:00',
     details: {
+      clientName: 'Acme Corp',
       clientId: '49b0d06c-ba28-482e-9a91-36ff20650b19',
+      whatsapp: '+14155551234',
+      website: 'https://acmecorp.com',
       category: 'Lead Generation',
       icp: 'anyone thats looking for leads for their business',
       requirement: 'They say they want to be hired, list services and an hourly rate, and ask people to DM to hire them, so it is a real job request.',
@@ -24,6 +27,7 @@ export const mockTasks: Task[] = [
     createdAt: '2026-01-22T08:45:00',
     details: {
       clientId: 'a7c3d892-1234-5678-abcd-ef1234567890',
+      whatsapp: '+14155559876',
       category: 'Software Development',
       icp: 'tech startups looking for developers',
       requirement: 'Looking for a full-stack developer for a 3-month project. Budget is $5000/month.',
@@ -97,6 +101,7 @@ export const mockTasks: Task[] = [
     createdAt: '2026-01-21T14:00:00',
     details: {
       clientId: 'b8d4e903-5678-9abc-def0-123456789abc',
+      whatsapp: '+14155557890',
       category: 'Marketing',
       icp: 'small businesses needing social media management',
       requirement: 'Looking for someone to manage Instagram and TikTok accounts.',

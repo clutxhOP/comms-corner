@@ -323,7 +323,10 @@ export default function ApiDocs() {
                     <div>
                       <Badge className="mb-2">lead-approval</Badge>
                       <CodeBlock code={`{
+  "clientName": "string (optional)",
   "clientId": "string",
+  "whatsapp": "string",
+  "website": "string (optional)",
   "category": "string",
   "icp": "string",
   "requirement": "string",
