@@ -29,7 +29,10 @@ export default function CreateTask() {
   const [loading, setLoading] = useState(false);
 
   // Additional fields for lead-approval
+  const [leadApprovalClientName, setLeadApprovalClientName] = useState('');
   const [clientId, setClientId] = useState('');
+  const [leadApprovalWhatsapp, setLeadApprovalWhatsapp] = useState('');
+  const [website, setWebsite] = useState('');
   const [category, setCategory] = useState('');
   const [icp, setIcp] = useState('');
   const [requirement, setRequirement] = useState('');
@@ -52,7 +55,17 @@ export default function CreateTask() {
 
     switch (type) {
       case 'lead-approval':
-        details = { clientId, category, icp, requirement, contactInfo, proofLink };
+        details = { 
+          clientName: leadApprovalClientName || null, 
+          clientId, 
+          whatsapp: leadApprovalWhatsapp, 
+          website: website || null, 
+          category, 
+          icp, 
+          requirement, 
+          contactInfo, 
+          proofLink 
+        };
         break;
       case 'lead-alert':
         details = { clientName, category, clientStatus, alertLevel, issue, assignee, whatsapp };
@@ -166,17 +179,33 @@ export default function CreateTask() {
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
+                      <Label>Client Name (optional)</Label>
+                      <Input value={leadApprovalClientName} onChange={(e) => setLeadApprovalClientName(e.target.value)} placeholder="Client name" />
+                    </div>
+                    <div className="space-y-2">
                       <Label>Client ID</Label>
                       <Input value={clientId} onChange={(e) => setClientId(e.target.value)} />
                     </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>WhatsApp</Label>
+                      <Input value={leadApprovalWhatsapp} onChange={(e) => setLeadApprovalWhatsapp(e.target.value)} placeholder="+1234567890" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Website (optional)</Label>
+                      <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://example.com" />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Category</Label>
                       <Input value={category} onChange={(e) => setCategory(e.target.value)} />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ICP</Label>
-                    <Input value={icp} onChange={(e) => setIcp(e.target.value)} />
+                    <div className="space-y-2">
+                      <Label>ICP</Label>
+                      <Input value={icp} onChange={(e) => setIcp(e.target.value)} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Requirement</Label>
