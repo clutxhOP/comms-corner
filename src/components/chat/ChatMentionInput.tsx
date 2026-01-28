@@ -2,9 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { User, Users, Send } from "lucide-react";
+import { User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 interface ChatMentionInputProps {
   value: string;
@@ -211,48 +210,43 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
   }, []);
 
   return (
-    <div className="relative flex-1 flex items-end gap-2">
-      <div className="relative flex-1">
-        <Textarea
-          ref={inputRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder || "Type @ to mention someone..."}
-          className={cn("min-h-[40px] max-h-32 resize-none bg-muted border-0", className)}
-          rows={1}
-        />
+    <div className="relative flex-1">
+      <Textarea
+        ref={inputRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder || "Type @ to mention someone..."}
+        className={cn("min-h-[40px] max-h-32 resize-none bg-muted border-0", className)}
+        rows={1}
+      />
 
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div
-            ref={suggestionsRef}
-            className="absolute bottom-full mb-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
-          >
-            {filteredSuggestions.map((option, index) => (
-              <button
-                key={option.id}
-                type="button"
-                className={cn(
-                  "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-accent",
-                  index === suggestionIndex && "bg-accent",
-                )}
-                onClick={() => selectSuggestion(option)}
-              >
-                {option.type === "department" ? (
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <User className="h-4 w-4 text-muted-foreground" />
-                )}
-                <span>{option.name}</span>
-                {option.type === "department" && <span className="text-xs text-muted-foreground ml-auto">Team</span>}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <Button type="submit" size="icon" disabled={!value.trim()} className="shrink-0">
-        <Send className="h-4 w-4" />
-      </Button>
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <div
+          ref={suggestionsRef}
+          className="absolute bottom-full mb-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+        >
+          {filteredSuggestions.map((option, index) => (
+            <button
+              key={option.id}
+              type="button"
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-accent",
+                index === suggestionIndex && "bg-accent",
+              )}
+              onClick={() => selectSuggestion(option)}
+            >
+              {option.type === "department" ? (
+                <Users className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <User className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span>{option.name}</span>
+              {option.type === "department" && <span className="text-xs text-muted-foreground ml-auto">Team</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
