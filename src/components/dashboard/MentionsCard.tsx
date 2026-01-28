@@ -14,7 +14,11 @@ export function MentionsCard() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useChatNotifications();
   const navigate = useNavigate();
 
-  const visible = useMemo(() => notifications.slice(0, 20), [notifications]);
+  // Only show unread mentions - they auto-dismiss when clicked
+  const unreadNotifications = useMemo(
+    () => notifications.filter(n => !n.read_at).slice(0, 20),
+    [notifications]
+  );
 
   const handleOpen = async (n: (typeof notifications)[number]) => {
     if (!n.read_at) await markAsRead(n.id);
@@ -49,31 +53,26 @@ export function MentionsCard() {
       <CardContent>
         {loading ? (
           <div className="text-sm text-muted-foreground">Loading mentions…</div>
-        ) : visible.length === 0 ? (
+        ) : unreadNotifications.length === 0 ? (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-4 text-muted-foreground">
             <Bell className="h-5 w-5 opacity-70" />
             <div>
-              <p className="text-sm font-medium text-foreground">No mentions yet</p>
-              <p className="text-xs">When someone tags you in chat, it’ll show up here.</p>
+              <p className="text-sm font-medium text-foreground">You're all caught up!</p>
+              <p className="text-xs">When someone tags you in chat, it'll show up here.</p>
             </div>
           </div>
         ) : (
           <ScrollArea className="h-[260px]">
             <div className="divide-y">
-              {visible.map((n) => (
+              {unreadNotifications.map((n) => (
                 <button
                   key={n.id}
                   onClick={() => handleOpen(n)}
-                  className={cn(
-                    'w-full p-3 text-left hover:bg-muted/50 transition-colors',
-                    !n.read_at && 'bg-primary/5'
-                  )}
+                  className="w-full p-3 text-left hover:bg-muted/50 transition-colors bg-primary/5"
                 >
                   <div className="flex items-start gap-2">
-                    {!n.read_at && (
-                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                    )}
-                    <div className={cn('min-w-0 flex-1', n.read_at && 'ml-4')}>
+                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
                         {n.sender_name} mentioned you
                       </p>
