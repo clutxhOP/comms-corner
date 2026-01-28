@@ -217,7 +217,7 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder || "Type @ to mention someone..."}
-        className={cn("min-h-[40px] max-h-32 resize-none bg-muted border-0", className)}
+        className={cn("min-h-[40px] max-h-32 resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0", className)}
         rows={1}
       />
 

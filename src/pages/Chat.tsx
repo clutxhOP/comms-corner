@@ -562,19 +562,8 @@ export default function Chat() {
                   className="hidden"
                 />
                 
-                <form onSubmit={handleSendMessage} className="flex items-center gap-2 p-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground shrink-0 hover:text-foreground"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSending}
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </Button>
-                  
-                  <div className="flex-1">
+                <form onSubmit={handleSendMessage} className="p-4">
+                  <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-1">
                     <ChatMentionInput
                       value={newMessage}
                       onChange={(value, newMentions) => {
@@ -584,20 +573,31 @@ export default function Chat() {
                       placeholder={`Message #${selectedChannel.name.toLowerCase()} (use @ to mention)`}
                       onSubmit={() => handleSendMessage()}
                     />
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground shrink-0 hover:text-foreground h-8 w-8"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSending}
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      type="submit"
+                      size="icon"
+                      className="shrink-0 h-8 w-8"
+                      disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
+                    >
+                      {isSending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="shrink-0"
-                    disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                  >
-                    {isSending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
                 </form>
               </div>
             </ChatDropZone>
