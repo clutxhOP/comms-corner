@@ -290,19 +290,36 @@ export function useTasks() {
   }, [user, profile, triggerWebhook, toast]);
 
   const deleteTask = useCallback(async (taskId: string) => {
+    // Store the task in case we need to revert
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    
     // Optimistically remove from UI first
     setTasks(prev => prev.filter(t => t.id !== taskId));
     
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .select()
+        .maybeSingle();
 
       if (error) {
-        // Revert on error - refetch to get actual state
-        await fetchTasks();
         throw error;
+      }
+
+      // If no data returned, check if the task still exists (RLS might have blocked deletion)
+      if (!data) {
+        // Verify deletion by checking if task still exists
+        const { data: existingTask } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('id', taskId)
+          .maybeSingle();
+        
+        if (existingTask) {
+          throw new Error('Delete failed - you may not have permission to delete this task');
+        }
       }
 
       toast({
@@ -311,13 +328,19 @@ export function useTasks() {
       });
     } catch (error) {
       console.error('Error deleting task:', error);
+      // Revert optimistic update - add the task back
+      if (taskToDelete) {
+        setTasks(prev => [taskToDelete, ...prev].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ));
+      }
       toast({
         title: 'Error',
-        description: 'Failed to delete task',
+        description: error instanceof Error ? error.message : 'Failed to delete task',
         variant: 'destructive',
       });
     }
-  }, [fetchTasks, toast]);
+  }, [tasks, toast]);
 
   const updateTaskAssignment = async (taskId: string, assignees: string[]) => {
     try {
