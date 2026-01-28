@@ -3,26 +3,60 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { MentionsCard } from '@/components/dashboard/MentionsCard';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserRoles } from '@/hooks/useUserRoles';
 import { CheckSquare, AlertCircle, Send, CheckCircle2, Clock, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { isTabVisible, isOtherTaskVisibleToUser, UserRole } from '@/utils/taskRoleFilter';
 
 export default function Dashboard() {
-  const { tasks, loading } = useTasks();
-  const { profile, user, isAdmin } = useAuth();
-  const { roles } = useUserRoles(user?.id);
-  const isDev = roles.includes('dev');
-  const canSeeErrors = isAdmin || isDev;
+  const { profile, user, isAdmin, isDev, isOps, roles, loading: authLoading } = useAuth();
+  const { tasks: allTasks, loading: tasksLoading } = useTasks();
+  
+  const userRoles = roles as UserRole[];
+  const userId = user?.id || '';
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
-  const pendingApprovals = tasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
-  const leadAlerts = tasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
-  const pendingOutreach = tasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
-  const pendingOthers = tasks.filter(t => t.type === 'other' && t.status === 'pending').length;
-  const errorAlerts = tasks.filter(t => t.type === 'error-alert' && t.status === 'pending');
-  const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'approved').length;
-  const totalPending = tasks.filter(t => t.status === 'pending').length;
+  // Visibility checks based on role
+  const canSeeErrors = isAdmin || isDev;
+  const canSeeApprovals = isAdmin || isOps;
+  const canSeeOutreach = isAdmin || isOps;
+
+  // Calculate counts with role-based filtering
+  const pendingApprovals = allTasks.filter(t => t.type === 'lead-approval' && t.status === 'pending').length;
+  const leadAlerts = allTasks.filter(t => t.type === 'lead-alert' && t.status === 'pending').length;
+  const pendingOutreach = allTasks.filter(t => t.type === 'lead-outreach' && t.status === 'pending').length;
+  
+  // Filter "Other" tasks by assignment for non-admins
+  const pendingOthers = allTasks.filter(t => 
+    t.type === 'other' && 
+    t.status === 'pending' &&
+    isOtherTaskVisibleToUser(t.assigned_to, userId, isAdmin)
+  ).length;
+  
+  const errorAlerts = allTasks.filter(t => t.type === 'error-alert' && t.status === 'pending');
+  
+  // Filter completed tasks based on role visibility
+  const completedTasks = allTasks.filter(t => {
+    if (t.status !== 'done' && t.status !== 'approved') return false;
+    
+    // Dev: exclude lead-approval and lead-outreach
+    if (isDev && !isAdmin) {
+      if (t.type === 'lead-approval' || t.type === 'lead-outreach') return false;
+      if (t.type === 'other' && !isOtherTaskVisibleToUser(t.assigned_to, userId, isAdmin)) return false;
+    }
+    
+    // Ops: exclude error-alert
+    if (isOps && !isAdmin && !isDev) {
+      if (t.type === 'error-alert') return false;
+      if (t.type === 'other' && !isOtherTaskVisibleToUser(t.assigned_to, userId, isAdmin)) return false;
+    }
+    
+    return true;
+  }).length;
+  
+  const totalPending = allTasks.filter(t => t.status === 'pending').length;
+
+  const loading = authLoading || tasksLoading;
 
   if (loading) {
     return (
@@ -87,96 +121,117 @@ export default function Dashboard() {
         {/* Mentions / Tags */}
         <MentionsCard />
 
-        <div className={`grid gap-4 sm:grid-cols-2 ${canSeeErrors ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
-          {canSeeErrors && (
-            <StatCard
-              title="Error Alerts"
-              value={errorAlerts.length}
-              icon={AlertTriangle}
-              className="border-l-4 border-l-destructive"
-            />
-          )}
-          <StatCard
-            title="Pending Approvals"
-            value={pendingApprovals}
-            icon={CheckSquare}
-            className="border-l-4 border-l-primary"
-          />
-          <StatCard
-            title="Lead Alerts"
-            value={leadAlerts}
-            icon={AlertCircle}
-            className="border-l-4 border-l-destructive"
-          />
-          <StatCard
-            title="Pending Outreach"
-            value={pendingOutreach}
-            icon={Send}
-            className="border-l-4 border-l-warning"
-          />
-          <StatCard
-            title="Pending Others"
-            value={pendingOthers}
-            icon={FileText}
-            className="border-l-4 border-l-muted-foreground"
-          />
-          <StatCard
-            title="Completed"
-            value={completedTasks}
-            icon={CheckCircle2}
-            className="border-l-4 border-l-success"
-          />
-        </div>
+        {/* Stat cards - role-based visibility */}
+        {(() => {
+          // Calculate visible card count for grid layout
+          let visibleCards = 3; // Lead Alerts, Pending Others, Completed always visible
+          if (canSeeErrors) visibleCards++;
+          if (canSeeApprovals) visibleCards++;
+          if (canSeeOutreach) visibleCards++;
+          
+          const gridCols = visibleCards <= 4 ? `lg:grid-cols-${visibleCards}` : `lg:grid-cols-${visibleCards}`;
+          
+          return (
+            <div className={`grid gap-4 sm:grid-cols-2 ${gridCols}`}>
+              {canSeeErrors && (
+                <StatCard
+                  title="Error Alerts"
+                  value={errorAlerts.length}
+                  icon={AlertTriangle}
+                  className="border-l-4 border-l-destructive"
+                />
+              )}
+              {canSeeApprovals && (
+                <StatCard
+                  title="Pending Approvals"
+                  value={pendingApprovals}
+                  icon={CheckSquare}
+                  className="border-l-4 border-l-primary"
+                />
+              )}
+              <StatCard
+                title="Lead Alerts"
+                value={leadAlerts}
+                icon={AlertCircle}
+                className="border-l-4 border-l-destructive"
+              />
+              {canSeeOutreach && (
+                <StatCard
+                  title="Pending Outreach"
+                  value={pendingOutreach}
+                  icon={Send}
+                  className="border-l-4 border-l-warning"
+                />
+              )}
+              <StatCard
+                title="Pending Others"
+                value={pendingOthers}
+                icon={FileText}
+                className="border-l-4 border-l-muted-foreground"
+              />
+              <StatCard
+                title="Completed"
+                value={completedTasks}
+                icon={CheckCircle2}
+                className="border-l-4 border-l-success"
+              />
+            </div>
+          );
+        })()}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-xl border bg-card p-6 shadow-sm">
             <h2 className="font-semibold text-foreground mb-4">Task Distribution</h2>
             <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Lead Approvals</span>
-                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-approval').length}</span>
+              {canSeeApprovals && (
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">Lead Approvals</span>
+                    <span className="font-medium">{allTasks.filter(t => t.type === 'lead-approval').length}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all" 
+                      style={{ width: allTasks.length ? `${(allTasks.filter(t => t.type === 'lead-approval').length / allTasks.length) * 100}%` : '0%' }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all" 
-                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-approval').length / tasks.length) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
+              )}
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Lead Alerts</span>
-                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-alert').length}</span>
+                  <span className="font-medium">{allTasks.filter(t => t.type === 'lead-alert').length}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-destructive rounded-full transition-all" 
-                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-alert').length / tasks.length) * 100}%` : '0%' }}
+                    style={{ width: allTasks.length ? `${(allTasks.filter(t => t.type === 'lead-alert').length / allTasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Lead Outreach</span>
-                  <span className="font-medium">{tasks.filter(t => t.type === 'lead-outreach').length}</span>
+              {canSeeOutreach && (
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">Lead Outreach</span>
+                    <span className="font-medium">{allTasks.filter(t => t.type === 'lead-outreach').length}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-warning rounded-full transition-all" 
+                      style={{ width: allTasks.length ? `${(allTasks.filter(t => t.type === 'lead-outreach').length / allTasks.length) * 100}%` : '0%' }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-warning rounded-full transition-all" 
-                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'lead-outreach').length / tasks.length) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
+              )}
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Other Tasks</span>
-                  <span className="font-medium">{tasks.filter(t => t.type === 'other').length}</span>
+                  <span className="font-medium">{allTasks.filter(t => t.type === 'other' && isOtherTaskVisibleToUser(t.assigned_to, userId, isAdmin)).length}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-muted-foreground rounded-full transition-all" 
-                    style={{ width: tasks.length ? `${(tasks.filter(t => t.type === 'other').length / tasks.length) * 100}%` : '0%' }}
+                    style={{ width: allTasks.length ? `${(allTasks.filter(t => t.type === 'other' && isOtherTaskVisibleToUser(t.assigned_to, userId, isAdmin)).length / allTasks.length) * 100}%` : '0%' }}
                   />
                 </div>
               </div>
@@ -199,7 +254,7 @@ export default function Dashboard() {
                   <span>Completion Rate</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {tasks.length ? Math.round((completedTasks / tasks.length) * 100) : 0}%
+                  {allTasks.length ? Math.round((completedTasks / allTasks.length) * 100) : 0}%
                 </p>
               </div>
             </div>
