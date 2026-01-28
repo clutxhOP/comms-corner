@@ -1,11 +1,29 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { User, Users } from "lucide-react";
+import {
+  User,
+  Users,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Link,
+  List,
+  ListOrdered,
+  Code,
+  FileCode,
+  Plus,
+  Type,
+  Smile,
+  AtSign,
+  Mic,
+  Paperclip,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-interface ChatMentionInputProps {
+interface ChatRichTextInputProps {
   value: string;
   onChange: (value: string, mentions: string[]) => void;
   placeholder?: string;
@@ -31,13 +49,14 @@ const DEPARTMENTS = [
   { id: "dept_ops", name: "Ops Team", role: "ops" },
 ];
 
-export function ChatMentionInput({ value, onChange, placeholder, className, onSubmit }: ChatMentionInputProps) {
+export function ChatRichTextInput({ value, onChange, placeholder, className, onSubmit }: ChatRichTextInputProps) {
   const { profiles } = useProfilesDisplay();
   const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [mentionSearch, setMentionSearch] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [showToolbar, setShowToolbar] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +82,6 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
 
   // Build mention options from users and departments
   const mentionOptions = useMemo<MentionOption[]>(() => {
-    // Use profiles directly if usersWithRoles is not ready yet
     const sourceUsers =
       usersWithRoles.length > 0
         ? usersWithRoles
@@ -87,7 +105,6 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
       type: "department" as const,
     }));
 
-    // Put users first so the dropdown shows the full user list immediately.
     return [...userOptions, ...deptOptions];
   }, [usersWithRoles, profiles]);
 
@@ -98,11 +115,9 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
     return mentionOptions.filter((opt) => opt.name.toLowerCase().includes(search));
   }, [mentionOptions, mentionSearch]);
 
-  // Find the current mention being typed - supports multi-word names
+  // Find the current mention being typed
   const findMentionContext = (text: string, pos: number) => {
     const beforeCursor = text.slice(0, pos);
-    // Match @ followed by any characters (including spaces) that look like a partial mention
-    // Stop at certain delimiters that indicate end of mention attempt
     const match = beforeCursor.match(/@([A-Za-z0-9\s]*)$/);
     return match ? { start: beforeCursor.length - match[0].length, search: match[1] } : null;
   };
@@ -121,7 +136,6 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
       setShowSuggestions(false);
     }
 
-    // Extract mentions from text
     const currentMentions = extractMentionIds(newValue);
     onChange(newValue, currentMentions);
   };
@@ -129,8 +143,6 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
   const extractMentionIds = (text: string): string[] => {
     const mentions: string[] = [];
 
-    // Look for @mentions - match name that starts after @ and continues until we hit common delimiters
-    // Match names by looking for exact matches in our mention options
     mentionOptions.forEach((option) => {
       const mentionPattern = new RegExp(
         `@${option.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$|,|\\.|\\n|!)`,
@@ -162,17 +174,14 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
     const after = value.slice(cursorPosition);
     const newValue = `${before}@${option.name} ${after}`;
 
-    // Get mentions from the new value
     const mentions = extractMentionIds(newValue);
-
     onChange(newValue, mentions);
     setShowSuggestions(false);
 
-    // Focus back and set cursor position after the inserted mention
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
-        const newPos = mentionContext.start + option.name.length + 2; // +2 for @ and space
+        const newPos = mentionContext.start + option.name.length + 2;
         inputRef.current.setSelectionRange(newPos, newPos);
       }
     }, 0);
@@ -198,6 +207,58 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
     }
   };
 
+  // Format text helpers
+  const wrapSelection = (before: string, after: string) => {
+    if (!inputRef.current) return;
+
+    const start = inputRef.current.selectionStart;
+    const end = inputRef.current.selectionEnd;
+    const selectedText = value.substring(start, end);
+
+    const newValue = value.substring(0, start) + before + selectedText + after + value.substring(end);
+    const mentions = extractMentionIds(newValue);
+    onChange(newValue, mentions);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newPos = start + before.length + selectedText.length;
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  const insertText = (text: string) => {
+    if (!inputRef.current) return;
+
+    const start = inputRef.current.selectionStart;
+    const newValue = value.substring(0, start) + text + value.substring(start);
+    const mentions = extractMentionIds(newValue);
+    onChange(newValue, mentions);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newPos = start + text.length;
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  // Formatting actions
+  const formatBold = () => wrapSelection("**", "**");
+  const formatItalic = () => wrapSelection("*", "*");
+  const formatUnderline = () => wrapSelection("__", "__");
+  const formatStrikethrough = () => wrapSelection("~~", "~~");
+  const formatCode = () => wrapSelection("`", "`");
+  const formatCodeBlock = () => wrapSelection("\n```\n", "\n```\n");
+  const formatBulletList = () => insertText("\n- ");
+  const formatNumberedList = () => insertText("\n1. ");
+  const formatLink = () => {
+    const url = prompt("Enter URL:");
+    if (url) wrapSelection("[", `](${url})`);
+  };
+
   // Close suggestions on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -211,16 +272,152 @@ export function ChatMentionInput({ value, onChange, placeholder, className, onSu
 
   return (
     <div className="relative flex-1">
-      <Textarea
-        ref={inputRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder || "Type @ to mention someone..."}
-        className={cn("min-h-[40px] max-h-32 resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0", className)}
-        rows={1}
-      />
+      <div className="bg-secondary/50 rounded-lg border border-border">
+        {/* Formatting Toolbar */}
+        <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatBold}
+            title="Bold (Ctrl+B)"
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatItalic}
+            title="Italic (Ctrl+I)"
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatStrikethrough}
+            title="Strikethrough"
+          >
+            <Strikethrough className="h-4 w-4" />
+          </Button>
 
+          <div className="w-px h-5 bg-border mx-1" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatLink}
+            title="Insert Link"
+          >
+            <Link className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-5 bg-border mx-1" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatBulletList}
+            title="Bullet List"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatNumberedList}
+            title="Numbered List"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-5 bg-border mx-1" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatCode}
+            title="Inline Code"
+          >
+            <Code className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={formatCodeBlock}
+            title="Code Block"
+          >
+            <FileCode className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Text Input Area */}
+        <div className="relative">
+          <textarea
+            ref={inputRef}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder || "Type @ to mention..."}
+            className={cn(
+              "w-full min-h-[80px] max-h-48 px-3 py-2 bg-transparent border-0 resize-none focus:outline-none text-sm",
+              className,
+            )}
+            onFocus={() => setShowToolbar(true)}
+          />
+        </div>
+
+        {/* Bottom Action Bar */}
+        <div className="flex items-center justify-between px-2 py-1.5 border-t border-border">
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Add attachment">
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Format text">
+              <Type className="h-4 w-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Add emoji">
+              <Smile className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Mention someone"
+              onClick={() => insertText("@")}
+            >
+              <AtSign className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Attach file">
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Voice message">
+              <Mic className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mention Suggestions */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div
           ref={suggestionsRef}
