@@ -71,7 +71,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             {details.website && (
               <p className="text-muted-foreground text-xs mt-2">
                 <span className="font-semibold">Website:</span>{" "}
-                
+                <a
                   href={details.website}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -98,7 +98,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            
+            <a
               href={details.contactInfo}
               target="_blank"
               rel="noopener noreferrer"
@@ -111,7 +111,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            
+            <a
               href={details.proofLink}
               target="_blank"
               rel="noopener noreferrer"
