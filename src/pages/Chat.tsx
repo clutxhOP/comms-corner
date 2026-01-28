@@ -17,7 +17,7 @@ import rehypeSanitize from "rehype-sanitize";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
 import { MessageReactions } from "@/components/chat/MessageReactions";
-import { ChatMentionInput } from "@/components/chat/ChatMentionInput";
+import { ChatRichTextInput } from "@/components/chat/ChatRichTextInput";
 import { NotificationBell } from "@/components/chat/NotificationBell";
 import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
 import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
@@ -561,32 +561,21 @@ export default function Chat() {
 
                 <div className="max-w-3xl mx-auto px-4 w-full">
                   <form onSubmit={handleSendMessage} className="py-4">
-                    <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-1">
-                      <ChatMentionInput
+                    <div className="flex items-center gap-2">
+                      <ChatRichTextInput
                         value={newMessage}
                         onChange={(value, newMentions) => {
                           setNewMessage(value);
                           setMentions(newMentions);
                         }}
-                        placeholder={`Message #${selectedChannel.name.toLowerCase()} (use @ to mention)`}
+                        placeholder={`Message #${selectedChannel.name.toLowerCase()}`}
                         onSubmit={() => handleSendMessage()}
                       />
 
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground shrink-0 hover:text-foreground h-8 w-8"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isSending}
-                      >
-                        <Paperclip className="h-4 w-4" />
-                      </Button>
-
-                      <Button
                         type="submit"
                         size="icon"
-                        className="shrink-0 h-8 w-8"
+                        className="shrink-0 h-9 w-9"
                         disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
                       >
                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
