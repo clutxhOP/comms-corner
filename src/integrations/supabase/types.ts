@@ -287,6 +287,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          mention_notifications: boolean
+          permission_status: string | null
+          sound_enabled: boolean
+          task_notifications: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mention_notifications?: boolean
+          permission_status?: string | null
+          sound_enabled?: boolean
+          task_notifications?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mention_notifications?: boolean
+          permission_status?: string | null
+          sound_enabled?: boolean
+          task_notifications?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       personal_access_tokens: {
         Row: {
           created_at: string
