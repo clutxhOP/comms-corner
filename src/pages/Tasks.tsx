@@ -26,6 +26,7 @@ import {
   Search, CheckSquare, AlertCircle, Send, ClipboardCheck, 
   MoreHorizontal, AlertTriangle, ArrowUpDown, Filter, AtSign
 } from 'lucide-react';
+import { getAllowedTaskTypes, isTabVisible, UserRole } from '@/utils/taskRoleFilter';
 
 // Convert DbTask to Task for components
 function convertToTask(dbTask: DbTask): Task {
@@ -46,13 +47,17 @@ type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone, deleteTask } = useTasks();
   const { mentionedTaskIds } = useMentionedTasks();
-  const { isAdmin } = useAuth();
+  const { isAdmin, roles, rolesLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  
+  // Get allowed task types based on user roles
+  const userRoles = roles as UserRole[];
+  const allowedTaskTypes = useMemo(() => getAllowedTaskTypes(userRoles), [userRoles]);
 
   const handleApprove = async (taskId: string) => {
     await approveTask(taskId);
@@ -126,9 +131,12 @@ export default function Tasks() {
     setSelectedTasks(new Set());
   };
 
-  // Apply filtering and sorting
+  // Apply filtering, sorting, and role-based filtering
   const processedTasks = useMemo(() => {
     let result = [...tasks];
+
+    // Filter by allowed task types based on role
+    result = result.filter(task => allowedTaskTypes.includes(task.type));
 
     // Filter by search query
     if (searchQuery) {
@@ -159,11 +167,12 @@ export default function Tasks() {
     });
 
     return result;
-  }, [tasks, searchQuery, statusFilter, sortBy]);
+  }, [tasks, searchQuery, statusFilter, sortBy, allowedTaskTypes]);
 
   const pendingTasks = processedTasks.filter(t => t.status === 'pending');
   const mentionedTasks = processedTasks.filter(t => mentionedTaskIds.includes(t.id));
   
+  // These are already filtered by allowedTaskTypes since they come from processedTasks
   const approvalTasks = processedTasks.filter(t => t.type === 'lead-approval');
   const alertTasks = processedTasks.filter(t => t.type === 'lead-alert');
   const outreachTasks = processedTasks.filter(t => t.type === 'lead-outreach');
@@ -252,7 +261,7 @@ export default function Tasks() {
     );
   };
 
-  if (loading) {
+  if (loading || rolesLoading) {
     return (
       <MainLayout>
         <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -334,7 +343,7 @@ export default function Tasks() {
               <ClipboardCheck className="h-4 w-4" />
               All ({processedTasks.length})
             </TabsTrigger>
-            {mentionedTasks.length > 0 && (
+            {mentionedTasks.length > 0 && isTabVisible('mentioned', userRoles) && (
               <TabsTrigger value="mentioned" className="gap-1.5">
                 <AtSign className="h-4 w-4" />
                 Mentioned
@@ -343,26 +352,36 @@ export default function Tasks() {
                 </Badge>
               </TabsTrigger>
             )}
-            <TabsTrigger value="approvals" className="gap-1.5">
-              <CheckSquare className="h-4 w-4" />
-              Approvals ({approvalTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="alerts" className="gap-1.5">
-              <AlertCircle className="h-4 w-4" />
-              Alerts ({alertTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="outreach" className="gap-1.5">
-              <Send className="h-4 w-4" />
-              Outreach ({outreachTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="errors" className="gap-1.5">
-              <AlertTriangle className="h-4 w-4" />
-              Errors ({errorAlertTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="other" className="gap-1.5">
-              <MoreHorizontal className="h-4 w-4" />
-              Other ({otherTasks.length})
-            </TabsTrigger>
+            {isTabVisible('approvals', userRoles) && (
+              <TabsTrigger value="approvals" className="gap-1.5">
+                <CheckSquare className="h-4 w-4" />
+                Approvals ({approvalTasks.length})
+              </TabsTrigger>
+            )}
+            {isTabVisible('alerts', userRoles) && (
+              <TabsTrigger value="alerts" className="gap-1.5">
+                <AlertCircle className="h-4 w-4" />
+                Alerts ({alertTasks.length})
+              </TabsTrigger>
+            )}
+            {isTabVisible('outreach', userRoles) && (
+              <TabsTrigger value="outreach" className="gap-1.5">
+                <Send className="h-4 w-4" />
+                Outreach ({outreachTasks.length})
+              </TabsTrigger>
+            )}
+            {isTabVisible('errors', userRoles) && (
+              <TabsTrigger value="errors" className="gap-1.5">
+                <AlertTriangle className="h-4 w-4" />
+                Errors ({errorAlertTasks.length})
+              </TabsTrigger>
+            )}
+            {isTabVisible('other', userRoles) && (
+              <TabsTrigger value="other" className="gap-1.5">
+                <MoreHorizontal className="h-4 w-4" />
+                Other ({otherTasks.length})
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
