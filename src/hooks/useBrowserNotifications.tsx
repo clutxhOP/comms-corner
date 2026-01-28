@@ -65,26 +65,38 @@ export function useBrowserNotifications() {
   }, [preferences?.sound_enabled]);
 
   const showNotification = useCallback(
-    (options: NotificationOptions) => {
+    (options: NotificationOptions, forceShow = false) => {
+      console.log('[BrowserNotification] showNotification called:', { 
+        title: options.title, 
+        isSupported, 
+        permissionStatus,
+        forceShow 
+      });
+
       // Don't show if not supported or permission not granted
       if (!isSupported || permissionStatus !== 'granted') {
+        console.log('[BrowserNotification] Blocked: not supported or permission not granted');
         return null;
       }
 
-      // Don't show if document is visible and focused
-      if (document.visibilityState === 'visible' && document.hasFocus()) {
+      // Skip visibility check if forceShow is true (for test notifications)
+      if (!forceShow && document.visibilityState === 'visible' && document.hasFocus()) {
+        console.log('[BrowserNotification] Skipped: document is visible and focused (use forceShow to override)');
         return null;
       }
 
       try {
+        console.log('[BrowserNotification] Creating notification...');
         const notification = new Notification(options.title, {
           body: options.body,
           icon: options.icon || '/favicon.png',
           tag: options.tag || 'default',
           badge: '/favicon.png',
           requireInteraction: false,
+          silent: false,
         });
 
+        console.log('[BrowserNotification] Notification created successfully');
         playNotificationSound();
 
         notification.onclick = () => {
@@ -102,12 +114,24 @@ export function useBrowserNotifications() {
 
         return notification;
       } catch (error) {
-        console.error('Error showing notification:', error);
+        console.error('[BrowserNotification] Error showing notification:', error);
         return null;
       }
     },
     [isSupported, permissionStatus, navigate, playNotificationSound]
   );
+
+  const showTestNotification = useCallback(() => {
+    console.log('[BrowserNotification] Test notification triggered');
+    return showNotification(
+      {
+        title: 'Test Notification',
+        body: 'If you see this in your system tray, notifications are working!',
+        tag: `test-${Date.now()}`,
+      },
+      true // forceShow - bypass visibility check
+    );
+  }, [showNotification]);
 
   const showTaskAssignmentNotification = useCallback(
     (taskTitle: string, taskId: string) => {
@@ -154,6 +178,7 @@ export function useBrowserNotifications() {
     permissionStatus,
     requestPermission,
     showNotification,
+    showTestNotification,
     showTaskAssignmentNotification,
     showMentionNotification,
     preferences,
