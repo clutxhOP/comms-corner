@@ -26,7 +26,12 @@ import {
   Search, CheckSquare, AlertCircle, Send, ClipboardCheck, 
   MoreHorizontal, AlertTriangle, ArrowUpDown, Filter, AtSign
 } from 'lucide-react';
-import { getAllowedTaskTypes, isTabVisible, UserRole } from '@/utils/taskRoleFilter';
+import { 
+  filterTasksForUser, 
+  isTabVisible, 
+  getAllowedStatusFilters,
+  UserRole 
+} from '@/utils/taskRoleFilter';
 
 // Convert DbTask to Task for components
 function convertToTask(dbTask: DbTask): Task {
@@ -47,7 +52,7 @@ type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone, deleteTask } = useTasks();
   const { mentionedTaskIds } = useMentionedTasks();
-  const { isAdmin, roles, rolesLoading } = useAuth();
+  const { user, isAdmin, roles, rolesLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -55,9 +60,12 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   
-  // Get allowed task types based on user roles
+  // Get user info for filtering
   const userRoles = roles as UserRole[];
-  const allowedTaskTypes = useMemo(() => getAllowedTaskTypes(userRoles), [userRoles]);
+  const userId = user?.id || '';
+  
+  // Get allowed status filters based on user roles
+  const allowedStatusFilters = useMemo(() => getAllowedStatusFilters(userRoles), [userRoles]);
 
   const handleApprove = async (taskId: string) => {
     await approveTask(taskId);
@@ -131,12 +139,10 @@ export default function Tasks() {
     setSelectedTasks(new Set());
   };
 
-  // Apply filtering, sorting, and role-based filtering
+  // Apply filtering, sorting, and role-based filtering (including assignment-based for "Other" tasks)
   const processedTasks = useMemo(() => {
-    let result = [...tasks];
-
-    // Filter by allowed task types based on role
-    result = result.filter(task => allowedTaskTypes.includes(task.type));
+    // First apply role and assignment-based filtering
+    let result = filterTasksForUser(tasks, userRoles, userId);
 
     // Filter by search query
     if (searchQuery) {
@@ -145,8 +151,8 @@ export default function Tasks() {
       );
     }
 
-    // Filter by status
-    if (statusFilter !== 'all') {
+    // Filter by status (only if status is allowed for this role)
+    if (statusFilter !== 'all' && allowedStatusFilters.includes(statusFilter)) {
       result = result.filter(task => task.status === statusFilter);
     }
 
@@ -167,7 +173,7 @@ export default function Tasks() {
     });
 
     return result;
-  }, [tasks, searchQuery, statusFilter, sortBy, allowedTaskTypes]);
+  }, [tasks, searchQuery, statusFilter, sortBy, userRoles, userId, allowedStatusFilters]);
 
   const pendingTasks = processedTasks.filter(t => t.status === 'pending');
   const mentionedTasks = processedTasks.filter(t => mentionedTaskIds.includes(t.id));
@@ -304,11 +310,21 @@ export default function Tasks() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="done">Done</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="disapproved">Disapproved</SelectItem>
+              {allowedStatusFilters.includes('all') && (
+                <SelectItem value="all">All Status</SelectItem>
+              )}
+              {allowedStatusFilters.includes('pending') && (
+                <SelectItem value="pending">Pending</SelectItem>
+              )}
+              {allowedStatusFilters.includes('done') && (
+                <SelectItem value="done">Done</SelectItem>
+              )}
+              {allowedStatusFilters.includes('approved') && (
+                <SelectItem value="approved">Approved</SelectItem>
+              )}
+              {allowedStatusFilters.includes('disapproved') && (
+                <SelectItem value="disapproved">Disapproved</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
