@@ -10,6 +10,7 @@ import { BulkTaskActions } from '@/components/tasks/BulkTaskActions';
 import { SelectableTaskCard } from '@/components/tasks/SelectableTaskCard';
 import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useMentionedTasks } from '@/hooks/useTaskComments';
+import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { Task, ErrorAlertDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,6 +53,7 @@ type StatusFilter = 'all' | 'pending' | 'done' | 'approved' | 'disapproved';
 export default function Tasks() {
   const { tasks, loading, approveTask, disapproveTask, markTaskDone, deleteTask } = useTasks();
   const { mentionedTaskIds } = useMentionedTasks();
+  const { profiles } = useProfilesDisplay();
   const { user, isAdmin, roles, rolesLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [disapprovalDialogOpen, setDisapprovalDialogOpen] = useState(false);
@@ -205,7 +207,11 @@ export default function Tasks() {
               onDelete={handleDelete}
             />
           );
-        case 'lead-alert':
+        case 'lead-alert': {
+          // Get the dev's name who closed this task
+          const closedByDevName = dbTask.closed_by_dev 
+            ? profiles.find(p => p.user_id === dbTask.closed_by_dev)?.full_name 
+            : undefined;
           return (
             <LeadAlertCard 
               task={{
@@ -214,8 +220,13 @@ export default function Tasks() {
               }} 
               onMarkDone={handleMarkDone}
               onDelete={handleDelete}
+              sentToOps={dbTask.sent_to_ops ?? undefined}
+              opsReason={dbTask.ops_reason ?? undefined}
+              closedByDevName={closedByDevName}
+              closedAt={dbTask.actioned_at ?? undefined}
             />
           );
+        }
         case 'lead-outreach':
           return (
             <LeadOutreachCard 

@@ -140,12 +140,18 @@ export function isOtherTaskVisibleToUser(
  * Filter tasks based on role and assignment
  * This applies both task type filtering and assignment-based filtering for "Other" tasks
  */
-export function filterTasksForUser<T extends { type: string; assigned_to: string[] | null }>(
+export function filterTasksForUser<T extends { 
+  type: string; 
+  assigned_to: string[] | null;
+  sent_to_ops?: boolean | null;
+}>(
   tasks: T[],
   roles: UserRole[],
   userId: string
 ): T[] {
   const isAdmin = roles.includes('admin');
+  const isDev = roles.includes('dev');
+  const isOps = roles.includes('ops');
   const allowedTypes = getAllowedTaskTypes(roles);
 
   return tasks.filter(task => {
@@ -157,6 +163,25 @@ export function filterTasksForUser<T extends { type: string; assigned_to: string
     // For "Other" tasks, apply assignment-based filtering
     if (task.type === 'other') {
       return isOtherTaskVisibleToUser(task.assigned_to, userId, isAdmin);
+    }
+
+    // For lead-alert tasks, apply dev/ops filtering based on sent_to_ops flag
+    if (task.type === 'lead-alert') {
+      // Admins see everything
+      if (isAdmin) {
+        return true;
+      }
+      
+      // Dev users should NOT see alerts that have been escalated to OPS
+      if (isDev && !isOps) {
+        return task.sent_to_ops !== true;
+      }
+      
+      // OPS users see alerts that have been escalated to them
+      // They can also see non-escalated alerts (normal pending alerts)
+      if (isOps && !isDev) {
+        return true; // OPS sees all lead-alerts (both escalated and non-escalated pending)
+      }
     }
 
     // All other task types pass through if type is allowed

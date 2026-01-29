@@ -86,6 +86,10 @@ export default function CreateTask() {
       assigned_to: assignedTo ? [assignedTo] : null,  // Convert single ID to array
       created_by: null,
       disapproval_reason: null,
+      sent_to_ops: null,
+      ops_reason: null,
+      closed_by_dev: null,
+      dev_close_response: null,
     });
 
     setLoading(false);
