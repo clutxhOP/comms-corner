@@ -82,6 +82,15 @@ export function useTasks() {
 
       const task = tasks.find((t) => t.id === taskId);
 
+      // 🔍 DEBUG LOGS - Check what's in the task
+      console.log("═══════════════════════════════════════");
+      console.log("📋 FULL TASK OBJECT:", task);
+      console.log("🔗 Approval webhook URL:", task?.details?.approvalWebhookUrl);
+      console.log("🔗 Disapproval webhook URL:", task?.details?.disapprovalWebhookUrl);
+      console.log("🔑 All task.details keys:", task?.details ? Object.keys(task.details) : "NO DETAILS");
+      console.log("📦 Full task.details:", task?.details);
+      console.log("═══════════════════════════════════════");
+
       try {
         const { error } = await supabase
           .from("tasks")
@@ -136,6 +145,7 @@ export function useTasks() {
           }
         } else {
           console.warn("⚠️ No approvalWebhookUrl found in task details");
+          console.warn("⚠️ This might be why the webhook is not being called!");
         }
 
         // Also trigger general webhooks (for any other configured webhooks)
@@ -165,6 +175,13 @@ export function useTasks() {
       if (!user) return;
 
       const task = tasks.find((t) => t.id === taskId);
+
+      // 🔍 DEBUG LOGS - Check what's in the task
+      console.log("═══════════════════════════════════════");
+      console.log("📋 FULL TASK OBJECT (disapprove):", task);
+      console.log("🔗 Disapproval webhook URL:", task?.details?.disapprovalWebhookUrl);
+      console.log("🔑 All task.details keys:", task?.details ? Object.keys(task.details) : "NO DETAILS");
+      console.log("═══════════════════════════════════════");
 
       try {
         const { error } = await supabase
@@ -228,6 +245,7 @@ export function useTasks() {
           }
         } else {
           console.warn("⚠️ No disapprovalWebhookUrl found in task details");
+          console.warn("⚠️ This might be why the webhook is not being called!");
         }
 
         // Also trigger general webhooks (for any other configured webhooks)
