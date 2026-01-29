@@ -116,24 +116,34 @@ export function useTasks() {
           try {
             console.log("🔔 Calling approval webhook:", task.details.approvalWebhookUrl);
 
+            const webhookPayload = {
+              action: "task_approve",
+              timestamp: new Date().toISOString(),
+              task: {
+                id: task.id,
+                title: task.title,
+                type: task.type,
+                details: task.details,
+              },
+              user: {
+                id: user.id,
+                name: profile?.full_name,
+              },
+            };
+
+            console.log("📤 Webhook payload:", webhookPayload);
+
             const response = await fetch(task.details.approvalWebhookUrl as string, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "task_approve",
-                timestamp: new Date().toISOString(),
-                task: {
-                  id: task.id,
-                  title: task.title,
-                  type: task.type,
-                  details: task.details,
-                },
-                user: {
-                  id: user.id,
-                  name: profile?.full_name,
-                },
-              }),
+              body: JSON.stringify(webhookPayload),
             });
+
+            console.log("📥 Webhook response status:", response.status);
+            console.log("📥 Webhook response OK:", response.ok);
+
+            const responseText = await response.text();
+            console.log("📥 Webhook response body:", responseText);
 
             if (response.ok) {
               console.log("✅ Approval webhook called successfully");
