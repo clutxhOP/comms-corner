@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     // Get current customer data
     const { data: customer, error: fetchError } = await supabase
       .from("customers")
-      .select("id, total_leads_sent")
+      .select("id, num_of_leads")
       .eq("id", payload.customer_id)
       .maybeSingle();
 
@@ -115,12 +115,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle null num_of_leads by defaulting to 0
+    const currentLeadCount = customer.num_of_leads ?? 0;
+    const newLeadCount = currentLeadCount + 1;
+    const timestamp = new Date().toISOString();
+
     // Update customer with incremented lead count and timestamp
     const { data, error } = await supabase
       .from("customers")
       .update({
-        total_leads_sent: customer.total_leads_sent + 1,
-        last_lead_sent_at: new Date().toISOString(),
+        num_of_leads: newLeadCount,
+        lastleadsentat: timestamp,
       })
       .eq("id", payload.customer_id)
       .select()
@@ -134,12 +139,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Lead recorded for customer:", payload.customer_id, "by user:", userId, "new total:", data.total_leads_sent);
+    console.log("Lead recorded for customer:", payload.customer_id, "by user:", userId, "new total:", newLeadCount);
 
+    // Return response with mapped field names for API consistency
     return new Response(
       JSON.stringify({ 
-        data,
-        message: `Lead recorded. Total leads sent: ${data.total_leads_sent}` 
+        data: {
+          ...data,
+          // Map database fields to API field names for consistency
+          total_leads_sent: data.num_of_leads,
+          last_lead_sent_at: data.lastleadsentat,
+        },
+        message: `Lead recorded. Total leads sent: ${newLeadCount}` 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
