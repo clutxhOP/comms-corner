@@ -17,6 +17,11 @@ export interface DbTask {
   disapproval_reason: string | null;
   created_at: string;
   updated_at: string;
+  // Dev close workflow fields
+  sent_to_ops: boolean | null;
+  ops_reason: string | null;
+  closed_by_dev: string | null;
+  dev_close_response: Record<string, unknown> | null;
 }
 
 export function useTasks() {
@@ -48,7 +53,11 @@ export function useTasks() {
         ...task,
         type: task.type as DbTask['type'],
         status: task.status as DbTask['status'],
-        details: task.details as Record<string, unknown>
+        details: task.details as Record<string, unknown>,
+        sent_to_ops: task.sent_to_ops ?? null,
+        ops_reason: task.ops_reason ?? null,
+        closed_by_dev: task.closed_by_dev ?? null,
+        dev_close_response: task.dev_close_response as Record<string, unknown> | null,
       }));
       
       setTasks(typedData);
@@ -176,16 +185,29 @@ export function useTasks() {
 
     const task = tasks.find(t => t.id === taskId);
     
+    // Determine the new status based on the response
+    // If sendToOps is true, keep as pending so OPS can see and action it
+    // Otherwise, mark as done
+    const shouldSendToOps = devCloseResponse?.sendToOps === true;
+    const newStatus = shouldSendToOps ? 'pending' : 'done';
+    
     // Optimistically update UI first
     setTasks(prev => prev.map(t => 
       t.id === taskId 
-        ? { ...t, status: 'done' as const, actioned_by: user.id, actioned_at: new Date().toISOString() }
+        ? { 
+            ...t, 
+            status: newStatus as DbTask['status'], 
+            actioned_by: user.id, 
+            actioned_at: new Date().toISOString(),
+            // Update sent_to_ops for filtering purposes
+            ...(devCloseResponse && { sent_to_ops: devCloseResponse.sendToOps })
+          }
         : t
     ));
 
     try {
       const updateData: Record<string, unknown> = {
-        status: 'done',
+        status: newStatus,
         actioned_by: user.id,
         actioned_at: new Date().toISOString(),
       };
@@ -226,9 +248,9 @@ export function useTasks() {
       });
 
       toast({
-        title: devCloseResponse?.sendToOps ? 'Alert sent to OPS' : 'Task completed',
-        description: devCloseResponse?.sendToOps 
-          ? `The alert has been forwarded to OPS for review. Reason: ${devCloseResponse.reason === 'no_issue_found' ? 'No issue found' : 'Issue not fixed'}`
+        title: shouldSendToOps ? 'Alert escalated to OPS' : 'Task completed',
+        description: shouldSendToOps 
+          ? `The alert has been forwarded to OPS for review. Reason: ${devCloseResponse?.reason === 'no_issue_found' ? 'No issue found' : 'Issue not fixed'}`
           : 'The task has been marked as done.',
       });
     } catch (error) {

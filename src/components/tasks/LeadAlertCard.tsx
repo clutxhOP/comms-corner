@@ -20,16 +20,31 @@ interface LeadAlertCardProps {
     },
   ) => void;
   onDelete?: (taskId: string) => void;
+  // Optional fields for escalation info display
+  sentToOps?: boolean;
+  opsReason?: string;
+  closedByDevName?: string;
+  closedAt?: string;
 }
 
-export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps) {
+export function LeadAlertCard({ 
+  task, 
+  onMarkDone, 
+  onDelete,
+  sentToOps,
+  opsReason,
+  closedByDevName,
+  closedAt,
+}: LeadAlertCardProps) {
   const details = task.details as LeadAlertDetails;
   const isCompleted = task.status === "done";
+  const isEscalatedToOps = sentToOps === true;
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [devCloseDialogOpen, setDevCloseDialogOpen] = useState(false);
   const { user } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles(user?.id);
   const isDev = roles.includes("dev");
+  const isOps = roles.includes("ops");
   const canDelete = roles.includes("admin") || roles.includes("dev");
 
   // Generate dynamic alert title based on alertLevel
@@ -125,6 +140,29 @@ export function LeadAlertCard({ task, onMarkDone, onDelete }: LeadAlertCardProps
               <span className="text-sm">WhatsApp: {details.whatsapp}</span>
             </div>
           </div>
+
+          {/* Show escalation info for OPS users when task was escalated */}
+          {isEscalatedToOps && (
+            <div className="border-t pt-3 mt-3 bg-warning/5 p-3 rounded-lg">
+              <p className="font-medium text-foreground text-xs flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 text-warning" />
+                Escalated from Dev Team
+              </p>
+              <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {closedByDevName && (
+                  <p>Reviewed by: <span className="font-medium text-foreground">{closedByDevName}</span></p>
+                )}
+                {closedAt && (
+                  <p>Reviewed at: <span className="font-medium text-foreground">{new Date(closedAt).toLocaleString()}</span></p>
+                )}
+                {opsReason && (
+                  <p>Reason: <span className="font-medium text-foreground">
+                    {opsReason === 'no_issue_found' ? 'No issue found in WFS' : opsReason === 'issue_not_fixed' ? 'Issue found but not fixed' : opsReason}
+                  </span></p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {!isCompleted && (
