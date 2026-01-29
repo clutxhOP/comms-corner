@@ -82,15 +82,6 @@ export function useTasks() {
 
       const task = tasks.find((t) => t.id === taskId);
 
-      // 🔍 DEBUG LOGS - Check what's in the task
-      console.log("═══════════════════════════════════════");
-      console.log("📋 FULL TASK OBJECT:", task);
-      console.log("🔗 Approval webhook URL:", task?.details?.approvalWebhookUrl);
-      console.log("🔗 Disapproval webhook URL:", task?.details?.disapprovalWebhookUrl);
-      console.log("🔑 All task.details keys:", task?.details ? Object.keys(task.details) : "NO DETAILS");
-      console.log("📦 Full task.details:", task?.details);
-      console.log("═══════════════════════════════════════");
-
       try {
         const { error } = await supabase
           .from("tasks")
@@ -111,54 +102,33 @@ export function useTasks() {
           ),
         );
 
-        // ✅ FIX: Call the specific approval webhook from task details (same as admin does)
+        // Call the specific approval webhook from task details
         if (task?.details?.approvalWebhookUrl) {
           try {
-            console.log("🔔 Calling approval webhook:", task.details.approvalWebhookUrl);
-
-            const webhookPayload = {
-              action: "task_approve",
-              timestamp: new Date().toISOString(),
-              task: {
-                id: task.id,
-                title: task.title,
-                type: task.type,
-                details: task.details,
-              },
-              user: {
-                id: user.id,
-                name: profile?.full_name,
-              },
-            };
-
-            console.log("📤 Webhook payload:", webhookPayload);
-
-            const response = await fetch(task.details.approvalWebhookUrl as string, {
+            await fetch(task.details.approvalWebhookUrl as string, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(webhookPayload),
+              body: JSON.stringify({
+                action: "task_approve",
+                timestamp: new Date().toISOString(),
+                task: {
+                  id: task.id,
+                  title: task.title,
+                  type: task.type,
+                  details: task.details,
+                },
+                user: {
+                  id: user.id,
+                  name: profile?.full_name,
+                },
+              }),
             });
-
-            console.log("📥 Webhook response status:", response.status);
-            console.log("📥 Webhook response OK:", response.ok);
-
-            const responseText = await response.text();
-            console.log("📥 Webhook response body:", responseText);
-
-            if (response.ok) {
-              console.log("✅ Approval webhook called successfully");
-            } else {
-              console.error("❌ Approval webhook failed with status:", response.status);
-            }
           } catch (webhookError) {
-            console.error("❌ Failed to call approval webhook:", webhookError);
+            console.error("Failed to call approval webhook:", webhookError);
           }
-        } else {
-          console.warn("⚠️ No approvalWebhookUrl found in task details");
-          console.warn("⚠️ This might be why the webhook is not being called!");
         }
 
-        // Also trigger general webhooks (for any other configured webhooks)
+        // Also trigger general webhooks
         await triggerWebhook("task_approve", {
           task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
           user: { id: user.id, name: profile?.full_name },
@@ -185,13 +155,6 @@ export function useTasks() {
       if (!user) return;
 
       const task = tasks.find((t) => t.id === taskId);
-
-      // 🔍 DEBUG LOGS - Check what's in the task
-      console.log("═══════════════════════════════════════");
-      console.log("📋 FULL TASK OBJECT (disapprove):", task);
-      console.log("🔗 Disapproval webhook URL:", task?.details?.disapprovalWebhookUrl);
-      console.log("🔑 All task.details keys:", task?.details ? Object.keys(task.details) : "NO DETAILS");
-      console.log("═══════════════════════════════════════");
 
       try {
         const { error } = await supabase
@@ -220,12 +183,10 @@ export function useTasks() {
           ),
         );
 
-        // ✅ FIX: Call the specific disapproval webhook from task details (same as admin does)
+        // Call the specific disapproval webhook from task details
         if (task?.details?.disapprovalWebhookUrl) {
           try {
-            console.log("🔔 Calling disapproval webhook:", task.details.disapprovalWebhookUrl);
-
-            const response = await fetch(task.details.disapprovalWebhookUrl as string, {
+            await fetch(task.details.disapprovalWebhookUrl as string, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -244,21 +205,12 @@ export function useTasks() {
                 },
               }),
             });
-
-            if (response.ok) {
-              console.log("✅ Disapproval webhook called successfully");
-            } else {
-              console.error("❌ Disapproval webhook failed with status:", response.status);
-            }
           } catch (webhookError) {
-            console.error("❌ Failed to call disapproval webhook:", webhookError);
+            console.error("Failed to call disapproval webhook:", webhookError);
           }
-        } else {
-          console.warn("⚠️ No disapprovalWebhookUrl found in task details");
-          console.warn("⚠️ This might be why the webhook is not being called!");
         }
 
-        // Also trigger general webhooks (for any other configured webhooks)
+        // Also trigger general webhooks
         await triggerWebhook("task_disapprove", {
           task: task
             ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
