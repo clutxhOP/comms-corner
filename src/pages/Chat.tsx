@@ -361,12 +361,12 @@ export default function Chat() {
         <div className="flex-1 flex flex-col bg-background overflow-hidden">
           {selectedChannel ? (
             <>
-              {/* Chat Header - Fixed */}
-              <div className="flex items-center justify-between border-b bg-card px-4 py-3 flex-shrink-0">
+              {/* Chat Header - Fixed and compact */}
+              <div className="flex items-center justify-between border-b bg-card px-4 py-2.5 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Hash className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <h3 className="font-medium text-foreground">{selectedChannel.name}</h3>
+                    <h3 className="font-medium text-foreground text-sm">{selectedChannel.name}</h3>
                     {selectedChannel.description && (
                       <p className="text-xs text-muted-foreground">{selectedChannel.description}</p>
                     )}
@@ -557,10 +557,10 @@ export default function Chat() {
                 </ChatDropZone>
               </div>
 
-              {/* Input with Mentions and File Attachments - Fixed at bottom */}
+              {/* Input with Mentions and File Attachments - Fixed at bottom and compact */}
               <div className="border-t bg-card flex-shrink-0">
-                {/* File Preview */}
-                <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />
+                {/* File Preview - only shown when there are attachments */}
+                {attachments.length > 0 && <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />}
 
                 {/* Hidden file input */}
                 <input
@@ -573,7 +573,7 @@ export default function Chat() {
                 />
 
                 <div className="max-w-3xl mx-auto px-4 w-full">
-                  <form onSubmit={handleSendMessage} className="py-4">
+                  <form onSubmit={handleSendMessage} className="py-2">
                     <div className="flex items-center gap-2">
                       <ChatRichTextInput
                         value={newMessage}
