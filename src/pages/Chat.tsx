@@ -376,10 +376,9 @@ export default function Chat() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-full scrollbar-thin" ref={scrollRef}>
-                  <div className="max-w-3xl mx-auto px-4 w-full">
-                    <div className="flex flex-col gap-1 py-4">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={scrollRef}>
+                <div className="max-w-3xl mx-auto px-4 w-full">
+                  <div className="flex flex-col gap-1 py-4">
                       {messagesLoading ? (
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -405,9 +404,7 @@ export default function Chat() {
                                   id={`chat-message-${message.id}`}
                                   className={cn(
                                     "rounded-2xl px-4 py-2",
-                                    isOwn
-                                      ? "bg-primary text-primary-foreground rounded-br-md"
-                                      : "bg-muted rounded-bl-md",
+                                    isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md",
                                   )}
                                 >
                                   {!isOwn && (
@@ -425,12 +422,7 @@ export default function Chat() {
                                         autoFocus
                                       />
                                       <div className="flex gap-1 justify-end">
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-6 px-2"
-                                          onClick={handleCancelEdit}
-                                        >
+                                        <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleCancelEdit}>
                                           <X className="h-3 w-3" />
                                         </Button>
                                         <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
@@ -497,12 +489,8 @@ export default function Chat() {
                                               {children}
                                             </pre>
                                           ),
-                                          h1: ({ children }) => (
-                                            <h1 className="text-base font-bold my-2">{children}</h1>
-                                          ),
-                                          h2: ({ children }) => (
-                                            <h2 className="text-sm font-bold my-1.5">{children}</h2>
-                                          ),
+                                          h1: ({ children }) => <h1 className="text-base font-bold my-2">{children}</h1>,
+                                          h2: ({ children }) => <h2 className="text-sm font-bold my-1.5">{children}</h2>,
                                           h3: ({ children }) => (
                                             <h3 className="text-sm font-semibold my-1">{children}</h3>
                                           ),
@@ -554,7 +542,7 @@ export default function Chat() {
                       )}
                     </div>
                   </div>
-                </ScrollArea>
+                </div>
               </div>
 
               {/* Input with Mentions and File Attachments */}
