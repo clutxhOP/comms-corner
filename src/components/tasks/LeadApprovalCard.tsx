@@ -28,7 +28,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
 
-  const extractLeadData = (businessId: string, status: 'approved' | 'disapproved'): CreateLeadAssignmentData => ({
+  const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => ({
     lead_id: task.id,
     client_id: details.clientId,
     client_name: details.clientName || null,
@@ -45,25 +45,25 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
   const handleApprove = async () => {
     // Save to lead_assignments table with the client_id as business_id reference
-    const assignmentData = extractLeadData(details.clientId, 'approved');
+    const assignmentData = extractLeadData(details.clientId, "approved");
     await createAssignment(assignmentData);
-    
+
     // Call original approve handler
     onApprove?.(task.id);
   };
 
   const handleDisapprove = async () => {
     // Save to lead_assignments table with the client_id as business_id reference
-    const assignmentData = extractLeadData(details.clientId, 'disapproved');
+    const assignmentData = extractLeadData(details.clientId, "disapproved");
     await createAssignment(assignmentData);
-    
+
     // Call original disapprove handler
     onDisapprove?.(task.id);
   };
 
   const handleReassign = async (data: { businessId: string; whatsapp?: string; reason?: string }) => {
     const existingAssignment = getAssignmentByLeadId(task.id);
-    
+
     if (existingAssignment) {
       // Update existing assignment with reassignment details
       await reassignLead(task.id, {
@@ -73,7 +73,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       });
     } else {
       // Create new assignment with selected business as the initial assignment
-      const assignmentData = extractLeadData(data.businessId, 'approved');
+      const assignmentData = extractLeadData(data.businessId, "approved");
       await createAssignment(assignmentData);
     }
   };
@@ -83,7 +83,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       <div
         className={cn(
           "rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
-          (isCompleted || isApprovedOrDisapproved) && "opacity-60"
+          (isCompleted || isApprovedOrDisapproved) && "opacity-60",
         )}
       >
         <div className="flex items-start justify-between mb-4">
@@ -127,7 +127,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             {details.website && (
               <p className="text-muted-foreground text-xs mt-2">
                 <span className="font-semibold">Website:</span>{" "}
-                
+                <a
                   href={details.website}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -154,7 +154,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            
+            <a
               href={details.contactInfo}
               target="_blank"
               rel="noopener noreferrer"
@@ -167,7 +167,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            
+            <a
               href={details.proofLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -195,10 +195,10 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             </div>
             {canReassign && (
               <div className="flex justify-center">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   style={{ width: "calc(50% - 0.25rem)" }}
                   onClick={() => setReassignDialogOpen(true)}
                 >
@@ -211,21 +211,27 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         )}
 
         {(isCompleted || isApprovedOrDisapproved) && (
-          <div className={cn(
-            "mt-4 p-2 rounded-lg text-center text-sm font-medium",
-            task.status === "approved" ? "bg-success/10 text-success" : 
-            task.status === "disapproved" ? "bg-destructive/10 text-destructive" :
-            "bg-success/10 text-success"
-          )}>
-            {task.status === "approved" ? "✓ Approved" : 
-             task.status === "disapproved" ? "✗ Disapproved" : 
-             "✓ Completed"}
+          <div
+            className={cn(
+              "mt-4 p-2 rounded-lg text-center text-sm font-medium",
+              task.status === "approved"
+                ? "bg-success/10 text-success"
+                : task.status === "disapproved"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-success/10 text-success",
+            )}
+          >
+            {task.status === "approved"
+              ? "✓ Approved"
+              : task.status === "disapproved"
+                ? "✗ Disapproved"
+                : "✓ Completed"}
           </div>
         )}
       </div>
 
       <TaskCommentsDialog open={commentsOpen} onOpenChange={setCommentsOpen} taskId={task.id} taskTitle={task.title} />
-      
+
       <ReassignLeadDialog
         open={reassignDialogOpen}
         onOpenChange={setReassignDialogOpen}
