@@ -312,7 +312,7 @@ export default function Chat() {
 
   return (
     <MainLayout>
-      <div className="flex h-[calc(100vh-3.5rem)]">
+      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
         {/* Channel List */}
         <div className="w-64 border-r bg-card flex flex-col shrink-0">
           <div className="p-4 border-b">
@@ -358,11 +358,11 @@ export default function Chat() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-background">
+        <div className="flex-1 flex flex-col bg-background overflow-hidden">
           {selectedChannel ? (
             <ChatDropZone onFilesDropped={handleFilesDropped}>
               {/* Chat Header */}
-              <div className="flex items-center justify-between border-b bg-card px-4 py-3">
+              <div className="flex items-center justify-between border-b bg-card px-4 py-3 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Hash className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -376,176 +376,189 @@ export default function Chat() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 scrollbar-thin" ref={scrollRef}>
-                <div className="max-w-3xl mx-auto px-4 w-full">
-                  <div className="flex flex-col gap-1 py-4">
-                    {messagesLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                      </div>
-                    ) : messages.length === 0 ? (
-                      <div className="flex items-center justify-center py-8">
-                        <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      getMessagesWithSeparators().map((item, index) => {
-                        if (item.type === "separator") {
-                          return <ChatDateSeparator key={`sep-${item.date}`} date={item.date!} />;
-                        }
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full scrollbar-thin" ref={scrollRef}>
+                  <div className="max-w-3xl mx-auto px-4 w-full">
+                    <div className="flex flex-col gap-1 py-4">
+                      {messagesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                      ) : messages.length === 0 ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
+                        </div>
+                      ) : (
+                        getMessagesWithSeparators().map((item, index) => {
+                          if (item.type === "separator") {
+                            return <ChatDateSeparator key={`sep-${item.date}`} date={item.date!} />;
+                          }
 
-                        const message = item.message!;
-                        const isOwn = message.user_id === user?.id;
-                        const isEditing = editingMessageId === message.id;
+                          const message = item.message!;
+                          const isOwn = message.user_id === user?.id;
+                          const isEditing = editingMessageId === message.id;
 
-                        return (
-                          <div key={message.id} className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
-                            <div className="group flex items-start gap-1 max-w-[70%]">
-                              <div
-                                id={`chat-message-${message.id}`}
-                                className={cn(
-                                  "rounded-2xl px-4 py-2",
-                                  isOwn ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md",
-                                )}
-                              >
-                                {!isOwn && (
-                                  <p className="text-xs font-medium mb-1 opacity-70">
-                                    {message.sender_name || message.user_name}
-                                  </p>
-                                )}
+                          return (
+                            <div key={message.id} className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
+                              <div className="group flex items-start gap-1 max-w-[70%]">
+                                <div
+                                  id={`chat-message-${message.id}`}
+                                  className={cn(
+                                    "rounded-2xl px-4 py-2",
+                                    isOwn
+                                      ? "bg-primary text-primary-foreground rounded-br-md"
+                                      : "bg-muted rounded-bl-md",
+                                  )}
+                                >
+                                  {!isOwn && (
+                                    <p className="text-xs font-medium mb-1 opacity-70">
+                                      {message.sender_name || message.user_name}
+                                    </p>
+                                  )}
 
-                                {isEditing ? (
-                                  <div className="flex flex-col gap-2">
-                                    <Input
-                                      value={editContent}
-                                      onChange={(e) => setEditContent(e.target.value)}
-                                      className="bg-background/20 border-0 text-inherit"
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1 justify-end">
-                                      <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleCancelEdit}>
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
-                                        <Check className="h-3 w-3" />
-                                      </Button>
+                                  {isEditing ? (
+                                    <div className="flex flex-col gap-2">
+                                      <Input
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        className="bg-background/20 border-0 text-inherit"
+                                        autoFocus
+                                      />
+                                      <div className="flex gap-1 justify-end">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 px-2"
+                                          onClick={handleCancelEdit}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
+                                          <Check className="h-3 w-3" />
+                                        </Button>
+                                      </div>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <div className={cn("text-sm break-words")}>
-                                    <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                                      components={{
-                                        p: ({ children }) => (
-                                          <p className="my-0.5 break-words leading-relaxed">{children}</p>
-                                        ),
-                                        strong: ({ children }) => {
-                                          // Check if this is a mention (starts with @)
-                                          const text = String(children);
-                                          if (text.startsWith("@")) {
-                                            return (
-                                              <span
-                                                className={cn(
-                                                  "font-semibold px-1 py-0.5 rounded",
-                                                  isOwn
-                                                    ? "bg-primary-foreground/20 text-primary-foreground"
-                                                    : "bg-primary/10 text-primary",
-                                                )}
-                                              >
-                                                {children}
-                                              </span>
-                                            );
-                                          }
-                                          return <strong className="font-bold">{children}</strong>;
-                                        },
-                                        em: ({ children }) => <em className="italic">{children}</em>,
-                                        ul: ({ children }) => (
-                                          <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
-                                        ),
-                                        ol: ({ children }) => (
-                                          <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
-                                        ),
-                                        li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
-                                        a: ({ href, children }) => (
-                                          <a
-                                            href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={cn(
-                                              "hover:opacity-80 break-all underline",
-                                              isOwn ? "text-primary-foreground" : "text-primary",
-                                            )}
-                                          >
-                                            {children}
-                                          </a>
-                                        ),
-                                        code: ({ children }) => (
-                                          <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
-                                            {children}
-                                          </code>
-                                        ),
-                                        pre: ({ children }) => (
-                                          <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
-                                            {children}
-                                          </pre>
-                                        ),
-                                        h1: ({ children }) => <h1 className="text-base font-bold my-2">{children}</h1>,
-                                        h2: ({ children }) => <h2 className="text-sm font-bold my-1.5">{children}</h2>,
-                                        h3: ({ children }) => (
-                                          <h3 className="text-sm font-semibold my-1">{children}</h3>
-                                        ),
-                                      }}
+                                  ) : (
+                                    <div className={cn("text-sm break-words")}>
+                                      <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                                        components={{
+                                          p: ({ children }) => (
+                                            <p className="my-0.5 break-words leading-relaxed">{children}</p>
+                                          ),
+                                          strong: ({ children }) => {
+                                            // Check if this is a mention (starts with @)
+                                            const text = String(children);
+                                            if (text.startsWith("@")) {
+                                              return (
+                                                <span
+                                                  className={cn(
+                                                    "font-semibold px-1 py-0.5 rounded",
+                                                    isOwn
+                                                      ? "bg-primary-foreground/20 text-primary-foreground"
+                                                      : "bg-primary/10 text-primary",
+                                                  )}
+                                                >
+                                                  {children}
+                                                </span>
+                                              );
+                                            }
+                                            return <strong className="font-bold">{children}</strong>;
+                                          },
+                                          em: ({ children }) => <em className="italic">{children}</em>,
+                                          ul: ({ children }) => (
+                                            <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
+                                          ),
+                                          ol: ({ children }) => (
+                                            <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
+                                          ),
+                                          li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
+                                          a: ({ href, children }) => (
+                                            <a
+                                              href={href}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className={cn(
+                                                "hover:opacity-80 break-all underline",
+                                                isOwn ? "text-primary-foreground" : "text-primary",
+                                              )}
+                                            >
+                                              {children}
+                                            </a>
+                                          ),
+                                          code: ({ children }) => (
+                                            <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
+                                              {children}
+                                            </code>
+                                          ),
+                                          pre: ({ children }) => (
+                                            <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
+                                              {children}
+                                            </pre>
+                                          ),
+                                          h1: ({ children }) => (
+                                            <h1 className="text-base font-bold my-2">{children}</h1>
+                                          ),
+                                          h2: ({ children }) => (
+                                            <h2 className="text-sm font-bold my-1.5">{children}</h2>
+                                          ),
+                                          h3: ({ children }) => (
+                                            <h3 className="text-sm font-semibold my-1">{children}</h3>
+                                          ),
+                                        }}
+                                      >
+                                        {renderMessageContent(message.content, isOwn)}
+                                      </ReactMarkdown>
+                                    </div>
+                                  )}
+
+                                  {/* Attachments Display */}
+                                  {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
+                                    <ChatAttachmentDisplay attachments={messageAttachments[message.id]} isOwn={isOwn} />
+                                  )}
+
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p
+                                      className={cn(
+                                        "text-xs",
+                                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
+                                      )}
                                     >
-                                      {renderMessageContent(message.content, isOwn)}
-                                    </ReactMarkdown>
+                                      {new Date(message.created_at).toLocaleTimeString("en-US", {
+                                        hour: "numeric",
+                                        minute: "2-digit",
+                                      })}
+                                      {message.edited_at && <span className="ml-1 italic">(edited)</span>}
+                                    </p>
                                   </div>
-                                )}
 
-                                {/* Attachments Display */}
-                                {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
-                                  <ChatAttachmentDisplay attachments={messageAttachments[message.id]} isOwn={isOwn} />
-                                )}
-
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p
-                                    className={cn(
-                                      "text-xs",
-                                      isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
-                                    )}
-                                  >
-                                    {new Date(message.created_at).toLocaleTimeString("en-US", {
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    })}
-                                    {message.edited_at && <span className="ml-1 italic">(edited)</span>}
-                                  </p>
+                                  <MessageReactions
+                                    reactions={getAggregatedReactions(message)}
+                                    onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                    isOwn={isOwn}
+                                  />
                                 </div>
 
-                                <MessageReactions
-                                  reactions={getAggregatedReactions(message)}
-                                  onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                {/* Actions (reactions + edit/delete menu for own messages) */}
+                                <ChatMessageActions
                                   isOwn={isOwn}
+                                  onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
+                                  onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
+                                  onReact={(emoji) => toggleReaction(message.id, emoji)}
                                 />
                               </div>
-
-                              {/* Actions (reactions + edit/delete menu for own messages) */}
-                              <ChatMessageActions
-                                isOwn={isOwn}
-                                onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
-                                onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
-                                onReact={(emoji) => toggleReaction(message.id, emoji)}
-                              />
                             </div>
-                          </div>
-                        );
-                      })
-                    )}
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
-              </ScrollArea>
+                </ScrollArea>
+              </div>
 
               {/* Input with Mentions and File Attachments */}
-              <div className="border-t bg-card">
+              <div className="border-t bg-card flex-shrink-0">
                 {/* File Preview */}
                 <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />
 
