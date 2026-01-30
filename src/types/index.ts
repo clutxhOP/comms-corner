@@ -43,7 +43,7 @@ export interface Task {
   id: string;
   type: TaskType;
   title: string;
-  status: 'pending' | 'done';
+  status: 'pending' | 'done' | 'approved' | 'disapproved';
   createdAt: string;
   details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails;
   disapprovalReason?: string;

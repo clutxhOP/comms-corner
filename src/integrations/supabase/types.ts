@@ -287,6 +287,75 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_assignments: {
+        Row: {
+          approval_status: string
+          assigned_by: string
+          business_id: string
+          category: string
+          client_id: string
+          client_name: string | null
+          client_whatsapp: string
+          contact_info: string
+          created_at: string
+          icp: string | null
+          id: string
+          lead_id: string
+          post_url: string
+          reassigned_at: string | null
+          reassigned_business_id: string | null
+          reassigned_by: string | null
+          reassigned_whatsapp: string | null
+          reassignment_reason: string | null
+          requirement: string
+          website: string | null
+        }
+        Insert: {
+          approval_status: string
+          assigned_by: string
+          business_id: string
+          category: string
+          client_id: string
+          client_name?: string | null
+          client_whatsapp: string
+          contact_info: string
+          created_at?: string
+          icp?: string | null
+          id?: string
+          lead_id: string
+          post_url: string
+          reassigned_at?: string | null
+          reassigned_business_id?: string | null
+          reassigned_by?: string | null
+          reassigned_whatsapp?: string | null
+          reassignment_reason?: string | null
+          requirement: string
+          website?: string | null
+        }
+        Update: {
+          approval_status?: string
+          assigned_by?: string
+          business_id?: string
+          category?: string
+          client_id?: string
+          client_name?: string | null
+          client_whatsapp?: string
+          contact_info?: string
+          created_at?: string
+          icp?: string | null
+          id?: string
+          lead_id?: string
+          post_url?: string
+          reassigned_at?: string | null
+          reassigned_business_id?: string | null
+          reassigned_by?: string | null
+          reassigned_whatsapp?: string | null
+          reassignment_reason?: string | null
+          requirement?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string

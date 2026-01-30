@@ -19,6 +19,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CompletedLeadsSection } from '@/components/admin/CompletedLeadsSection';
 
 export default function AdminDashboard() {
   const { tasks, loading: tasksLoading } = useTasks();
@@ -414,6 +415,9 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Completed Leads Section - Admin Only */}
+        <CompletedLeadsSection />
       </div>
     </MainLayout>
   );
