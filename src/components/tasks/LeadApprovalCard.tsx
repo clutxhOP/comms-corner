@@ -83,7 +83,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       <div
         className={cn(
           "rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
-          (isCompleted || isApprovedOrDisapproved) && "opacity-60",
+          (isCompleted || isApprovedOrDisapproved) && "opacity-60"
         )}
       >
         <div className="flex items-start justify-between mb-4">
@@ -198,7 +198,8 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="w-[calc(50%-0.25rem)] border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                  style={{ width: "calc(50% - 0.25rem)" }}
                   onClick={() => setReassignDialogOpen(true)}
                 >
                   <RefreshCcw className="h-4 w-4 mr-1" />
