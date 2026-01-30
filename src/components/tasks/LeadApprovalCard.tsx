@@ -127,7 +127,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             {details.website && (
               <p className="text-muted-foreground text-xs mt-2">
                 <span className="font-semibold">Website:</span>{" "}
-                <a
+                
                   href={details.website}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -154,7 +154,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            <a
+            
               href={details.contactInfo}
               target="_blank"
               rel="noopener noreferrer"
@@ -167,7 +167,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            <a
+            
               href={details.proofLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -182,25 +182,29 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         </div>
 
         {!isCompleted && !isApprovedOrDisapproved && (
-          <div className="flex gap-2 mt-4">
-            <Button size="sm" className="flex-1 bg-success hover:bg-success/90" onClick={handleApprove}>
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Approve
-            </Button>
-            <Button size="sm" variant="destructive" className="flex-1" onClick={() => onDisapprove?.(task.id)}>
-              <XCircle className="h-4 w-4 mr-1" />
-              Disapprove
-            </Button>
-            {canReassign && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
-                onClick={() => setReassignDialogOpen(true)}
-              >
-                <RefreshCcw className="h-4 w-4 mr-1" />
-                Reassign
+          <div className="flex flex-col gap-2 mt-4">
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 bg-success hover:bg-success/90" onClick={handleApprove}>
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Approve
               </Button>
+              <Button size="sm" variant="destructive" className="flex-1" onClick={handleDisapprove}>
+                <XCircle className="h-4 w-4 mr-1" />
+                Disapprove
+              </Button>
+            </div>
+            {canReassign && (
+              <div className="flex justify-center">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-[calc(50%-0.25rem)] border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                  onClick={() => setReassignDialogOpen(true)}
+                >
+                  <RefreshCcw className="h-4 w-4 mr-1" />
+                  Reassign
+                </Button>
+              </div>
             )}
           </div>
         )}
