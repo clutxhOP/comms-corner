@@ -17,6 +17,7 @@ export interface LeadAssignment {
   icp: string | null;
   business_id: string;
   reassigned_business_id: string | null;
+  reassigned_business_ids: string[] | null;
   reassigned_whatsapp: string | null;
   approval_status: 'approved' | 'disapproved';
   assigned_by: string;
@@ -42,7 +43,7 @@ export interface CreateLeadAssignmentData {
 }
 
 export interface ReassignLeadData {
-  business_id: string;
+  business_ids: string[];
   whatsapp?: string;
   reason?: string;
 }
@@ -123,11 +124,12 @@ export function useLeadAssignments() {
         const existing = assignments.find((a) => a.lead_id === leadId);
 
         if (existing) {
-          // Update existing record
+          // Update existing record with multiple business IDs
           const { error } = await supabase
             .from('lead_assignments')
             .update({
-              reassigned_business_id: data.business_id,
+              reassigned_business_id: data.business_ids[0] || null, // Keep first for backward compat
+              reassigned_business_ids: data.business_ids,
               reassigned_whatsapp: data.whatsapp || null,
               reassigned_by: user.id,
               reassignment_reason: data.reason || null,
@@ -142,7 +144,8 @@ export function useLeadAssignments() {
               a.id === existing.id
                 ? {
                     ...a,
-                    reassigned_business_id: data.business_id,
+                    reassigned_business_id: data.business_ids[0] || null,
+                    reassigned_business_ids: data.business_ids,
                     reassigned_whatsapp: data.whatsapp || null,
                     reassigned_by: user.id,
                     reassignment_reason: data.reason || null,
@@ -153,9 +156,10 @@ export function useLeadAssignments() {
           );
         }
 
+        const businessCount = data.business_ids.length;
         toast({
           title: 'Lead reassigned successfully',
-          description: 'The lead has been reassigned to the selected business.',
+          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? 'es' : ''}.`,
         });
 
         return true;
@@ -180,7 +184,8 @@ export function useLeadAssignments() {
         const { error } = await supabase
           .from('lead_assignments')
           .update({
-            reassigned_business_id: data.business_id,
+            reassigned_business_id: data.business_ids[0] || null, // Keep first for backward compat
+            reassigned_business_ids: data.business_ids,
             reassigned_whatsapp: data.whatsapp || null,
             reassigned_by: user.id,
             reassignment_reason: data.reason || null,
@@ -195,7 +200,8 @@ export function useLeadAssignments() {
             a.id === assignmentId
               ? {
                   ...a,
-                  reassigned_business_id: data.business_id,
+                  reassigned_business_id: data.business_ids[0] || null,
+                  reassigned_business_ids: data.business_ids,
                   reassigned_whatsapp: data.whatsapp || null,
                   reassigned_by: user.id,
                   reassignment_reason: data.reason || null,
@@ -205,9 +211,10 @@ export function useLeadAssignments() {
           )
         );
 
+        const businessCount = data.business_ids.length;
         toast({
           title: 'Lead reassigned successfully',
-          description: 'The lead has been reassigned to the selected business.',
+          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? 'es' : ''}.`,
         });
 
         return true;
