@@ -8,6 +8,8 @@ import { ReassignLeadDialog } from "./ReassignLeadDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useLeadAssignments, CreateLeadAssignmentData } from "@/hooks/useLeadAssignments";
+import { useBusinesses, Business } from "@/hooks/useBusinesses";
+import { useWebhooks } from "@/hooks/useWebhooks";
 
 interface LeadApprovalCardProps {
   task: Task;
@@ -25,6 +27,8 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
   const { createAssignment, reassignLead, getAssignmentByLeadId } = useLeadAssignments();
+  const { allBusinesses } = useBusinesses();
+  const { triggerWebhook } = useWebhooks();
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
 
@@ -61,21 +65,52 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
     onDisapprove?.(task.id);
   };
 
-  const handleReassign = async (data: { businessId: string; whatsapp?: string; reason?: string }) => {
+  const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     const existingAssignment = getAssignmentByLeadId(task.id);
 
     if (existingAssignment) {
       // Update existing assignment with reassignment details
       await reassignLead(task.id, {
-        business_id: data.businessId,
+        business_ids: data.businessIds,
         whatsapp: data.whatsapp,
         reason: data.reason,
       });
     } else {
-      // Create new assignment with selected business as the initial assignment
-      const assignmentData = extractLeadData(data.businessId, "approved");
+      // Create new assignment with first selected business as the initial assignment
+      const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
+
+    // Get full business details for selected businesses
+    const selectedBusinesses = allBusinesses.filter((b: Business) => 
+      data.businessIds.includes(b.id)
+    );
+
+    // Build and send webhook payload
+    const reassignedTo = selectedBusinesses.map((business: Business) => ({
+      // Business details (from businesses table - different for each business)
+      clientId: business.id,
+      clientName: business.name || 'Unknown Business',
+      whatsapp: business.whatsapp || '',
+      website: business.website || null,
+      category: business.category || '',
+      reassigned_to: business.whatsapp || '',
+      
+      // Lead details (from task/details - same for all businesses)
+      id: task.id,
+      icp: details.icp || '',
+      contactInfo: details.contactInfo,
+      other_contact: details.whatsapp,
+      proofLink: details.proofLink,
+      requirement: details.requirement,
+      recordId: details.clientId, // Using clientId as recordId
+    }));
+
+    // Trigger webhook
+    await triggerWebhook('lead_reassigned', {
+      event: 'lead.reassigned',
+      reassigned_to: reassignedTo,
+    });
   };
 
   return (

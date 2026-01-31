@@ -304,6 +304,7 @@ export type Database = {
           post_url: string
           reassigned_at: string | null
           reassigned_business_id: string | null
+          reassigned_business_ids: Json | null
           reassigned_by: string | null
           reassigned_whatsapp: string | null
           reassignment_reason: string | null
@@ -326,6 +327,7 @@ export type Database = {
           post_url: string
           reassigned_at?: string | null
           reassigned_business_id?: string | null
+          reassigned_business_ids?: Json | null
           reassigned_by?: string | null
           reassigned_whatsapp?: string | null
           reassignment_reason?: string | null
@@ -348,6 +350,7 @@ export type Database = {
           post_url?: string
           reassigned_at?: string | null
           reassigned_business_id?: string | null
+          reassigned_business_ids?: Json | null
           reassigned_by?: string | null
           reassigned_whatsapp?: string | null
           reassignment_reason?: string | null
