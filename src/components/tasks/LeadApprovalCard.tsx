@@ -152,6 +152,13 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             <p className="font-medium text-foreground">Lead Details</p>
             <p className="font-medium text-foreground mt-2 text-xs">Requirement:</p>
             <p className="text-muted-foreground text-xs">{details.requirement}</p>
+
+            {details.recordId && (
+              <div className="mt-3">
+                <p className="font-medium text-foreground text-xs">Record ID:</p>
+                <p className="text-muted-foreground text-xs">{details.recordId}</p>
+              </div>
+            )}
           </div>
 
           <div>

@@ -331,7 +331,8 @@ export default function ApiDocs() {
   "icp": "string",
   "requirement": "string",
   "contactInfo": "string (email or URL)",
-  "proofLink": "string (URL)"
+  "proofLink": "string (URL)",
+  "recordId": "string (optional)"
 }`} />
                     </div>
 
