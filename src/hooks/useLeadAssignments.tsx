@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
-import { useToast } from './use-toast';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+import { useToast } from "./use-toast";
 
 export interface LeadAssignment {
   id: string;
@@ -19,12 +19,13 @@ export interface LeadAssignment {
   reassigned_business_id: string | null;
   reassigned_business_ids: string[] | null;
   reassigned_whatsapp: string | null;
-  approval_status: 'approved' | 'disapproved';
+  approval_status: "approved" | "disapproved";
   assigned_by: string;
   reassigned_by: string | null;
   reassignment_reason: string | null;
   created_at: string;
   reassigned_at: string | null;
+  record_id: string | null;
 }
 
 export interface CreateLeadAssignmentData {
@@ -39,7 +40,8 @@ export interface CreateLeadAssignmentData {
   website?: string | null;
   icp?: string | null;
   business_id: string;
-  approval_status: 'approved' | 'disapproved';
+  approval_status: "approved" | "disapproved";
+  record_id?: string | null;
 }
 
 export interface ReassignLeadData {
@@ -59,19 +61,19 @@ export function useLeadAssignments() {
 
     try {
       const { data, error } = await supabase
-        .from('lead_assignments')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("lead_assignments")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setAssignments((data || []) as LeadAssignment[]);
     } catch (error) {
-      console.error('Error fetching lead assignments:', error);
+      console.error("Error fetching lead assignments:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load lead assignments',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load lead assignments",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -90,7 +92,7 @@ export function useLeadAssignments() {
 
       try {
         const { data: newAssignment, error } = await supabase
-          .from('lead_assignments')
+          .from("lead_assignments")
           .insert({
             ...data,
             assigned_by: user.id,
@@ -103,16 +105,16 @@ export function useLeadAssignments() {
         setAssignments((prev) => [newAssignment as LeadAssignment, ...prev]);
         return newAssignment as LeadAssignment;
       } catch (error) {
-        console.error('Error creating lead assignment:', error);
+        console.error("Error creating lead assignment:", error);
         toast({
-          title: 'Error',
-          description: 'Failed to create lead assignment',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to create lead assignment",
+          variant: "destructive",
         });
         return null;
       }
     },
-    [user, toast]
+    [user, toast],
   );
 
   const reassignLead = useCallback(
@@ -126,16 +128,16 @@ export function useLeadAssignments() {
         if (existing) {
           // Update existing record with multiple business IDs
           const { error } = await supabase
-            .from('lead_assignments')
+            .from("lead_assignments")
             .update({
-              reassigned_business_id: data.business_ids[0] || null, // Keep first for backward compat
+              reassigned_business_id: data.business_ids[0] || null,
               reassigned_business_ids: data.business_ids,
               reassigned_whatsapp: data.whatsapp || null,
               reassigned_by: user.id,
               reassignment_reason: data.reason || null,
               reassigned_at: new Date().toISOString(),
             })
-            .eq('id', existing.id);
+            .eq("id", existing.id);
 
           if (error) throw error;
 
@@ -151,29 +153,29 @@ export function useLeadAssignments() {
                     reassignment_reason: data.reason || null,
                     reassigned_at: new Date().toISOString(),
                   }
-                : a
-            )
+                : a,
+            ),
           );
         }
 
         const businessCount = data.business_ids.length;
         toast({
-          title: 'Lead reassigned successfully',
-          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? 'es' : ''}.`,
+          title: "Lead reassigned successfully",
+          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? "es" : ""}.`,
         });
 
         return true;
       } catch (error) {
-        console.error('Error reassigning lead:', error);
+        console.error("Error reassigning lead:", error);
         toast({
-          title: 'Error',
-          description: 'Failed to reassign lead',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to reassign lead",
+          variant: "destructive",
         });
         return false;
       }
     },
-    [user, assignments, toast]
+    [user, assignments, toast],
   );
 
   const reassignById = useCallback(
@@ -182,16 +184,16 @@ export function useLeadAssignments() {
 
       try {
         const { error } = await supabase
-          .from('lead_assignments')
+          .from("lead_assignments")
           .update({
-            reassigned_business_id: data.business_ids[0] || null, // Keep first for backward compat
+            reassigned_business_id: data.business_ids[0] || null,
             reassigned_business_ids: data.business_ids,
             reassigned_whatsapp: data.whatsapp || null,
             reassigned_by: user.id,
             reassignment_reason: data.reason || null,
             reassigned_at: new Date().toISOString(),
           })
-          .eq('id', assignmentId);
+          .eq("id", assignmentId);
 
         if (error) throw error;
 
@@ -207,35 +209,35 @@ export function useLeadAssignments() {
                   reassignment_reason: data.reason || null,
                   reassigned_at: new Date().toISOString(),
                 }
-              : a
-          )
+              : a,
+          ),
         );
 
         const businessCount = data.business_ids.length;
         toast({
-          title: 'Lead reassigned successfully',
-          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? 'es' : ''}.`,
+          title: "Lead reassigned successfully",
+          description: `The lead has been reassigned to ${businessCount} business${businessCount !== 1 ? "es" : ""}.`,
         });
 
         return true;
       } catch (error) {
-        console.error('Error reassigning lead:', error);
+        console.error("Error reassigning lead:", error);
         toast({
-          title: 'Error',
-          description: 'Failed to reassign lead',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to reassign lead",
+          variant: "destructive",
         });
         return false;
       }
     },
-    [user, toast]
+    [user, toast],
   );
 
   const getAssignmentByLeadId = useCallback(
     (leadId: string) => {
       return assignments.find((a) => a.lead_id === leadId);
     },
-    [assignments]
+    [assignments],
   );
 
   return {
