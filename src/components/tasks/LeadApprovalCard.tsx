@@ -103,7 +103,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       other_contact: details.whatsapp,
       proofLink: details.proofLink,
       requirement: details.requirement,
-      recordId: details.clientId, // Using clientId as recordId
+      recordId: details.recordId || '',
     }));
 
     // Trigger webhook
