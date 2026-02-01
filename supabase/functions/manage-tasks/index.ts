@@ -245,12 +245,16 @@ Deno.serve(async (req) => {
       if (!validation.valid) {
         const detailsSchema: Record<string, object> = {
           "lead-approval": {
-            clientId: "string (required)",
+            clientId: "string (required) - The UUID of the assigned client/business",
+            clientName: "string (optional) - The client/business name",
+            whatsapp: "string (optional) - Client WhatsApp number",
+            website: "string (optional) - Client website URL",
             category: "string (required)",
             icp: "string (required)",
             requirement: "string (required)",
             contactInfo: "string (required)",
-            proofLink: "string (required)"
+            proofLink: "string (required)",
+            recordId: "string (optional) - The row ID from external leads table (e.g., '544')"
           },
           "lead-alert": {
             clientName: "string (required)",
