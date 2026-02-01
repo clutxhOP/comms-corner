@@ -252,9 +252,9 @@ Deno.serve(async (req) => {
             category: "string (required)",
             icp: "string (required)",
             requirement: "string (required)",
-            contactInfo: "string (required)",
-            proofLink: "string (required)",
-            recordId: "string (optional) - The row ID from external leads table (e.g., '544')"
+            contactInfo: "string (required) - Email or URL",
+            proofLink: "string (required) - URL",
+            recordId: "string (optional) - The lead record ID from external Supabase leads table (e.g., '544')"
           },
           "lead-alert": {
             clientName: "string (required)",

@@ -308,6 +308,7 @@ export type Database = {
           reassigned_by: string | null
           reassigned_whatsapp: string | null
           reassignment_reason: string | null
+          record_id: string | null
           requirement: string
           website: string | null
         }
@@ -331,6 +332,7 @@ export type Database = {
           reassigned_by?: string | null
           reassigned_whatsapp?: string | null
           reassignment_reason?: string | null
+          record_id?: string | null
           requirement: string
           website?: string | null
         }
@@ -354,6 +356,7 @@ export type Database = {
           reassigned_by?: string | null
           reassigned_whatsapp?: string | null
           reassignment_reason?: string | null
+          record_id?: string | null
           requirement?: string
           website?: string | null
         }
