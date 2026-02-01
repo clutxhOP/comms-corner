@@ -36,16 +36,16 @@ async function getAuthUserId(req: Request, supabase: any): Promise<{ userId: str
     if (pat.expires_at && pat.expires_at <= nowIso) return null;
 
     // Best-effort update
-    await supabase
-      .from("personal_access_tokens")
-      .update({ last_used_at: nowIso })
-      .eq("id", pat.id);
+    await supabase.from("personal_access_tokens").update({ last_used_at: nowIso }).eq("id", pat.id);
 
     return { userId: pat.user_id as string, authType: "pat" };
   }
 
   // JWT authentication
-  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser(token);
   if (userError || !user) return null;
 
   return { userId: user.id, authType: "jwt" };
@@ -60,11 +60,11 @@ interface TaskPayload {
 
 // Define required fields for each task type
 const requiredFields: Record<string, string[]> = {
-  "lead-approval": ["clientId", "category", "icp", "requirement", "contactInfo", "proofLink"],
+  "lead-approval": ["clientId", "category", "icp", "requirement", "contactInfo", "proofLink", "recordId"],
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
   "error-alert": ["description"], // description is required, supports plain text, HTML, and Markdown
-  "other": ["description"],
+  other: ["description"],
 };
 
 // Department email to role mapping
@@ -74,42 +74,39 @@ const departmentEmails: Record<string, string> = {
   "admin@backendglamor.com": "admin",
 };
 
-function validateDetails(type: string, details: Record<string, unknown> | undefined): { valid: boolean; missing: string[] } {
+function validateDetails(
+  type: string,
+  details: Record<string, unknown> | undefined,
+): { valid: boolean; missing: string[] } {
   const required = requiredFields[type] || [];
   if (!details) {
     return { valid: required.length === 0, missing: required };
   }
-  
+
   const missing: string[] = [];
   for (const field of required) {
     if (details[field] === undefined || details[field] === null || details[field] === "") {
       missing.push(field);
     }
   }
-  
+
   return { valid: missing.length === 0, missing };
 }
 
 // Resolve assignees from email(s) to user IDs
-async function resolveAssignees(
-  supabase: any,
-  assignedTo: string | string[] | undefined
-): Promise<string[]> {
+async function resolveAssignees(supabase: any, assignedTo: string | string[] | undefined): Promise<string[]> {
   if (!assignedTo) return [];
-  
+
   const inputs = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
   const userIds: string[] = [];
-  
+
   for (const input of inputs) {
     // Check if it's a department email
     const role = departmentEmails[input.toLowerCase()];
     if (role) {
       // Get all users with this role
-      const { data: roleUsers } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", role);
-      
+      const { data: roleUsers } = await supabase.from("user_roles").select("user_id").eq("role", role);
+
       if (roleUsers && Array.isArray(roleUsers)) {
         for (const r of roleUsers) {
           userIds.push(r.user_id as string);
@@ -117,26 +114,26 @@ async function resolveAssignees(
       }
       continue;
     }
-    
+
     // Check if it's a UUID (profile ID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(input)) {
       userIds.push(input);
       continue;
     }
-    
+
     // Try to find user by email
     const { data: profile } = await supabase
       .from("profiles")
       .select("user_id")
       .eq("email", input.toLowerCase())
       .maybeSingle();
-    
+
     if (profile && profile.user_id) {
       userIds.push(profile.user_id as string);
     }
   }
-  
+
   // Remove duplicates
   return [...new Set(userIds)];
 }
@@ -154,10 +151,10 @@ Deno.serve(async (req) => {
 
     const auth = await getAuthUserId(req, supabase);
     if (!auth) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const userId = auth.userId;
 
@@ -188,25 +185,25 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error("Error fetching tasks:", error);
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      return new Response(
-        JSON.stringify({ data }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ data }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // POST - Create task (admin or dev only)
     if (method === "POST") {
       if (!isAdminOrDev) {
-        return new Response(
-          JSON.stringify({ error: "Only admins and developers can create tasks" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Only admins and developers can create tasks" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const payload: TaskPayload = await req.json();
@@ -214,18 +211,18 @@ Deno.serve(async (req) => {
       // Validate required fields
       if (!payload.type || !payload.title) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: "Missing required fields",
             required: {
               type: "lead-approval | lead-alert | lead-outreach | other",
               title: "string",
-              details: "object - required fields depend on task type"
+              details: "object - required fields depend on task type",
             },
             optional: {
-              assigned_to: "Email, Profile ID, Department email (e.g., ops@backendglamor.com), or array of these"
-            }
+              assigned_to: "Email, Profile ID, Department email (e.g., ops@backendglamor.com), or array of these",
+            },
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -233,10 +230,10 @@ Deno.serve(async (req) => {
       const validTypes = ["lead-approval", "lead-alert", "lead-outreach", "error-alert", "other"];
       if (!validTypes.includes(payload.type)) {
         return new Response(
-          JSON.stringify({ 
-            error: `Invalid task type. Must be one of: ${validTypes.join(", ")}`
+          JSON.stringify({
+            error: `Invalid task type. Must be one of: ${validTypes.join(", ")}`,
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -252,9 +249,9 @@ Deno.serve(async (req) => {
             category: "string (required)",
             icp: "string (required)",
             requirement: "string (required)",
-            contactInfo: "string (required) - Email or URL",
-            proofLink: "string (required) - URL",
-            recordId: "string (optional) - The lead record ID from external Supabase leads table (e.g., '544')"
+            contactInfo: "string (required)",
+            proofLink: "string (required)",
+            recordId: "string (required) - The row ID from external leads table (e.g., '544')",
           },
           "lead-alert": {
             clientName: "string (required)",
@@ -263,30 +260,30 @@ Deno.serve(async (req) => {
             clientStatus: "string (required)",
             alertLevel: "yellow | red (required)",
             issue: "string (required)",
-            timeSinceLastLead: "string (required)"
+            timeSinceLastLead: "string (required)",
           },
           "lead-outreach": {
             requirement: "string (required)",
             contactInfo: "string (required)",
             post: "string (required)",
-            comment: "string (required)"
+            comment: "string (required)",
           },
           "error-alert": {
-            description: "string (required) - accepts plain text, HTML, and Markdown formatting"
+            description: "string (required) - accepts plain text, HTML, and Markdown formatting",
           },
-          "other": {
+          other: {
             description: "string (required)",
-            notes: "string (optional)"
-          }
+            notes: "string (optional)",
+          },
         };
 
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: "Missing required fields in details",
             missing_fields: validation.missing,
-            required_schema: detailsSchema[payload.type]
+            required_schema: detailsSchema[payload.type],
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -308,38 +305,38 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error("Error creating task:", error);
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       console.log("Task created:", data.id, "by user:", userId, "assigned_to:", resolvedAssignees);
 
-      return new Response(
-        JSON.stringify({ data }),
-        { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ data }), {
+        status: 201,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // PATCH - Update task (admin or dev only)
     if (method === "PATCH") {
       if (!isAdminOrDev) {
-        return new Response(
-          JSON.stringify({ error: "Only admins and developers can update tasks" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Only admins and developers can update tasks" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       if (!taskId) {
-        return new Response(
-          JSON.stringify({ error: "Task ID required as query parameter: ?id=<uuid>" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Task ID required as query parameter: ?id=<uuid>" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const payload = await req.json();
-      
+
       // Check if this is a lead-alert details update
       if (payload.timeSinceLastLead !== undefined || payload.alertLevel !== undefined) {
         // Fetch the existing task
@@ -350,31 +347,31 @@ Deno.serve(async (req) => {
           .single();
 
         if (fetchError || !existingTask) {
-          return new Response(
-            JSON.stringify({ error: "Task not found" }),
-            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "Task not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         // Validate task type
         if (existingTask.type !== "lead-alert") {
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: "This endpoint only supports updating lead-alert tasks",
-              task_type: existingTask.type
+              task_type: existingTask.type,
             }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
 
         // Validate alertLevel if provided
         if (payload.alertLevel !== undefined && !["yellow", "red"].includes(payload.alertLevel)) {
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: "Invalid alertLevel. Must be 'yellow' or 'red'",
-              provided: payload.alertLevel
+              provided: payload.alertLevel,
             }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
 
@@ -394,18 +391,18 @@ Deno.serve(async (req) => {
 
         if (error) {
           console.error("Error updating lead-alert:", error);
-          return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         console.log("Lead-alert updated:", taskId, "by user:", userId);
 
-        return new Response(
-          JSON.stringify({ data }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ data }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Handle assignment update (existing functionality)
@@ -423,76 +420,75 @@ Deno.serve(async (req) => {
 
         if (error) {
           console.error("Error updating task:", error);
-          return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         console.log("Task updated:", taskId, "assigned_to:", resolvedAssignees);
 
-        return new Response(
-          JSON.stringify({ data }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ data }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "No valid update fields provided",
           supported_fields: {
             lead_alert_update: ["timeSinceLastLead", "alertLevel"],
-            assignment_update: ["assigned_to"]
-          }
+            assignment_update: ["assigned_to"],
+          },
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // DELETE - Delete task (admin or dev only)
     if (method === "DELETE") {
       if (!isAdminOrDev) {
-        return new Response(
-          JSON.stringify({ error: "Only admins and developers can delete tasks" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Only admins and developers can delete tasks" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       if (!taskId) {
-        return new Response(
-          JSON.stringify({ error: "Task ID required as query parameter: ?id=<uuid>" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Task ID required as query parameter: ?id=<uuid>" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const { error } = await supabase.from("tasks").delete().eq("id", taskId);
 
       if (error) {
         console.error("Error deleting task:", error);
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       console.log("Task deleted:", taskId, "by user:", userId);
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
