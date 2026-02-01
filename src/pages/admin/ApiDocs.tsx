@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 const BASE_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
@@ -337,7 +337,7 @@ export default function ApiDocs() {
   "requirement": "string (required) - Lead requirement details",
   "contactInfo": "string (required) - Email or URL",
   "proofLink": "string (required) - URL to proof/post",
-  "recordId": "string (optional) - Source record ID (e.g., '558' from Airtable)"
+  "recordId": "string (optional) - Source record ID (UUID from Supabase)"
 }`}
                       />
                     </div>
@@ -380,7 +380,7 @@ export default function ApiDocs() {
 
 // Example with Markdown:
 {
-  "description": "**Error:** Forbidden - perhaps check your credentials?\\n\\nhttps://n8n.example.com/workflow/abc123\\n\\n--------------------------------------------------------------"
+  "description": "**Error:** Forbidden - perhaps check your credentials?\\\\n\\\\nhttps://n8n.example.com/workflow/abc123\\\\n\\\\n--------------------------------------------------------------"
 }`}
                       />
                     </div>
@@ -587,7 +587,7 @@ export default function ApiDocs() {
                   auth="None (public endpoint)"
                   requestBody={`{
   "channelId": "main",  // Use slug (main, dev, ops) or full UUID
-  "message": "Hello from automation!\\n\\n**Bold text** and [links](https://example.com) work too!",
+  "message": "Hello from automation!\\\\n\\\\n**Bold text** and [links](https://example.com) work too!",
   "sender": "Daily Report Bot"  // Display name for the sender
 }`}
                   responseExample={`{
