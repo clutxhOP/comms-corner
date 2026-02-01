@@ -20,6 +20,7 @@ export interface LeadApprovalDetails {
   requirement: string;
   contactInfo: string;
   proofLink: string;
+  recordId?: string;
 }
 
 export interface LeadAlertDetails {
