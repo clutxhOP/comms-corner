@@ -62,19 +62,20 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
     onDisapprove?.(task.id);
   };
 
-  const handleReassign = async (data: { businessId: string; whatsapp?: string; reason?: string }) => {
+  const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     const existingAssignment = getAssignmentByLeadId(task.id);
 
     if (existingAssignment) {
       // Update existing assignment with reassignment details
       await reassignLead(task.id, {
-        business_ids: [data.businessId],
+        business_ids: data.businessIds,
         whatsapp: data.whatsapp,
         reason: data.reason,
       });
     } else {
       // Create new assignment with selected business as the initial assignment
-      const assignmentData = extractLeadData(data.businessId, "approved");
+      // Use the first business ID from the array
+      const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
   };
@@ -84,7 +85,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       <div
         className={cn(
           "rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
-          (isCompleted || isApprovedOrDisapproved) && "opacity-60",
+          (isCompleted || isApprovedOrDisapproved) && "opacity-60"
         )}
       >
         <div className="flex items-start justify-between mb-4">
@@ -128,7 +129,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             {details.website && (
               <p className="text-muted-foreground text-xs mt-2">
                 <span className="font-semibold">Website:</span>{" "}
-                <a
+                
                   href={details.website}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -155,7 +156,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Contact info:</p>
-            <a
+            
               href={details.contactInfo}
               target="_blank"
               rel="noopener noreferrer"
@@ -168,7 +169,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
           <div>
             <p className="font-medium text-foreground text-xs">Proof:</p>
-            <a
+            
               href={details.proofLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -219,7 +220,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
                 ? "bg-success/10 text-success"
                 : task.status === "disapproved"
                   ? "bg-destructive/10 text-destructive"
-                  : "bg-success/10 text-success",
+                  : "bg-success/10 text-success"
             )}
           >
             {task.status === "approved"
