@@ -1,4 +1,4 @@
-export type TaskType = 'lead-approval' | 'lead-alert' | 'lead-outreach' | 'error-alert' | 'other';
+export type TaskType = "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "other";
 
 export interface ErrorAlertDetails {
   error: string;
@@ -28,7 +28,7 @@ export interface LeadAlertDetails {
   category: string;
   whatsapp: string;
   clientStatus: string;
-  alertLevel: 'yellow' | 'red';
+  alertLevel: "yellow" | "red";
   issue: string;
   timeSinceLastLead: string;
 }
@@ -44,7 +44,7 @@ export interface Task {
   id: string;
   type: TaskType;
   title: string;
-  status: 'pending' | 'done' | 'approved' | 'disapproved';
+  status: "pending" | "done" | "approved" | "disapproved";
   createdAt: string;
   details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails;
   disapprovalReason?: string;
@@ -53,9 +53,9 @@ export interface Task {
 export interface ChatMessage {
   id: string;
   content: string;
-  sender: 'user' | 'contact';
+  sender: "user" | "contact";
   timestamp: string;
-  status: 'sent' | 'delivered' | 'read';
+  status: "sent" | "delivered" | "read";
 }
 
 export interface ChatContact {
