@@ -1,11 +1,11 @@
-import { MainLayout } from '@/components/layout/MainLayout';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const BASE_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
 
@@ -41,7 +41,7 @@ function CodeBlock({ code }: CodeBlockProps) {
 }
 
 interface EndpointProps {
-  method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH';
+  method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
   path: string;
   description: string;
   auth: string;
@@ -52,11 +52,11 @@ interface EndpointProps {
 
 function Endpoint({ method, path, description, auth, requestBody, responseExample, queryParams }: EndpointProps) {
   const methodColors: Record<string, string> = {
-    GET: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    POST: 'bg-success/10 text-success border-success/20',
-    DELETE: 'bg-destructive/10 text-destructive border-destructive/20',
-    PUT: 'bg-warning/10 text-warning border-warning/20',
-    PATCH: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+    GET: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    POST: "bg-success/10 text-success border-success/20",
+    DELETE: "bg-destructive/10 text-destructive border-destructive/20",
+    PUT: "bg-warning/10 text-warning border-warning/20",
+    PATCH: "bg-purple-500/10 text-purple-600 border-purple-500/20",
   };
 
   return (
@@ -110,9 +110,9 @@ function TokenDisplay() {
   const { session } = useAuth();
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState(false);
-  
-  const token = session?.access_token || '';
-  const maskedToken = token ? `${token.slice(0, 20)}...${token.slice(-10)}` : 'No token available';
+
+  const token = session?.access_token || "";
+  const maskedToken = token ? `${token.slice(0, 20)}...${token.slice(-10)}` : "No token available";
 
   const handleCopy = () => {
     if (token) {
@@ -134,23 +134,17 @@ function TokenDisplay() {
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-muted p-3 rounded-lg font-mono text-sm break-all">
-            {showToken ? token || 'No token available' : maskedToken}
+            {showToken ? token || "No token available" : maskedToken}
           </div>
           <Button
             size="icon"
             variant="outline"
             onClick={() => setShowToken(!showToken)}
-            title={showToken ? 'Hide token' : 'Show token'}
+            title={showToken ? "Hide token" : "Show token"}
           >
             {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={handleCopy}
-            disabled={!token}
-            title="Copy token"
-          >
+          <Button size="icon" variant="outline" onClick={handleCopy} disabled={!token} title="Copy token">
             {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
@@ -171,9 +165,7 @@ export default function ApiDocs() {
             <Code className="h-6 w-6" />
             API Documentation
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Reference for all available API endpoints
-          </p>
+          <p className="text-muted-foreground mt-1">Reference for all available API endpoints</p>
         </div>
 
         {/* Your Token */}
@@ -291,25 +283,37 @@ export default function ApiDocs() {
                   </p>
                   <div className="space-y-3">
                     <div>
-                      <Badge variant="outline" className="mb-2">Single User by Email</Badge>
+                      <Badge variant="outline" className="mb-2">
+                        Single User by Email
+                      </Badge>
                       <CodeBlock code={`"assigned_to": "john@company.com"`} />
                     </div>
                     <div>
-                      <Badge variant="outline" className="mb-2">Single User by Profile ID</Badge>
+                      <Badge variant="outline" className="mb-2">
+                        Single User by Profile ID
+                      </Badge>
                       <CodeBlock code={`"assigned_to": "550e8400-e29b-41d4-a716-446655440000"`} />
                     </div>
                     <div>
-                      <Badge variant="outline" className="mb-2">Multiple Users</Badge>
+                      <Badge variant="outline" className="mb-2">
+                        Multiple Users
+                      </Badge>
                       <CodeBlock code={`"assigned_to": ["john@company.com", "jane@company.com"]`} />
                     </div>
                     <div>
-                      <Badge variant="outline" className="mb-2">Department Email (assigns to all users with that role)</Badge>
-                      <CodeBlock code={`"assigned_to": "ops@backendglamor.com"  // Assigns to all ops team
+                      <Badge variant="outline" className="mb-2">
+                        Department Email (assigns to all users with that role)
+                      </Badge>
+                      <CodeBlock
+                        code={`"assigned_to": "ops@backendglamor.com"  // Assigns to all ops team
 "assigned_to": "dev@backendglamor.com"  // Assigns to all dev team
-"assigned_to": "admin@backendglamor.com" // Assigns to all admins`} />
+"assigned_to": "admin@backendglamor.com" // Assigns to all admins`}
+                      />
                     </div>
                     <div>
-                      <Badge variant="outline" className="mb-2">Mixed Assignment</Badge>
+                      <Badge variant="outline" className="mb-2">
+                        Mixed Assignment
+                      </Badge>
                       <CodeBlock code={`"assigned_to": ["ops@backendglamor.com", "john@company.com"]`} />
                     </div>
                   </div>
@@ -318,27 +322,30 @@ export default function ApiDocs() {
                 {/* Task Type Schemas */}
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   <h4 className="font-medium text-foreground">Task Type Details Schema (all fields mandatory)</h4>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <Badge className="mb-2">lead-approval</Badge>
-                      <CodeBlock code={`{
-  "clientName": "string (optional)",
-  "clientId": "string",
-  "whatsapp": "string",
-  "website": "string (optional)",
-  "category": "string",
-  "icp": "string",
-  "requirement": "string",
-  "contactInfo": "string (email or URL)",
-  "proofLink": "string (URL)",
-  "recordId": "string (optional)"
-}`} />
+                      <CodeBlock
+                        code={`{
+  "clientName": "string (optional) - Client/business name",
+  "clientId": "string (required) - UUID of assigned client/business",
+  "whatsapp": "string (optional) - Client WhatsApp number",
+  "website": "string (optional) - Client website URL",
+  "category": "string (required) - Business category",
+  "icp": "string (required) - Ideal customer profile",
+  "requirement": "string (required) - Lead requirement details",
+  "contactInfo": "string (required) - Email or URL",
+  "proofLink": "string (required) - URL to proof/post",
+  "recordId": "string (optional) - Source record ID (e.g., '558' from Airtable)"
+}`}
+                      />
                     </div>
 
                     <div>
                       <Badge className="mb-2">lead-alert</Badge>
-                      <CodeBlock code={`{
+                      <CodeBlock
+                        code={`{
   "clientName": "string",
   "category": "string",
   "whatsapp": "string",
@@ -346,36 +353,45 @@ export default function ApiDocs() {
   "alertLevel": "yellow | red",
   "issue": "string",
   "timeSinceLastLead": "string (e.g., '48 hours')"
-}`} />
+}`}
+                      />
                     </div>
 
                     <div>
                       <Badge className="mb-2">lead-outreach</Badge>
-                      <CodeBlock code={`{
+                      <CodeBlock
+                        code={`{
   "requirement": "string",
   "contactInfo": "string (email or URL)",
   "post": "string (URL to the post)",
   "comment": "string (comment to post)"
-}`} />
+}`}
+                      />
                     </div>
 
                     <div>
-                      <Badge className="mb-2 bg-destructive/10 text-destructive border-destructive/20">error-alert</Badge>
-                      <CodeBlock code={`{
+                      <Badge className="mb-2 bg-destructive/10 text-destructive border-destructive/20">
+                        error-alert
+                      </Badge>
+                      <CodeBlock
+                        code={`{
   "description": "string - accepts plain text, HTML, and Markdown formatting"
 }
 
 // Example with Markdown:
 {
   "description": "**Error:** Forbidden - perhaps check your credentials?\\n\\nhttps://n8n.example.com/workflow/abc123\\n\\n--------------------------------------------------------------"
-}`} />
+}`}
+                      />
                     </div>
 
                     <div>
                       <Badge className="mb-2">other</Badge>
-                      <CodeBlock code={`{
+                      <CodeBlock
+                        code={`{
   "description": "string"
-}`} />
+}`}
+                      />
                     </div>
                   </div>
                 </div>
@@ -385,9 +401,7 @@ export default function ApiDocs() {
                   path="/manage-tasks?id=<task_uuid>"
                   description="Update task assignment. Admin or Dev only."
                   auth="Admin or Dev (JWT or PAT)"
-                  queryParams={[
-                    { name: 'id', type: 'uuid', description: 'The task ID to update' }
-                  ]}
+                  queryParams={[{ name: "id", type: "uuid", description: "The task ID to update" }]}
                   requestBody={`{
   "assigned_to": "string or string[] - email, profile ID, or department email"
 }`}
@@ -405,9 +419,7 @@ export default function ApiDocs() {
                   path="/manage-tasks?id=<task_uuid>"
                   description="Update lead-alert task details (timeSinceLastLead, alertLevel). Only works for lead-alert type tasks."
                   auth="Admin or Dev (JWT or PAT)"
-                  queryParams={[
-                    { name: 'id', type: 'uuid', description: 'The lead-alert task ID to update' }
-                  ]}
+                  queryParams={[{ name: "id", type: "uuid", description: "The lead-alert task ID to update" }]}
                   requestBody={`{
   "timeSinceLastLead": "96 hours",  // Optional - update time since last lead
   "alertLevel": "red"               // Optional - must be "yellow" or "red"
@@ -437,9 +449,7 @@ export default function ApiDocs() {
                   path="/manage-tasks"
                   description="Delete a task by ID. Admin only."
                   auth="Admin only"
-                  queryParams={[
-                    { name: 'id', type: 'uuid', description: 'The task ID to delete' }
-                  ]}
+                  queryParams={[{ name: "id", type: "uuid", description: "The task ID to delete" }]}
                   responseExample={`{
   "success": true
 }`}
@@ -512,9 +522,7 @@ export default function ApiDocs() {
                   path="/manage-customers"
                   description="Remove a customer by ID."
                   auth="Admin only"
-                  queryParams={[
-                    { name: 'id', type: 'uuid', description: 'The customer ID to delete' }
-                  ]}
+                  queryParams={[{ name: "id", type: "uuid", description: "The customer ID to delete" }]}
                   responseExample={`{
   "success": true
 }`}
@@ -599,20 +607,29 @@ export default function ApiDocs() {
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="font-mono">main</Badge>
+                      <Badge variant="outline" className="font-mono">
+                        main
+                      </Badge>
                       <span className="text-sm text-muted-foreground">Main channel - accessible by all roles</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="font-mono">dev</Badge>
+                      <Badge variant="outline" className="font-mono">
+                        dev
+                      </Badge>
                       <span className="text-sm text-muted-foreground">Developers channel - admin and dev only</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="font-mono">ops</Badge>
+                      <Badge variant="outline" className="font-mono">
+                        ops
+                      </Badge>
                       <span className="text-sm text-muted-foreground">Operations channel - admin and ops only</span>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    💡 View all channels with their IDs at <a href="/channels" className="text-primary hover:underline">/channels</a>
+                    💡 View all channels with their IDs at{" "}
+                    <a href="/channels" className="text-primary hover:underline">
+                      /channels
+                    </a>
                   </p>
                 </div>
               </CardContent>
@@ -630,35 +647,43 @@ export default function ApiDocs() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <h4 className="text-sm font-medium mb-2">401 Unauthorized</h4>
-                <CodeBlock code={`{
+                <CodeBlock
+                  code={`{
   "error": "Missing authorization header"
 }
 // or
 {
   "error": "Invalid token"
-}`} />
+}`}
+                />
               </div>
               <div>
                 <h4 className="text-sm font-medium mb-2">403 Forbidden</h4>
-                <CodeBlock code={`{
+                <CodeBlock
+                  code={`{
   "error": "Only admins can create tasks"
-}`} />
+}`}
+                />
               </div>
               <div>
                 <h4 className="text-sm font-medium mb-2">400 Bad Request</h4>
-                <CodeBlock code={`{
+                <CodeBlock
+                  code={`{
   "error": "Missing required fields",
   "required": {
     "type": "lead-approval | ...",
     "title": "string"
   }
-}`} />
+}`}
+                />
               </div>
               <div>
                 <h4 className="text-sm font-medium mb-2">404 Not Found</h4>
-                <CodeBlock code={`{
+                <CodeBlock
+                  code={`{
   "error": "Customer not found"
-}`} />
+}`}
+                />
               </div>
             </div>
           </CardContent>
