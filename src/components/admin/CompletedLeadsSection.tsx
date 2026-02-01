@@ -17,9 +17,9 @@ export function CompletedLeadsSection() {
   const [selectedAssignment, setSelectedAssignment] = useState<LeadAssignment | null>(null);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
 
-  // Filter for completed leads only
+  // Filter for completed leads only (approved or disapproved)
   const completedAssignments = assignments.filter(
-    (assignment) => assignment.approval_status === "approved" || assignment.approval_status === "rejected",
+    (assignment) => assignment.approval_status === "approved" || assignment.approval_status === "disapproved",
   );
 
   const getBusinessName = (businessId: string | null) => {
@@ -75,7 +75,7 @@ export function CompletedLeadsSection() {
       other_contact: selectedAssignment.client_whatsapp,
       proofLink: selectedAssignment.post_url,
       requirement: selectedAssignment.requirement,
-      recordId: selectedAssignment.client_id,
+      recordId: selectedAssignment.record_id || selectedAssignment.client_id,
     }));
 
     // Trigger webhook
