@@ -28,45 +28,97 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
 
-  const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => ({
-    lead_id: task.id,
-    client_id: details.clientId,
-    client_name: details.clientName || null,
-    client_whatsapp: details.whatsapp,
-    contact_info: details.contactInfo,
-    post_url: details.proofLink,
-    category: details.category,
-    requirement: details.requirement,
-    website: details.website || null,
-    icp: details.icp || null,
-    business_id: businessId,
-    approval_status: status,
-    record_id: details.recordId || null,
-  });
+  // DEBUG: Log task details on component mount
+  console.log("=== LEAD APPROVAL CARD DEBUG ===");
+  console.log("Task ID:", task.id);
+  console.log("Task Details:", details);
+  console.log("RecordId from details:", details.recordId);
+  console.log("RecordId type:", typeof details.recordId);
+  console.log("RecordId is null?", details.recordId === null);
+  console.log("RecordId is undefined?", details.recordId === undefined);
+  console.log("================================");
+
+  const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => {
+    const data = {
+      lead_id: task.id,
+      client_id: details.clientId,
+      client_name: details.clientName || null,
+      client_whatsapp: details.whatsapp,
+      contact_info: details.contactInfo,
+      post_url: details.proofLink,
+      category: details.category,
+      requirement: details.requirement,
+      website: details.website || null,
+      icp: details.icp || null,
+      business_id: businessId,
+      approval_status: status,
+      record_id: details.recordId || null,
+    };
+
+    // DEBUG: Log extracted data
+    console.log("=== EXTRACTED LEAD DATA ===");
+    console.log("Full data object:", data);
+    console.log("record_id value:", data.record_id);
+    console.log("===========================");
+
+    return data;
+  };
 
   const handleApprove = async () => {
+    // DEBUG: Log before save
+    console.log("=== HANDLE APPROVE DEBUG ===");
+    console.log("RecordId before save:", details.recordId);
+    console.log("Details object:", details);
+
     // Save to lead_assignments table with the client_id as business_id reference
     const assignmentData = extractLeadData(details.clientId, "approved");
-    await createAssignment(assignmentData);
+
+    console.log("Assignment data to save:", assignmentData);
+    console.log("============================");
+
+    const result = await createAssignment(assignmentData);
+
+    console.log("=== CREATE ASSIGNMENT RESULT ===");
+    console.log("Result:", result);
+    console.log("================================");
 
     // Call original approve handler
     onApprove?.(task.id);
   };
 
   const handleDisapprove = async () => {
+    // DEBUG: Log before save
+    console.log("=== HANDLE DISAPPROVE DEBUG ===");
+    console.log("RecordId before save:", details.recordId);
+
     // Save to lead_assignments table with the client_id as business_id reference
     const assignmentData = extractLeadData(details.clientId, "disapproved");
-    await createAssignment(assignmentData);
+
+    console.log("Assignment data to save:", assignmentData);
+    console.log("================================");
+
+    const result = await createAssignment(assignmentData);
+
+    console.log("=== CREATE ASSIGNMENT RESULT ===");
+    console.log("Result:", result);
+    console.log("================================");
 
     // Call original disapprove handler
     onDisapprove?.(task.id);
   };
 
   const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
+    console.log("=== HANDLE REASSIGN DEBUG ===");
+    console.log("Reassign data:", data);
+    console.log("RecordId:", details.recordId);
+
     const existingAssignment = getAssignmentByLeadId(task.id);
+
+    console.log("Existing assignment:", existingAssignment);
 
     if (existingAssignment) {
       // Update existing assignment with reassignment details
+      console.log("Updating existing assignment");
       await reassignLead(task.id, {
         business_ids: data.businessIds,
         whatsapp: data.whatsapp,
@@ -74,10 +126,13 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       });
     } else {
       // Create new assignment with selected business as the initial assignment
-      // Use the first business ID from the array
+      console.log("Creating new assignment for first business:", data.businessIds[0]);
       const assignmentData = extractLeadData(data.businessIds[0], "approved");
+      console.log("New assignment data:", assignmentData);
       await createAssignment(assignmentData);
     }
+
+    console.log("=============================");
   };
 
   return (
@@ -146,6 +201,17 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
             <p className="text-muted-foreground text-xs mt-2">
               <span className="font-semibold">ICP:</span> {details.icp}
             </p>
+            {/* DEBUG: Show recordId in UI */}
+            {details.recordId && (
+              <p className="text-muted-foreground text-xs mt-2 bg-yellow-100 dark:bg-yellow-900 p-1 rounded">
+                <span className="font-semibold">🔍 DEBUG - Record ID:</span> {details.recordId}
+              </p>
+            )}
+            {!details.recordId && (
+              <p className="text-destructive text-xs mt-2 bg-red-100 dark:bg-red-900 p-1 rounded">
+                <span className="font-semibold">⚠️ DEBUG - Record ID:</span> NOT SET (null/undefined)
+              </p>
+            )}
           </div>
 
           <div className="border-t border-dashed pt-3">
