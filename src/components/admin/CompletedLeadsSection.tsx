@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ExternalLink, RefreshCcw, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
-import { useLeadAssignments, LeadAssignment } from '@/hooks/useLeadAssignments';
-import { useBusinesses, Business } from '@/hooks/useBusinesses';
-import { useUsers } from '@/hooks/useUsers';
-import { useWebhooks } from '@/hooks/useWebhooks';
-import { ReassignLeadDialog } from '@/components/tasks/ReassignLeadDialog';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink, RefreshCcw, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { useLeadAssignments, LeadAssignment } from "@/hooks/useLeadAssignments";
+import { useBusinesses, Business } from "@/hooks/useBusinesses";
+import { useUsers } from "@/hooks/useUsers";
+import { useWebhooks } from "@/hooks/useWebhooks";
+import { ReassignLeadDialog } from "@/components/tasks/ReassignLeadDialog";
 
 export function CompletedLeadsSection() {
   const { assignments, loading, reassignById } = useLeadAssignments();
@@ -17,24 +17,29 @@ export function CompletedLeadsSection() {
   const [selectedAssignment, setSelectedAssignment] = useState<LeadAssignment | null>(null);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
 
+  // Filter for completed leads only
+  const completedAssignments = assignments.filter(
+    (assignment) => assignment.approval_status === "approved" || assignment.approval_status === "rejected",
+  );
+
   const getBusinessName = (businessId: string | null) => {
-    if (!businessId) return 'Unknown';
+    if (!businessId) return "Unknown";
     const business = allBusinesses.find((b: Business) => b.id === businessId);
-    return business?.name || 'Unknown Business';
+    return business?.name || "Unknown Business";
   };
 
   const getBusinessNames = (businessIds: string[] | null) => {
     if (!businessIds || businessIds.length === 0) return null;
     return businessIds
       .map((id) => getBusinessName(id))
-      .filter((name) => name !== 'Unknown')
-      .join(', ');
+      .filter((name) => name !== "Unknown" && name !== "Unknown Business")
+      .join(", ");
   };
 
   const getUserName = (userId: string | null) => {
-    if (!userId) return 'Unknown';
+    if (!userId) return "Unknown";
     const user = users.find((u) => u.user_id === userId);
-    return user?.full_name || 'Unknown User';
+    return user?.full_name || "Unknown User";
   };
 
   const handleReassignClick = (assignment: LeadAssignment) => {
@@ -42,11 +47,7 @@ export function CompletedLeadsSection() {
     setReassignDialogOpen(true);
   };
 
-  const handleReassignConfirm = async (data: {
-    businessIds: string[];
-    whatsapp?: string;
-    reason?: string;
-  }) => {
+  const handleReassignConfirm = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     if (!selectedAssignment) return;
 
     await reassignById(selectedAssignment.id, {
@@ -56,33 +57,30 @@ export function CompletedLeadsSection() {
     });
 
     // Get full business details for selected businesses
-    const selectedBusinesses = allBusinesses.filter((b: Business) => 
-      data.businessIds.includes(b.id)
-    );
+    const selectedBusinesses = allBusinesses.filter((b: Business) => data.businessIds.includes(b.id));
 
     // Build and send webhook payload
     const reassignedTo = selectedBusinesses.map((business: Business) => ({
       // Business details (from businesses table - different for each business)
       clientId: business.id,
-      clientName: business.name || 'Unknown Business',
-      whatsapp: business.whatsapp || '',
+      clientName: business.name || "Unknown Business",
+      whatsapp: business.whatsapp || "",
       website: business.website || null,
-      category: business.category || '',
-      reassigned_to: business.whatsapp || '',
-      
+      category: business.category || "",
+
       // Lead details (from assignment - same for all businesses)
       id: selectedAssignment.lead_id,
-      icp: selectedAssignment.icp || '',
+      icp: selectedAssignment.icp || "",
       contactInfo: selectedAssignment.contact_info,
       other_contact: selectedAssignment.client_whatsapp,
       proofLink: selectedAssignment.post_url,
       requirement: selectedAssignment.requirement,
-      recordId: selectedAssignment.record_id || selectedAssignment.client_id,
+      recordId: selectedAssignment.client_id,
     }));
 
     // Trigger webhook
-    await triggerWebhook('lead_reassigned', {
-      event: 'lead.reassigned',
+    await triggerWebhook("lead_reassigned", {
+      event: "lead.reassigned",
       reassigned_to: reassignedTo,
     });
   };
@@ -111,37 +109,32 @@ export function CompletedLeadsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
-            Completed Leads ({assignments.length})
+            Completed Leads ({completedAssignments.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {assignments.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No completed leads yet.
-            </p>
+          {completedAssignments.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No completed leads yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {assignments.map((assignment) => {
+              {completedAssignments.map((assignment) => {
                 const reassignedNames = getBusinessNames(assignment.reassigned_business_ids);
                 const hasReassignments = reassignedNames || assignment.reassigned_business_id;
-                
+
                 return (
-                  <div
-                    key={assignment.id}
-                    className="rounded-lg border bg-card p-4 shadow-sm"
-                  >
+                  <div key={assignment.id} className="rounded-lg border bg-card p-4 shadow-sm">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Badge
                             variant="outline"
                             className={
-                              assignment.approval_status === 'approved'
-                                ? 'bg-success/10 text-success border-success/20'
-                                : 'bg-destructive/10 text-destructive border-destructive/20'
+                              assignment.approval_status === "approved"
+                                ? "bg-success/10 text-success border-success/20"
+                                : "bg-destructive/10 text-destructive border-destructive/20"
                             }
                           >
-                            {assignment.approval_status === 'approved' ? (
+                            {assignment.approval_status === "approved" ? (
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                             ) : (
                               <XCircle className="h-3 w-3 mr-1" />
@@ -154,33 +147,25 @@ export function CompletedLeadsSection() {
                             </Badge>
                           )}
                         </div>
-                        <h4 className="font-medium text-sm">
-                          {assignment.client_name || 'Unknown Client'}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {assignment.category}
-                        </p>
+                        <h4 className="font-medium text-sm">{assignment.client_name || "Unknown Client"}</h4>
+                        <p className="text-xs text-muted-foreground">{assignment.category}</p>
                       </div>
                     </div>
 
                     <div className="space-y-2 text-xs">
                       <div>
                         <span className="font-medium">Requirement:</span>
-                        <p className="text-muted-foreground line-clamp-2">
-                          {assignment.requirement}
-                        </p>
+                        <p className="text-muted-foreground line-clamp-2">{assignment.requirement}</p>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <span className="font-medium">WhatsApp:</span>
-                        <span className="text-muted-foreground">
-                          {assignment.client_whatsapp}
-                        </span>
+                        <span className="text-muted-foreground">{assignment.client_whatsapp}</span>
                       </div>
 
                       <div className="flex items-center gap-1">
                         <span className="font-medium">Contact:</span>
-                        
+                        <a
                           href={assignment.contact_info}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -193,9 +178,7 @@ export function CompletedLeadsSection() {
                       <div className="pt-2 border-t">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="font-medium">Assigned to:</span>
-                          <span className="text-muted-foreground">
-                            {getBusinessName(assignment.business_id)}
-                          </span>
+                          <span className="text-muted-foreground">{getBusinessName(assignment.business_id)}</span>
                         </div>
                         {hasReassignments && (
                           <div className="flex items-start gap-2 text-xs mt-1">
@@ -209,12 +192,12 @@ export function CompletedLeadsSection() {
                           </div>
                         )}
                         <p className="text-muted-foreground mt-1">
-                          By: {getUserName(assignment.assigned_by)} •{' '}
+                          By: {getUserName(assignment.assigned_by)} •{" "}
                           {new Date(assignment.created_at).toLocaleDateString()}
                         </p>
                         {assignment.reassigned_by && assignment.reassigned_at && (
                           <p className="text-muted-foreground mt-1">
-                            Reassigned by: {getUserName(assignment.reassigned_by)} •{' '}
+                            Reassigned by: {getUserName(assignment.reassigned_by)} •{" "}
                             {new Date(assignment.reassigned_at).toLocaleDateString()}
                           </p>
                         )}
