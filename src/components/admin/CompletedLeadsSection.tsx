@@ -77,7 +77,7 @@ export function CompletedLeadsSection() {
       other_contact: selectedAssignment.client_whatsapp,
       proofLink: selectedAssignment.post_url,
       requirement: selectedAssignment.requirement,
-      recordId: selectedAssignment.client_id,
+      recordId: selectedAssignment.record_id || selectedAssignment.client_id,
     }));
 
     // Trigger webhook
@@ -180,7 +180,7 @@ export function CompletedLeadsSection() {
 
                       <div className="flex items-center gap-1">
                         <span className="font-medium">Contact:</span>
-                        <a
+                        
                           href={assignment.contact_info}
                           target="_blank"
                           rel="noopener noreferrer"
