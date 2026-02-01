@@ -10,6 +10,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { useLeadAssignments, CreateLeadAssignmentData } from "@/hooks/useLeadAssignments";
 import { useBusinesses, Business } from "@/hooks/useBusinesses";
 import { useWebhooks } from "@/hooks/useWebhooks";
+import { externalSupabase } from "@/integrations/supabase/externalClient";
 
 interface LeadApprovalCardProps {
   task: Task;
@@ -65,6 +66,35 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
     onDisapprove?.(task.id);
   };
 
+  // Fetch actual recordId from external Supabase leads table
+  const fetchRecordIdFromExternalLeads = async (): Promise<string> => {
+    try {
+      // Query external leads table by clientId and contactInfo to find the matching row
+      const { data, error } = await externalSupabase
+        .from('leads')
+        .select('id')
+        .eq('assigned_to', details.clientId)
+        .eq('contact_info', details.contactInfo)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching recordId from external Supabase:', error);
+        return details.recordId || '';
+      }
+
+      if (data?.id) {
+        console.log('Fetched recordId from external leads table:', data.id);
+        return String(data.id);
+      }
+
+      console.warn('No matching lead found in external Supabase for clientId:', details.clientId);
+      return details.recordId || '';
+    } catch (err) {
+      console.error('Failed to connect to external Supabase:', err);
+      return details.recordId || '';
+    }
+  };
+
   const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     const existingAssignment = getAssignmentByLeadId(task.id);
 
@@ -80,6 +110,9 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
+
+    // Fetch the actual recordId from external Supabase leads table
+    const actualRecordId = await fetchRecordIdFromExternalLeads();
 
     // Get full business details for selected businesses
     const selectedBusinesses = allBusinesses.filter((b: Business) => 
@@ -103,7 +136,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       other_contact: details.whatsapp,
       proofLink: details.proofLink,
       requirement: details.requirement,
-      recordId: details.recordId || '',
+      recordId: actualRecordId,  // Use the fetched row ID from external Supabase
     }));
 
     // Trigger webhook
