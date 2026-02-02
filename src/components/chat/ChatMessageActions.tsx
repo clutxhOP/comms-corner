@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { MoreHorizontal, Edit2, Trash2, Smile } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, Smile, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Popover,
@@ -19,12 +20,23 @@ interface ChatMessageActionsProps {
   onEdit: () => void;
   onDelete: () => void;
   onReact: (emoji: string) => void;
+  canConvertToTask?: boolean;
+  onConvertToTask?: () => void;
 }
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
 
-export function ChatMessageActions({ isOwn, onEdit, onDelete, onReact }: ChatMessageActionsProps) {
+export function ChatMessageActions({ 
+  isOwn, 
+  onEdit, 
+  onDelete, 
+  onReact,
+  canConvertToTask = false,
+  onConvertToTask,
+}: ChatMessageActionsProps) {
   const [emojiOpen, setEmojiOpen] = useState(false);
+
+  const showDropdownMenu = isOwn || canConvertToTask;
 
   return (
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
@@ -59,7 +71,7 @@ export function ChatMessageActions({ isOwn, onEdit, onDelete, onReact }: ChatMes
         </PopoverContent>
       </Popover>
 
-      {isOwn && (
+      {showDropdownMenu && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -74,14 +86,27 @@ export function ChatMessageActions({ isOwn, onEdit, onDelete, onReact }: ChatMes
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit message
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete message
-            </DropdownMenuItem>
+            {canConvertToTask && onConvertToTask && (
+              <>
+                <DropdownMenuItem onClick={onConvertToTask}>
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Convert to Task
+                </DropdownMenuItem>
+                {isOwn && <DropdownMenuSeparator />}
+              </>
+            )}
+            {isOwn && (
+              <>
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit message
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete message
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
