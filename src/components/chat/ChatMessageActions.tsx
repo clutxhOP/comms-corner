@@ -36,7 +36,12 @@ export function ChatMessageActions({
 }: ChatMessageActionsProps) {
   const [emojiOpen, setEmojiOpen] = useState(false);
 
+  // Show dropdown if user owns the message OR can convert to task (admin)
   const showDropdownMenu = isOwn || canConvertToTask;
+
+  // Has any menu items to show
+  const hasEditDeleteOptions = isOwn;
+  const hasConvertOption = canConvertToTask && onConvertToTask;
 
   return (
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
@@ -86,16 +91,8 @@ export function ChatMessageActions({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {canConvertToTask && onConvertToTask && (
-              <>
-                <DropdownMenuItem onClick={onConvertToTask}>
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Convert to Task
-                </DropdownMenuItem>
-                {isOwn && <DropdownMenuSeparator />}
-              </>
-            )}
-            {isOwn && (
+            {/* Edit and Delete options - always shown first for own messages */}
+            {hasEditDeleteOptions && (
               <>
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit2 className="h-4 w-4 mr-2" />
@@ -106,6 +103,15 @@ export function ChatMessageActions({
                   Delete message
                 </DropdownMenuItem>
               </>
+            )}
+            {/* Separator only if both sections are shown */}
+            {hasEditDeleteOptions && hasConvertOption && <DropdownMenuSeparator />}
+            {/* Convert to Task option - only for admins */}
+            {hasConvertOption && (
+              <DropdownMenuItem onClick={onConvertToTask}>
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Convert to Task
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
