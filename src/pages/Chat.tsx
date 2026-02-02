@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
 import { useChatAttachments, fetchMessageAttachments, UploadedAttachment } from "@/hooks/useChatAttachments";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Search, Hash, Send, X, Check, Paperclip, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { NotificationBell } from "@/components/chat/NotificationBell";
 import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
 import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
 import { ChatDropZone } from "@/components/chat/ChatDropZone";
+import { ConvertToTaskDialog } from "@/components/chat/ConvertToTaskDialog";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +52,7 @@ export default function Chat() {
     toggleReaction,
   } = useChannelMessages(selectedChannelId);
   const { user, profile } = useAuth();
+  const { roles, loading: rolesLoading } = useUserRoles(user?.id);
   const { createMentionNotifications } = useChatNotifications();
   const { profiles } = useProfilesDisplay();
   const { attachments, isUploading, addFiles, removeAttachment, clearAttachments, uploadAttachments } =
@@ -66,6 +69,18 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get("message");
+
+  // State for Convert to Task dialog
+  const [convertToTaskOpen, setConvertToTaskOpen] = useState(false);
+  const [selectedMessageForTask, setSelectedMessageForTask] = useState<{
+    content: string;
+    sender: string;
+    timestamp: string;
+    channel: string;
+  } | null>(null);
+
+  // Check if current user is admin (only admin can convert messages to tasks)
+  const isAdmin = roles.includes("admin");
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -311,6 +326,7 @@ export default function Chat() {
   };
 
   return (
+    <>
     <MainLayout>
       <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
         {/* Channel List - Fixed sidebar */}
@@ -540,12 +556,28 @@ export default function Chat() {
                                   />
                                 </div>
 
-                                {/* Actions (reactions + edit/delete menu for own messages) */}
+                                {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
                                 <ChatMessageActions
                                   isOwn={isOwn}
                                   onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
                                   onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
                                   onReact={(emoji) => toggleReaction(message.id, emoji)}
+                                  canConvertToTask={isAdmin}
+                                  onConvertToTask={() => {
+                                    setSelectedMessageForTask({
+                                      content: message.content,
+                                      sender: message.sender_name || message.user_name || 'Unknown',
+                                      timestamp: new Date(message.created_at).toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                      }),
+                                      channel: selectedChannel?.name || 'Unknown',
+                                    });
+                                    setConvertToTaskOpen(true);
+                                  }}
                                 />
                               </div>
                             </div>
@@ -613,5 +645,18 @@ export default function Chat() {
         </div>
       </div>
     </MainLayout>
+
+    {/* Convert to Task Dialog - only rendered for admins */}
+    {selectedMessageForTask && (
+      <ConvertToTaskDialog
+        open={convertToTaskOpen}
+        onOpenChange={(open) => {
+          setConvertToTaskOpen(open);
+          if (!open) setSelectedMessageForTask(null);
+        }}
+        message={selectedMessageForTask}
+      />
+    )}
+    </>
   );
 }
