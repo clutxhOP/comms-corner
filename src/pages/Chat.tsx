@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,6 +6,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
 import { useChatAttachments, fetchMessageAttachments, UploadedAttachment } from "@/hooks/useChatAttachments";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Search, Hash, Send, X, Check, Paperclip, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,9 @@ import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
 import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
 import { ChatDropZone } from "@/components/chat/ChatDropZone";
 import { ConvertToTaskDialog } from "@/components/chat/ConvertToTaskDialog";
+import { UnreadDivider } from "@/components/chat/UnreadDivider";
+import { ChannelUnreadBadge } from "@/components/chat/ChannelUnreadBadge";
+import { MessageVisibilityTracker } from "@/components/chat/MessageVisibilityTracker";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +59,7 @@ export default function Chat() {
   const { roles, loading: rolesLoading } = useUserRoles(user?.id);
   const { createMentionNotifications } = useChatNotifications();
   const { profiles } = useProfilesDisplay();
+  const { unreadCounts, markAsRead, markChannelAsRead, getUnreadCount } = useUnreadMessages();
   const { attachments, isUploading, addFiles, removeAttachment, clearAttachments, uploadAttachments } =
     useChatAttachments();
   const [usersWithRoles, setUsersWithRoles] = useState<UserWithRole[]>([]);
@@ -189,6 +194,9 @@ export default function Chat() {
     const messageMentions = extractMentionIdsFromText(messageContent);
 
     try {
+      // Mark all previous messages as read when sending a new message
+      await markChannelAsRead(selectedChannelId);
+
       // Send the message with mentions
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions);
 
@@ -287,15 +295,31 @@ export default function Chat() {
 
   // Group messages by date for separators
   const getMessagesWithSeparators = () => {
-    const result: { type: "separator" | "message"; date?: string; message?: (typeof messages)[0] }[] = [];
+    const result: { type: "separator" | "message" | "unread-divider"; date?: string; message?: (typeof messages)[0]; unreadCount?: number }[] = [];
     let lastDate: string | null = null;
+    let unreadDividerInserted = false;
 
-    messages.forEach((message) => {
+    // Get unread count for current channel
+    const currentUnreadCount = selectedChannelId ? getUnreadCount(selectedChannelId) : 0;
+    
+    // Find first unread message index (messages not from current user that are unread)
+    // For simplicity, we'll place the divider based on unread count from the end
+    const totalMessages = messages.length;
+    const firstUnreadIndex = currentUnreadCount > 0 ? Math.max(0, totalMessages - currentUnreadCount) : -1;
+
+    messages.forEach((message, index) => {
       const messageDate = message.created_at.split("T")[0];
       if (messageDate !== lastDate) {
         result.push({ type: "separator", date: message.created_at });
         lastDate = messageDate;
       }
+      
+      // Insert unread divider before the first unread message
+      if (!unreadDividerInserted && currentUnreadCount > 0 && index === firstUnreadIndex && message.user_id !== user?.id) {
+        result.push({ type: "unread-divider", unreadCount: currentUnreadCount });
+        unreadDividerInserted = true;
+      }
+      
       result.push({ type: "message", message });
     });
 
@@ -350,24 +374,28 @@ export default function Chat() {
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                filteredChannels.map((channel) => (
-                  <button
-                    key={channel.id}
-                    onClick={() => setSelectedChannelId(channel.id)}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
-                      selectedChannelId === channel.id && "bg-muted",
-                    )}
-                  >
-                    <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{channel.name}</p>
-                      {channel.description && (
-                        <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
+                filteredChannels.map((channel) => {
+                  const unreadCount = getUnreadCount(channel.id);
+                  return (
+                    <button
+                      key={channel.id}
+                      onClick={() => setSelectedChannelId(channel.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
+                        selectedChannelId === channel.id && "bg-muted",
                       )}
-                    </div>
-                  </button>
-                ))
+                    >
+                      <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">{channel.name}</p>
+                        {channel.description && (
+                          <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
+                        )}
+                      </div>
+                      <ChannelUnreadBadge count={unreadCount} />
+                    </button>
+                  );
+                })
               )}
             </div>
           </ScrollArea>
@@ -388,7 +416,14 @@ export default function Chat() {
                     )}
                   </div>
                 </div>
-                <NotificationBell />
+                <div className="flex items-center gap-3">
+                  {getUnreadCount(selectedChannelId || '') > 0 && (
+                    <span className="text-xs font-medium text-destructive">
+                      {getUnreadCount(selectedChannelId || '')} unread
+                    </span>
+                  )}
+                  <NotificationBell />
+                </div>
               </div>
 
               {/* Messages - Scrollable area */}
@@ -410,177 +445,189 @@ export default function Chat() {
                             return <ChatDateSeparator key={`sep-${item.date}`} date={item.date!} />;
                           }
 
+                          if (item.type === "unread-divider") {
+                            return <UnreadDivider key="unread-divider" count={item.unreadCount || 0} />;
+                          }
+
                           const message = item.message!;
                           const isOwn = message.user_id === user?.id;
                           const isEditing = editingMessageId === message.id;
 
                           return (
-                            <div key={message.id} className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
-                              <div className="group flex items-start gap-1 max-w-[70%]">
-                                <div
-                                  id={`chat-message-${message.id}`}
-                                  className={cn(
-                                    "rounded-2xl px-4 py-2",
-                                    isOwn
-                                      ? "bg-primary text-primary-foreground rounded-br-md"
-                                      : "bg-muted rounded-bl-md",
-                                  )}
-                                >
-                                  {!isOwn && (
-                                    <p className="text-xs font-medium mb-1 opacity-70">
-                                      {message.sender_name || message.user_name}
-                                    </p>
-                                  )}
+                            <MessageVisibilityTracker
+                              key={message.id}
+                              messageId={message.id}
+                              channelId={selectedChannelId || ''}
+                              isOwnMessage={isOwn}
+                              onVisible={markAsRead}
+                            >
+                              <div className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
+                                <div className="group flex items-start gap-1 max-w-[70%]">
+                                  <div
+                                    id={`chat-message-${message.id}`}
+                                    className={cn(
+                                      "rounded-2xl px-4 py-2",
+                                      isOwn
+                                        ? "bg-primary text-primary-foreground rounded-br-md"
+                                        : "bg-muted rounded-bl-md",
+                                    )}
+                                  >
+                                    {!isOwn && (
+                                      <p className="text-xs font-medium mb-1 opacity-70">
+                                        {message.sender_name || message.user_name}
+                                      </p>
+                                    )}
 
-                                  {isEditing ? (
-                                    <div className="flex flex-col gap-2">
-                                      <Input
-                                        value={editContent}
-                                        onChange={(e) => setEditContent(e.target.value)}
-                                        className="bg-background/20 border-0 text-inherit"
-                                        autoFocus
-                                      />
-                                      <div className="flex gap-1 justify-end">
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-6 px-2"
-                                          onClick={handleCancelEdit}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </Button>
-                                        <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
-                                          <Check className="h-3 w-3" />
-                                        </Button>
+                                    {isEditing ? (
+                                      <div className="flex flex-col gap-2">
+                                        <Input
+                                          value={editContent}
+                                          onChange={(e) => setEditContent(e.target.value)}
+                                          className="bg-background/20 border-0 text-inherit"
+                                          autoFocus
+                                        />
+                                        <div className="flex gap-1 justify-end">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 px-2"
+                                            onClick={handleCancelEdit}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
+                                            <Check className="h-3 w-3" />
+                                          </Button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div className={cn("text-sm break-words")}>
-                                      <ReactMarkdown
-                                        remarkPlugins={[remarkGfm]}
-                                        rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                                        components={{
-                                          p: ({ children }) => (
-                                            <p className="my-0.5 break-words leading-relaxed">{children}</p>
-                                          ),
-                                          strong: ({ children }) => {
-                                            // Check if this is a mention (starts with @)
-                                            const text = String(children);
-                                            if (text.startsWith("@")) {
-                                              return (
-                                                <span
-                                                  className={cn(
-                                                    "font-semibold px-1 py-0.5 rounded",
-                                                    isOwn
-                                                      ? "bg-primary-foreground/20 text-primary-foreground"
-                                                      : "bg-primary/10 text-primary",
-                                                  )}
-                                                >
-                                                  {children}
-                                                </span>
-                                              );
-                                            }
-                                            return <strong className="font-bold">{children}</strong>;
-                                          },
-                                          em: ({ children }) => <em className="italic">{children}</em>,
-                                          ul: ({ children }) => (
-                                            <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
-                                          ),
-                                          ol: ({ children }) => (
-                                            <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
-                                          ),
-                                          li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
-                                          a: ({ href, children }) => (
-                                            <a
-                                              href={href}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className={cn(
-                                                "hover:opacity-80 break-all underline",
-                                                isOwn ? "text-primary-foreground" : "text-primary",
-                                              )}
-                                            >
-                                              {children}
-                                            </a>
-                                          ),
-                                          code: ({ children }) => (
-                                            <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
-                                              {children}
-                                            </code>
-                                          ),
-                                          pre: ({ children }) => (
-                                            <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
-                                              {children}
-                                            </pre>
-                                          ),
-                                          h1: ({ children }) => (
-                                            <h1 className="text-base font-bold my-2">{children}</h1>
-                                          ),
-                                          h2: ({ children }) => (
-                                            <h2 className="text-sm font-bold my-1.5">{children}</h2>
-                                          ),
-                                          h3: ({ children }) => (
-                                            <h3 className="text-sm font-semibold my-1">{children}</h3>
-                                          ),
-                                        }}
+                                    ) : (
+                                      <div className={cn("text-sm break-words")}>
+                                        <ReactMarkdown
+                                          remarkPlugins={[remarkGfm]}
+                                          rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                                          components={{
+                                            p: ({ children }) => (
+                                              <p className="my-0.5 break-words leading-relaxed">{children}</p>
+                                            ),
+                                            strong: ({ children }) => {
+                                              // Check if this is a mention (starts with @)
+                                              const text = String(children);
+                                              if (text.startsWith("@")) {
+                                                return (
+                                                  <span
+                                                    className={cn(
+                                                      "font-semibold px-1 py-0.5 rounded",
+                                                      isOwn
+                                                        ? "bg-primary-foreground/20 text-primary-foreground"
+                                                        : "bg-primary/10 text-primary",
+                                                    )}
+                                                  >
+                                                    {children}
+                                                  </span>
+                                                );
+                                              }
+                                              return <strong className="font-bold">{children}</strong>;
+                                            },
+                                            em: ({ children }) => <em className="italic">{children}</em>,
+                                            ul: ({ children }) => (
+                                              <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
+                                            ),
+                                            ol: ({ children }) => (
+                                              <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
+                                            ),
+                                            li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
+                                            a: ({ href, children }) => (
+                                              <a
+                                                href={href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={cn(
+                                                  "hover:opacity-80 break-all underline",
+                                                  isOwn ? "text-primary-foreground" : "text-primary",
+                                                )}
+                                              >
+                                                {children}
+                                              </a>
+                                            ),
+                                            code: ({ children }) => (
+                                              <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
+                                                {children}
+                                              </code>
+                                            ),
+                                            pre: ({ children }) => (
+                                              <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
+                                                {children}
+                                              </pre>
+                                            ),
+                                            h1: ({ children }) => (
+                                              <h1 className="text-base font-bold my-2">{children}</h1>
+                                            ),
+                                            h2: ({ children }) => (
+                                              <h2 className="text-sm font-bold my-1.5">{children}</h2>
+                                            ),
+                                            h3: ({ children }) => (
+                                              <h3 className="text-sm font-semibold my-1">{children}</h3>
+                                            ),
+                                          }}
+                                        >
+                                          {renderMessageContent(message.content, isOwn)}
+                                        </ReactMarkdown>
+                                      </div>
+                                    )}
+
+                                    {/* Attachments Display */}
+                                    {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
+                                      <ChatAttachmentDisplay attachments={messageAttachments[message.id]} isOwn={isOwn} />
+                                    )}
+
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <p
+                                        className={cn(
+                                          "text-xs",
+                                          isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
+                                        )}
                                       >
-                                        {renderMessageContent(message.content, isOwn)}
-                                      </ReactMarkdown>
+                                        {new Date(message.created_at).toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                        })}
+                                        {message.edited_at && <span className="ml-1 italic">(edited)</span>}
+                                      </p>
                                     </div>
-                                  )}
 
-                                  {/* Attachments Display */}
-                                  {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
-                                    <ChatAttachmentDisplay attachments={messageAttachments[message.id]} isOwn={isOwn} />
-                                  )}
-
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <p
-                                      className={cn(
-                                        "text-xs",
-                                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
-                                      )}
-                                    >
-                                      {new Date(message.created_at).toLocaleTimeString("en-US", {
-                                        hour: "numeric",
-                                        minute: "2-digit",
-                                      })}
-                                      {message.edited_at && <span className="ml-1 italic">(edited)</span>}
-                                    </p>
+                                    <MessageReactions
+                                      reactions={getAggregatedReactions(message)}
+                                      onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                      isOwn={isOwn}
+                                    />
                                   </div>
 
-                                  <MessageReactions
-                                    reactions={getAggregatedReactions(message)}
-                                    onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                  {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
+                                  <ChatMessageActions
                                     isOwn={isOwn}
+                                    onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
+                                    onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
+                                    onReact={(emoji) => toggleReaction(message.id, emoji)}
+                                    canConvertToTask={isAdmin}
+                                    onConvertToTask={() => {
+                                      setSelectedMessageForTask({
+                                        content: message.content,
+                                        sender: message.sender_name || message.user_name || 'Unknown',
+                                        timestamp: new Date(message.created_at).toLocaleString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                          hour: 'numeric',
+                                          minute: '2-digit',
+                                        }),
+                                        channel: selectedChannel?.name || 'Unknown',
+                                      });
+                                      setConvertToTaskOpen(true);
+                                    }}
                                   />
                                 </div>
-
-                                {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
-                                <ChatMessageActions
-                                  isOwn={isOwn}
-                                  onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
-                                  onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
-                                  onReact={(emoji) => toggleReaction(message.id, emoji)}
-                                  canConvertToTask={isAdmin}
-                                  onConvertToTask={() => {
-                                    setSelectedMessageForTask({
-                                      content: message.content,
-                                      sender: message.sender_name || message.user_name || 'Unknown',
-                                      timestamp: new Date(message.created_at).toLocaleString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric',
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                      }),
-                                      channel: selectedChannel?.name || 'Unknown',
-                                    });
-                                    setConvertToTaskOpen(true);
-                                  }}
-                                />
                               </div>
-                            </div>
+                            </MessageVisibilityTracker>
                           );
                         })
                       )}
