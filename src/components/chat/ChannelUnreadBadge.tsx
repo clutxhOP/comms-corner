@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface ChannelUnreadBadgeProps {
@@ -6,34 +7,19 @@ interface ChannelUnreadBadgeProps {
 }
 
 export function ChannelUnreadBadge({ count, className }: ChannelUnreadBadgeProps) {
-  console.log("ChannelUnreadBadge render - count:", count, "type:", typeof count);
-
-  if (count <= 0) {
-    console.log("Badge hidden - count is 0 or negative");
-    return null;
-  }
+  if (count <= 0) return null;
 
   const displayCount = count > 99 ? "99+" : count;
-  console.log("Badge SHOWING - displayCount:", displayCount);
 
   return (
-    <div
-      style={{
-        width: "30px",
-        height: "30px",
-        borderRadius: "50%",
-        backgroundColor: "#ff0000",
-        color: "#ffffff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "12px",
-        fontWeight: "bold",
-        flexShrink: 0,
-        border: "2px solid yellow",
-      }}
+    <Badge
+      variant="destructive"
+      className={cn(
+        "ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold flex items-center justify-center rounded-full",
+        className,
+      )}
     >
       {displayCount}
-    </div>
+    </Badge>
   );
 }
