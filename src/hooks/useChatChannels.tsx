@@ -76,6 +76,7 @@ export function useChannelMessages(channelId: string | null) {
   const fetchMessages = async () => {
     if (!channelId) return;
 
+    console.log("📥 FETCHING MESSAGES for channel:", channelId);
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -87,6 +88,8 @@ export function useChannelMessages(channelId: string | null) {
         .limit(100);
 
       if (error) throw error;
+
+      console.log("📦 Fetched", data?.length, "messages");
 
       // Fetch user names
       const userIds = [...new Set((data || []).map((m) => m.user_id))];
@@ -105,6 +108,7 @@ export function useChannelMessages(channelId: string | null) {
         reactions: reactions?.filter((r) => r.message_id === msg.id) || [],
       }));
 
+      console.log("✨ Setting messages:", messagesWithNames.length);
       setMessages(messagesWithNames);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -123,8 +127,18 @@ export function useChannelMessages(channelId: string | null) {
     }
   };
 
+  // Debug: Track all message state changes
+  useEffect(() => {
+    console.log("📊 MESSAGES STATE CHANGED:", {
+      count: messages.length,
+      messageIds: messages.map((m) => m.id.substring(0, 8)),
+      lastMessage: messages[messages.length - 1]?.content?.substring(0, 30),
+    });
+  }, [messages]);
+
   useEffect(() => {
     if (channelId) {
+      console.log("🔄 Channel changed to:", channelId);
       fetchMessages();
 
       // Subscribe to realtime updates for messages
@@ -149,7 +163,7 @@ export function useChannelMessages(channelId: string | null) {
                 return prev;
               }
 
-              console.log("✅ Adding new message:", newMessage.id, newMessage.content?.substring(0, 30));
+              console.log("✅ Adding new message to state:", newMessage.id, newMessage.content?.substring(0, 30));
 
               // Fetch user name asynchronously
               supabase
@@ -158,6 +172,7 @@ export function useChannelMessages(channelId: string | null) {
                 .eq("user_id", newMessage.user_id)
                 .maybeSingle()
                 .then(({ data: profile }) => {
+                  console.log("👤 Got profile for message:", newMessage.id, profile?.full_name);
                   setMessages((current) =>
                     current.map((m) =>
                       m.id === newMessage.id ? { ...m, user_name: profile?.full_name || "Unknown" } : m,
@@ -265,16 +280,20 @@ export function useChannelMessages(channelId: string | null) {
         .subscribe();
 
       return () => {
-        console.log("🔌 Unsubscribing from channels");
+        console.log("🔌 Unsubscribing from channel:", channelId);
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(reactionsChannel);
       };
+    } else {
+      console.log("❌ No channel selected");
+      setMessages([]);
     }
   }, [channelId]);
 
   const sendMessage = async (content: string, mentions: string[] = []): Promise<string | null> => {
     if (!channelId || !user || !content.trim()) return null;
 
+    console.log("📤 Sending message:", content.substring(0, 30));
     try {
       const { data, error } = await supabase
         .from("chat_messages")
@@ -288,6 +307,7 @@ export function useChannelMessages(channelId: string | null) {
         .single();
 
       if (error) throw error;
+      console.log("✉️ Message sent, ID:", data?.id);
       return data?.id || null;
     } catch (error) {
       console.error("Error sending message:", error);
