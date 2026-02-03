@@ -37,8 +37,10 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
     <div className="flex items-center gap-2 px-4 py-2 bg-muted border-l-4 border-primary">
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-primary">{userName}</div>
+
         <div className="text-sm text-primary/70 truncate">{content}</div>
       </div>
+
       <Button variant="ghost" size="sm" onClick={onCancel} className="h-6 w-6 p-0">
         <X className="h-4 w-4" />
       </Button>
@@ -49,11 +51,9 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
 // Replied Message Component (inline)
 function RepliedMessage({ userName, content, onClick }: { userName: string; content: string; onClick?: () => void }) {
   return (
-    <div
-      className="pl-3 border-l-2 border-primary/50 mb-2 cursor-pointer hover:border-primary transition-colors"
-      onClick={onClick}
-    >
+    <div onClick={onClick} className="mb-2 pl-3 border-l-2 border-primary/60 cursor-pointer">
       <div className="text-xs font-semibold text-primary">{userName}</div>
+
       <div className="text-sm text-primary/70 line-clamp-2">{content}</div>
     </div>
   );
