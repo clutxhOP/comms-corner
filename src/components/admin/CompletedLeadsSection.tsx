@@ -13,7 +13,7 @@ export function CompletedLeadsSection() {
   const { assignments, loading, reassignById } = useLeadAssignments();
   const { allBusinesses } = useBusinesses();
   const { users } = useUsers();
-  const { triggerWebhook } = useWebhooks();
+  const { triggerWebhook, webhooks, loading: webhooksLoading } = useWebhooks();
   const [selectedAssignment, setSelectedAssignment] = useState<LeadAssignment | null>(null);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
 
@@ -50,6 +50,10 @@ export function CompletedLeadsSection() {
   const handleReassignConfirm = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     if (!selectedAssignment) return;
 
+    console.log("🔍 Webhooks available:", webhooks);
+    console.log("🔍 Webhooks loading:", webhooksLoading);
+    console.log("🔍 Reassigning with data:", data);
+
     await reassignById(selectedAssignment.id, {
       business_ids: data.businessIds,
       whatsapp: data.whatsapp,
@@ -78,11 +82,18 @@ export function CompletedLeadsSection() {
       recordId: selectedAssignment.record_id || selectedAssignment.client_id,
     }));
 
+    console.log("🚀 Triggering webhook with payload:", {
+      event: "lead.reassigned",
+      reassigned_to: reassignedTo,
+    });
+
     // Trigger webhook
     await triggerWebhook("lead_reassigned", {
       event: "lead.reassigned",
       reassigned_to: reassignedTo,
     });
+
+    console.log("✅ Webhook trigger completed");
   };
 
   if (loading) {
