@@ -118,7 +118,6 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       id: task.id,
       icp: details.icp || "",
       contactInfo: details.contactInfo,
-      other_contact: details.whatsapp,
       proofLink: details.proofLink,
       requirement: details.requirement,
       recordId: details.recordId || details.clientId,
