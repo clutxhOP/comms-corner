@@ -84,8 +84,7 @@ export function useChannelMessages(channelId: string | null) {
         .select("*")
         .eq("channel_id", channelId)
         .is("deleted_at", null)
-        .order("created_at", { ascending: true })
-        .limit(100);
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
