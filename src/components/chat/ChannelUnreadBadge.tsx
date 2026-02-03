@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface ChannelUnreadBadgeProps {
@@ -20,14 +19,19 @@ export function ChannelUnreadBadge({ count, className }: ChannelUnreadBadgeProps
   console.log("Badge SHOWING - displayCount:", displayCount);
 
   return (
-    <Badge
-      variant="destructive"
+    <span
       className={cn(
-        "ml-auto h-6 min-w-[24px] px-2 text-xs font-bold flex items-center justify-center rounded-full bg-red-500 text-white z-50",
+        "inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white",
         className,
       )}
+      style={{
+        display: "inline-flex",
+        backgroundColor: "#ef4444",
+        color: "#ffffff",
+        zIndex: 999,
+      }}
     >
       {displayCount}
-    </Badge>
+    </span>
   );
 }
