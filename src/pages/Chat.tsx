@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
+import { useChatChannels, useChannelMessages, ChannelMessage } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
@@ -249,7 +249,7 @@ export default function Chat() {
 
     try {
       await markChannelAsRead(selectedChannelId);
-      // NEW: Pass replyingTo.id to sendMessage
+      // Pass replyingTo.id as third parameter
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions, replyingTo?.id);
 
       if (messageId && attachments.length > 0) {
@@ -275,7 +275,7 @@ export default function Chat() {
 
       setNewMessage("");
       setMentions([]);
-      setReplyingTo(null); // NEW: Clear reply after sending
+      setReplyingTo(null); // Clear reply after sending
     } finally {
       setIsSending(false);
     }
@@ -338,12 +338,12 @@ export default function Chat() {
     }
   };
 
-  // NEW: Handle reply
+  // Handle reply
   const handleReply = (messageId: string, content: string, userName: string) => {
     setReplyingTo({ id: messageId, content, userName });
   };
 
-  // NEW: Scroll to replied message
+  // Scroll to replied message
   const scrollToMessage = (messageId: string) => {
     const el = document.getElementById(`chat-message-${messageId}`);
     if (el) {
@@ -358,7 +358,7 @@ export default function Chat() {
     const result: {
       type: "separator" | "message" | "unread-divider";
       date?: string;
-      message?: (typeof messages)[0];
+      message?: ChannelMessage;
       unreadCount?: number;
     }[] = [];
     let lastDate: string | null = null;
@@ -391,7 +391,7 @@ export default function Chat() {
     return result;
   };
 
-  const getAggregatedReactions = (message: (typeof messages)[0]) => {
+  const getAggregatedReactions = (message: ChannelMessage) => {
     const reactionMap = new Map<string, { count: number; hasReacted: boolean }>();
 
     message.reactions?.forEach((reaction) => {
@@ -546,7 +546,7 @@ export default function Chat() {
                                         </p>
                                       )}
 
-                                      {/* NEW: Show replied message if exists */}
+                                      {/* Show replied message if exists */}
                                       {message.replied_message && (
                                         <RepliedMessage
                                           userName={message.replied_message.user_name}
@@ -727,7 +727,7 @@ export default function Chat() {
 
                 {/* Input */}
                 <div className="border-t bg-card flex-shrink-0">
-                  {/* NEW: Show reply preview if replying */}
+                  {/* Show reply preview if replying */}
                   {replyingTo && (
                     <ReplyPreview
                       userName={replyingTo.userName}
