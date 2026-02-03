@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useChatChannels, useChannelMessages, ChannelMessage } from "@/hooks/useChatChannels";
+import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
@@ -37,10 +37,8 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
     <div className="flex items-center gap-2 px-4 py-2 bg-muted border-l-4 border-primary">
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-primary">{userName}</div>
-
-        <div className="text-sm text-primary/70 truncate">{content}</div>
+        <div className="text-sm text-muted-foreground truncate">{content}</div>
       </div>
-
       <Button variant="ghost" size="sm" onClick={onCancel} className="h-6 w-6 p-0">
         <X className="h-4 w-4" />
       </Button>
@@ -51,10 +49,12 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
 // Replied Message Component (inline)
 function RepliedMessage({ userName, content, onClick }: { userName: string; content: string; onClick?: () => void }) {
   return (
-    <div onClick={onClick} className="mb-2 pl-3 border-l-2 border-primary/60 cursor-pointer">
+    <div
+      className="pl-3 border-l-2 border-primary/50 mb-2 cursor-pointer hover:border-primary transition-colors"
+      onClick={onClick}
+    >
       <div className="text-xs font-semibold text-primary">{userName}</div>
-
-      <div className="text-sm text-primary/70 line-clamp-2">{content}</div>
+      <div className="text-sm text-muted-foreground line-clamp-2">{content}</div>
     </div>
   );
 }
@@ -249,7 +249,7 @@ export default function Chat() {
 
     try {
       await markChannelAsRead(selectedChannelId);
-      // Pass replyingTo.id as third parameter
+      // NEW: Pass replyingTo.id to sendMessage
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions, replyingTo?.id);
 
       if (messageId && attachments.length > 0) {
@@ -275,7 +275,7 @@ export default function Chat() {
 
       setNewMessage("");
       setMentions([]);
-      setReplyingTo(null); // Clear reply after sending
+      setReplyingTo(null); // NEW: Clear reply after sending
     } finally {
       setIsSending(false);
     }
@@ -338,12 +338,12 @@ export default function Chat() {
     }
   };
 
-  // Handle reply
+  // NEW: Handle reply
   const handleReply = (messageId: string, content: string, userName: string) => {
     setReplyingTo({ id: messageId, content, userName });
   };
 
-  // Scroll to replied message
+  // NEW: Scroll to replied message
   const scrollToMessage = (messageId: string) => {
     const el = document.getElementById(`chat-message-${messageId}`);
     if (el) {
@@ -358,7 +358,7 @@ export default function Chat() {
     const result: {
       type: "separator" | "message" | "unread-divider";
       date?: string;
-      message?: ChannelMessage;
+      message?: (typeof messages)[0];
       unreadCount?: number;
     }[] = [];
     let lastDate: string | null = null;
@@ -391,7 +391,7 @@ export default function Chat() {
     return result;
   };
 
-  const getAggregatedReactions = (message: ChannelMessage) => {
+  const getAggregatedReactions = (message: (typeof messages)[0]) => {
     const reactionMap = new Map<string, { count: number; hasReacted: boolean }>();
 
     message.reactions?.forEach((reaction) => {
@@ -546,7 +546,7 @@ export default function Chat() {
                                         </p>
                                       )}
 
-                                      {/* Show replied message if exists */}
+                                      {/* NEW: Show replied message if exists */}
                                       {message.replied_message && (
                                         <RepliedMessage
                                           userName={message.replied_message.user_name}
@@ -727,7 +727,7 @@ export default function Chat() {
 
                 {/* Input */}
                 <div className="border-t bg-card flex-shrink-0">
-                  {/* Show reply preview if replying */}
+                  {/* NEW: Show reply preview if replying */}
                   {replyingTo && (
                     <ReplyPreview
                       userName={replyingTo.userName}
