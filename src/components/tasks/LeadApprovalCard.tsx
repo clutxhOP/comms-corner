@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Task, LeadApprovalDetails } from "@/types";
 import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,9 +28,16 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const { roles } = useUserRoles(user?.id);
   const { createAssignment, reassignLead, getAssignmentByLeadId } = useLeadAssignments();
   const { allBusinesses } = useBusinesses();
-  const { triggerWebhook } = useWebhooks();
+  const { triggerWebhook, webhooks, fetchWebhooks } = useWebhooks();
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
+
+  // Ensure webhooks are loaded
+  useEffect(() => {
+    if (webhooks.length === 0) {
+      fetchWebhooks();
+    }
+  }, [webhooks.length, fetchWebhooks]);
 
   const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => ({
     lead_id: task.id,
@@ -70,6 +77,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
     console.log("🔍 Starting reassignment process...");
     console.log("🔍 Selected business IDs:", data.businessIds);
     console.log("🔍 Current user roles:", roles);
+    console.log("🔍 Webhooks loaded:", webhooks);
 
     const existingAssignment = getAssignmentByLeadId(task.id);
 
