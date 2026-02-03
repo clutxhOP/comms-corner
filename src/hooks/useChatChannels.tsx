@@ -28,9 +28,16 @@ export interface ChannelMessage {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  reply_to: string | null; // NEW
   user_name?: string;
   sender_name?: string;
   reactions?: MessageReaction[];
+  replied_message?: {
+    // NEW
+    id: string;
+    content: string;
+    user_name: string;
+  } | null;
 }
 
 export function useChatChannels() {
@@ -101,11 +108,32 @@ export function useChannelMessages(channelId: string | null) {
         .select("*")
         .in("message_id", messageIds);
 
-      const messagesWithNames = (data || []).map((msg) => ({
-        ...msg,
-        user_name: profiles?.find((p) => p.user_id === msg.user_id)?.full_name || "Unknown",
-        reactions: reactions?.filter((r) => r.message_id === msg.id) || [],
-      }));
+      // NEW: Fetch replied messages details
+      const replyToIds = [...new Set((data || []).filter((m) => m.reply_to).map((m) => m.reply_to!))];
+      let repliedMessages: any[] = [];
+      if (replyToIds.length > 0) {
+        const { data: repliedData } = await supabase
+          .from("chat_messages")
+          .select("id, content, user_id")
+          .in("id", replyToIds);
+        repliedMessages = repliedData || [];
+      }
+
+      const messagesWithNames = (data || []).map((msg) => {
+        const repliedMsg = repliedMessages.find((r) => r.id === msg.reply_to);
+        return {
+          ...msg,
+          user_name: profiles?.find((p) => p.user_id === msg.user_id)?.full_name || "Unknown",
+          reactions: reactions?.filter((r) => r.message_id === msg.id) || [],
+          replied_message: repliedMsg
+            ? {
+                id: repliedMsg.id,
+                content: repliedMsg.content,
+                user_name: profiles?.find((p) => p.user_id === repliedMsg.user_id)?.full_name || "Unknown",
+              }
+            : null,
+        };
+      });
 
       console.log("✨ Setting messages:", messagesWithNames.length);
       setMessages(messagesWithNames);
@@ -179,12 +207,47 @@ export function useChannelMessages(channelId: string | null) {
                   );
                 });
 
+              // NEW: Fetch replied message details if reply_to exists
+              if (newMessage.reply_to) {
+                supabase
+                  .from("chat_messages")
+                  .select("id, content, user_id")
+                  .eq("id", newMessage.reply_to)
+                  .maybeSingle()
+                  .then(({ data: repliedMsg }) => {
+                    if (repliedMsg) {
+                      supabase
+                        .from("profiles")
+                        .select("full_name")
+                        .eq("user_id", repliedMsg.user_id)
+                        .maybeSingle()
+                        .then(({ data: repliedProfile }) => {
+                          setMessages((current) =>
+                            current.map((m) =>
+                              m.id === newMessage.id
+                                ? {
+                                    ...m,
+                                    replied_message: {
+                                      id: repliedMsg.id,
+                                      content: repliedMsg.content,
+                                      user_name: repliedProfile?.full_name || "Unknown",
+                                    },
+                                  }
+                                : m,
+                            ),
+                          );
+                        });
+                    }
+                  });
+              }
+
               return [
                 ...prev,
                 {
                   ...newMessage,
                   user_name: "Loading...",
                   reactions: [],
+                  replied_message: null,
                 },
               ];
             });
@@ -289,10 +352,11 @@ export function useChannelMessages(channelId: string | null) {
     }
   }, [channelId]);
 
-  const sendMessage = async (content: string, mentions: string[] = []): Promise<string | null> => {
+  // NEW: Updated sendMessage to accept replyTo parameter
+  const sendMessage = async (content: string, mentions: string[] = [], replyTo?: string): Promise<string | null> => {
     if (!channelId || !user || !content.trim()) return null;
 
-    console.log("📤 Sending message:", content.substring(0, 30));
+    console.log("📤 Sending message:", content.substring(0, 30), "Reply to:", replyTo);
     try {
       const { data, error } = await supabase
         .from("chat_messages")
@@ -301,6 +365,7 @@ export function useChannelMessages(channelId: string | null) {
           user_id: user.id,
           content: content.trim(),
           mentions: mentions.length > 0 ? mentions : [],
+          reply_to: replyTo || null,
         })
         .select()
         .single();
