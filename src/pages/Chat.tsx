@@ -141,6 +141,28 @@ export default function Chat() {
     }
   }, [messages, targetMessageId]);
 
+  // Auto-mark as read when scrolled to bottom
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement || !selectedChannelId) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+      // If user scrolled near the bottom, mark all messages as read
+      if (isNearBottom) {
+        const unreadCount = getUnreadCount(selectedChannelId);
+        if (unreadCount > 0) {
+          markChannelAsRead(selectedChannelId);
+        }
+      }
+    };
+
+    scrollElement.addEventListener("scroll", handleScroll);
+    return () => scrollElement.removeEventListener("scroll", handleScroll);
+  }, [selectedChannelId, getUnreadCount, markChannelAsRead]);
+
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   const extractMentionIdsFromText = (text: string): string[] => {
