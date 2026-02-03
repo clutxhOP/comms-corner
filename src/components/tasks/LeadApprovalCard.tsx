@@ -8,6 +8,8 @@ import { ReassignLeadDialog } from "./ReassignLeadDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useLeadAssignments, CreateLeadAssignmentData } from "@/hooks/useLeadAssignments";
+import { useBusinesses, Business } from "@/hooks/useBusinesses";
+import { useWebhooks } from "@/hooks/useWebhooks";
 
 interface LeadApprovalCardProps {
   task: Task;
@@ -25,6 +27,8 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
   const { createAssignment, reassignLead, getAssignmentByLeadId } = useLeadAssignments();
+  const { allBusinesses } = useBusinesses();
+  const { triggerWebhook } = useWebhooks();
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
 
@@ -63,6 +67,10 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   };
 
   const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
+    console.log("🔍 Starting reassignment process...");
+    console.log("🔍 Selected business IDs:", data.businessIds);
+    console.log("🔍 Current user roles:", roles);
+
     const existingAssignment = getAssignmentByLeadId(task.id);
 
     if (existingAssignment) {
@@ -78,6 +86,43 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
+
+    // Get full business details for selected businesses
+    const selectedBusinesses = allBusinesses.filter((b: Business) => data.businessIds.includes(b.id));
+
+    console.log("🔍 Selected businesses:", selectedBusinesses);
+
+    // Build webhook payload
+    const reassignedTo = selectedBusinesses.map((business: Business) => ({
+      // Business details (from businesses table - different for each business)
+      clientId: business.id,
+      clientName: business.name || "Unknown Business",
+      whatsapp: business.whatsapp || "",
+      website: business.website || null,
+      category: business.category || "",
+
+      // Lead details (from task details - same for all businesses)
+      id: task.id,
+      icp: details.icp || "",
+      contactInfo: details.contactInfo,
+      other_contact: details.whatsapp,
+      proofLink: details.proofLink,
+      requirement: details.requirement,
+      recordId: details.recordId || details.clientId,
+    }));
+
+    console.log("🚀 Triggering webhook with payload:", {
+      event: "lead.reassigned",
+      reassigned_to: reassignedTo,
+    });
+
+    // Trigger webhook
+    await triggerWebhook("lead_reassigned", {
+      event: "lead.reassigned",
+      reassigned_to: reassignedTo,
+    });
+
+    console.log("✅ Webhook triggered successfully");
   };
 
   return (
