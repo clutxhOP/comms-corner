@@ -1,59 +1,60 @@
-import { useState } from 'react';
-import { MoreHorizontal, Edit2, Trash2, Smile, ClipboardList } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { MoreHorizontal, Edit2, Trash2, Smile, ClipboardList, Reply } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface ChatMessageActionsProps {
   isOwn: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onReact: (emoji: string) => void;
+  onReply: () => void;
   canConvertToTask?: boolean;
   onConvertToTask?: () => void;
 }
 
-const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
+const EMOJI_OPTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏", "🎉"];
 
-export function ChatMessageActions({ 
-  isOwn, 
-  onEdit, 
-  onDelete, 
+export function ChatMessageActions({
+  isOwn,
+  onEdit,
+  onDelete,
   onReact,
+  onReply,
   canConvertToTask = false,
   onConvertToTask,
 }: ChatMessageActionsProps) {
   const [emojiOpen, setEmojiOpen] = useState(false);
 
-  // Show dropdown if user owns the message OR can convert to task (admin)
   const showDropdownMenu = isOwn || canConvertToTask;
-
-  // Has any menu items to show
   const hasEditDeleteOptions = isOwn;
   const hasConvertOption = canConvertToTask && onConvertToTask;
 
   return (
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onReply}
+        className={cn("h-6 w-6 rounded-full", "text-muted-foreground hover:text-foreground hover:bg-muted")}
+      >
+        <Reply className="h-3.5 w-3.5" />
+      </Button>
+
       <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "h-6 w-6 rounded-full",
-              "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
+            className={cn("h-6 w-6 rounded-full", "text-muted-foreground hover:text-foreground hover:bg-muted")}
           >
             <Smile className="h-3.5 w-3.5" />
           </Button>
@@ -82,16 +83,12 @@ export function ChatMessageActions({
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "h-6 w-6 rounded-full",
-                "text-muted-foreground hover:text-foreground hover:bg-muted"
-              )}
+              className={cn("h-6 w-6 rounded-full", "text-muted-foreground hover:text-foreground hover:bg-muted")}
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {/* Edit and Delete options - always shown first for own messages */}
             {hasEditDeleteOptions && (
               <>
                 <DropdownMenuItem onClick={onEdit}>
@@ -104,9 +101,7 @@ export function ChatMessageActions({
                 </DropdownMenuItem>
               </>
             )}
-            {/* Separator only if both sections are shown */}
             {hasEditDeleteOptions && hasConvertOption && <DropdownMenuSeparator />}
-            {/* Convert to Task option - only for admins */}
             {hasConvertOption && (
               <DropdownMenuItem onClick={onConvertToTask}>
                 <ClipboardList className="h-4 w-4 mr-2" />
