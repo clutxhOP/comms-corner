@@ -26,7 +26,6 @@ import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
 import { ChatDropZone } from "@/components/chat/ChatDropZone";
 import { ConvertToTaskDialog } from "@/components/chat/ConvertToTaskDialog";
 import { UnreadDivider } from "@/components/chat/UnreadDivider";
-import { ChannelUnreadBadge } from "@/components/chat/ChannelUnreadBadge";
 import { MessageVisibilityTracker } from "@/components/chat/MessageVisibilityTracker";
 import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
@@ -403,20 +402,34 @@ export default function Chat() {
                         key={channel.id}
                         onClick={() => setSelectedChannelId(channel.id)}
                         className={cn(
-                          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50 relative",
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
                           selectedChannelId === channel.id && "bg-muted",
                         )}
                       >
                         <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0 flex-1 overflow-hidden">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-foreground truncate">{channel.name}</p>
                           {channel.description && (
                             <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
                           )}
                         </div>
                         {unreadCount > 0 && (
-                          <div className="shrink-0">
-                            <ChannelUnreadBadge count={unreadCount} />
+                          <div
+                            style={{
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "50%",
+                              backgroundColor: "#ef4444",
+                              color: "#ffffff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {unreadCount > 99 ? "99+" : unreadCount}
                           </div>
                         )}
                       </button>
