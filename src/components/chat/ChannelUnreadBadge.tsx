@@ -13,25 +13,27 @@ export function ChannelUnreadBadge({ count, className }: ChannelUnreadBadgeProps
     return null;
   }
 
-  // Format count (show 99+ for large numbers)
   const displayCount = count > 99 ? "99+" : count;
-
   console.log("Badge SHOWING - displayCount:", displayCount);
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white",
-        className,
-      )}
+    <div
       style={{
-        display: "inline-flex",
-        backgroundColor: "#ef4444",
+        width: "30px",
+        height: "30px",
+        borderRadius: "50%",
+        backgroundColor: "#ff0000",
         color: "#ffffff",
-        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        fontWeight: "bold",
+        flexShrink: 0,
+        border: "2px solid yellow",
       }}
     >
       {displayCount}
-    </span>
+    </div>
   );
 }
