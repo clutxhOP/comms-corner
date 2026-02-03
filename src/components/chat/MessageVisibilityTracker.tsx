@@ -1,4 +1,4 @@
-import { useRef, useEffect, ReactNode } from 'react';
+import { useRef, useEffect, ReactNode } from "react";
 
 interface MessageVisibilityTrackerProps {
   messageId: string;
@@ -17,6 +17,7 @@ export function MessageVisibilityTracker({
 }: MessageVisibilityTrackerProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const hasBeenMarkedRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Don't track own messages
@@ -26,29 +27,27 @@ export function MessageVisibilityTracker({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !hasBeenMarkedRef.current) {
-            // Mark as read after the message has been visible for 1 second
-            const timeoutId = setTimeout(() => {
-              if (entry.isIntersecting && !hasBeenMarkedRef.current) {
+            // Mark as read after 300ms of visibility (faster than before)
+            timeoutRef.current = setTimeout(() => {
+              if (!hasBeenMarkedRef.current) {
                 hasBeenMarkedRef.current = true;
                 onVisible(channelId, messageId);
               }
-            }, 1000);
-
-            // Store timeout for cleanup
-            (entry.target as any)._readTimeout = timeoutId;
+            }, 300);
           } else {
-            // Clear timeout if message leaves viewport before 1 second
-            const timeoutId = (entry.target as any)._readTimeout;
-            if (timeoutId) {
-              clearTimeout(timeoutId);
+            // Clear timeout if message leaves viewport
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
             }
           }
         });
       },
       {
-        threshold: 0.5, // 50% of message must be visible
+        threshold: 0.3, // Only 30% of message needs to be visible (more forgiving)
         root: null,
-      }
+        rootMargin: "0px 0px -10% 0px", // Trigger slightly before fully in view
+      },
     );
 
     if (elementRef.current) {
@@ -56,11 +55,8 @@ export function MessageVisibilityTracker({
     }
 
     return () => {
-      if (elementRef.current) {
-        const timeoutId = (elementRef.current as any)._readTimeout;
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
       observer.disconnect();
     };
