@@ -32,12 +32,10 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
 
-  // Ensure webhooks are loaded
+  // Force fetch webhooks on mount
   useEffect(() => {
-    if (webhooks.length === 0) {
-      fetchWebhooks();
-    }
-  }, [webhooks.length, fetchWebhooks]);
+    fetchWebhooks();
+  }, []);
 
   const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => ({
     lead_id: task.id,
@@ -77,7 +75,14 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
     console.log("🔍 Starting reassignment process...");
     console.log("🔍 Selected business IDs:", data.businessIds);
     console.log("🔍 Current user roles:", roles);
-    console.log("🔍 Webhooks loaded:", webhooks);
+    console.log("🔍 Webhooks loaded count:", webhooks.length);
+    console.log("🔍 Webhooks array:", webhooks);
+
+    // Ensure webhooks are loaded before triggering
+    if (webhooks.length === 0) {
+      console.log("⚠️ Webhooks not loaded, fetching now...");
+      await fetchWebhooks();
+    }
 
     const existingAssignment = getAssignmentByLeadId(task.id);
 
@@ -123,6 +128,9 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       event: "lead.reassigned",
       reassigned_to: reassignedTo,
     });
+
+    // Small delay to ensure webhooks are loaded from the fetch above
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Trigger webhook
     await triggerWebhook("lead_reassigned", {
