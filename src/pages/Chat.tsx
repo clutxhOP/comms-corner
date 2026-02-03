@@ -90,6 +90,17 @@ export default function Chat() {
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  // Debug: Log unread counts whenever they change
+  useEffect(() => {
+    console.log("=== UNREAD COUNTS DEBUG ===");
+    console.log("All unread counts:", unreadCounts);
+    console.log("Current user ID:", user?.id);
+    console.log(
+      "Channels:",
+      channels.map((c) => ({ id: c.id, name: c.name })),
+    );
+  }, [unreadCounts, user, channels]);
+
   // Fetch user roles for department mention expansion
   useEffect(() => {
     const fetchUsersWithRoles = async () => {
@@ -295,13 +306,18 @@ export default function Chat() {
 
   // Group messages by date for separators
   const getMessagesWithSeparators = () => {
-    const result: { type: "separator" | "message" | "unread-divider"; date?: string; message?: (typeof messages)[0]; unreadCount?: number }[] = [];
+    const result: {
+      type: "separator" | "message" | "unread-divider";
+      date?: string;
+      message?: (typeof messages)[0];
+      unreadCount?: number;
+    }[] = [];
     let lastDate: string | null = null;
     let unreadDividerInserted = false;
 
     // Get unread count for current channel
     const currentUnreadCount = selectedChannelId ? getUnreadCount(selectedChannelId) : 0;
-    
+
     // Find first unread message index (messages not from current user that are unread)
     // For simplicity, we'll place the divider based on unread count from the end
     const totalMessages = messages.length;
@@ -313,13 +329,18 @@ export default function Chat() {
         result.push({ type: "separator", date: message.created_at });
         lastDate = messageDate;
       }
-      
+
       // Insert unread divider before the first unread message
-      if (!unreadDividerInserted && currentUnreadCount > 0 && index === firstUnreadIndex && message.user_id !== user?.id) {
+      if (
+        !unreadDividerInserted &&
+        currentUnreadCount > 0 &&
+        index === firstUnreadIndex &&
+        message.user_id !== user?.id
+      ) {
         result.push({ type: "unread-divider", unreadCount: currentUnreadCount });
         unreadDividerInserted = true;
       }
-      
+
       result.push({ type: "message", message });
     });
 
@@ -351,359 +372,372 @@ export default function Chat() {
 
   return (
     <>
-    <MainLayout>
-      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-        {/* Channel List - Fixed sidebar */}
-        <div className="w-64 border-r bg-card flex flex-col shrink-0">
-          <div className="p-4 border-b flex-shrink-0">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Channels</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search channels..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-muted border-0"
-              />
+      <MainLayout>
+        <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+          {/* Channel List - Fixed sidebar */}
+          <div className="w-64 border-r bg-card flex flex-col shrink-0">
+            <div className="p-4 border-b flex-shrink-0">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Channels</h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search channels..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-muted border-0"
+                />
+              </div>
             </div>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-2">
-              {channelsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                filteredChannels.map((channel) => {
-                  const unreadCount = getUnreadCount(channel.id);
-                  return (
-                    <button
-                      key={channel.id}
-                      onClick={() => setSelectedChannelId(channel.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
-                        selectedChannelId === channel.id && "bg-muted",
-                      )}
-                    >
-                      <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground truncate">{channel.name}</p>
-                        {channel.description && (
-                          <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                {channelsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  filteredChannels.map((channel) => {
+                    const unreadCount = getUnreadCount(channel.id);
+                    console.log(`Channel: ${channel.name} (${channel.id}), Unread Count: ${unreadCount}`);
+                    return (
+                      <button
+                        key={channel.id}
+                        onClick={() => setSelectedChannelId(channel.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-muted/50",
+                          selectedChannelId === channel.id && "bg-muted",
                         )}
-                      </div>
-                      <ChannelUnreadBadge count={unreadCount} />
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
-        </div>
+                      >
+                        <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground truncate">{channel.name}</p>
+                          {channel.description && (
+                            <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
+                          )}
+                        </div>
+                        <ChannelUnreadBadge count={unreadCount} />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-background overflow-hidden">
-          {selectedChannel ? (
-            <>
-              {/* Chat Header - Fixed and compact */}
-              <div className="flex items-center justify-between border-b bg-card px-4 py-2.5 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <Hash className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <h3 className="font-medium text-foreground text-sm">{selectedChannel.name}</h3>
-                    {selectedChannel.description && (
-                      <p className="text-xs text-muted-foreground">{selectedChannel.description}</p>
+          {/* Chat Area */}
+          <div className="flex-1 flex flex-col bg-background overflow-hidden">
+            {selectedChannel ? (
+              <>
+                {/* Chat Header - Fixed and compact */}
+                <div className="flex items-center justify-between border-b bg-card px-4 py-2.5 flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <Hash className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h3 className="font-medium text-foreground text-sm">{selectedChannel.name}</h3>
+                      {selectedChannel.description && (
+                        <p className="text-xs text-muted-foreground">{selectedChannel.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {getUnreadCount(selectedChannelId || "") > 0 && (
+                      <span className="text-xs font-medium text-destructive">
+                        {getUnreadCount(selectedChannelId || "")} unread
+                      </span>
                     )}
+                    <NotificationBell />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {getUnreadCount(selectedChannelId || '') > 0 && (
-                    <span className="text-xs font-medium text-destructive">
-                      {getUnreadCount(selectedChannelId || '')} unread
-                    </span>
-                  )}
-                  <NotificationBell />
-                </div>
-              </div>
 
-              {/* Messages - Scrollable area */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={scrollRef}>
-                <ChatDropZone onFilesDropped={handleFilesDropped}>
-                  <div className="max-w-3xl mx-auto px-4 w-full">
-                    <div className="flex flex-col gap-1 py-4">
-                      {messagesLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                        </div>
-                      ) : messages.length === 0 ? (
-                        <div className="flex items-center justify-center py-8">
-                          <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
-                        </div>
-                      ) : (
-                        getMessagesWithSeparators().map((item, index) => {
-                          if (item.type === "separator") {
-                            return <ChatDateSeparator key={`sep-${item.date}`} date={item.date!} />;
-                          }
+                {/* Messages - Scrollable area */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={scrollRef}>
+                  <ChatDropZone onFilesDropped={handleFilesDropped}>
+                    <div className="max-w-3xl mx-auto px-4 w-full">
+                      <div className="flex flex-col gap-1 py-4">
+                        {messagesLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                          </div>
+                        ) : messages.length === 0 ? (
+                          <div className="flex items-center justify-center py-8">
+                            <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
+                          </div>
+                        ) : (
+                          getMessagesWithSeparators().map((item, index) => {
+                            if (item.type === "separator") {
+                              return <ChatDateSeparator key={`sep-${item.date}`} date={item.date!} />;
+                            }
 
-                          if (item.type === "unread-divider") {
-                            return <UnreadDivider key="unread-divider" count={item.unreadCount || 0} />;
-                          }
+                            if (item.type === "unread-divider") {
+                              return <UnreadDivider key="unread-divider" count={item.unreadCount || 0} />;
+                            }
 
-                          const message = item.message!;
-                          const isOwn = message.user_id === user?.id;
-                          const isEditing = editingMessageId === message.id;
+                            const message = item.message!;
+                            const isOwn = message.user_id === user?.id;
+                            const isEditing = editingMessageId === message.id;
 
-                          return (
-                            <MessageVisibilityTracker
-                              key={message.id}
-                              messageId={message.id}
-                              channelId={selectedChannelId || ''}
-                              isOwnMessage={isOwn}
-                              onVisible={markAsRead}
-                            >
-                              <div className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
-                                <div className="group flex items-start gap-1 max-w-[70%]">
-                                  <div
-                                    id={`chat-message-${message.id}`}
-                                    className={cn(
-                                      "rounded-2xl px-4 py-2",
-                                      isOwn
-                                        ? "bg-primary text-primary-foreground rounded-br-md"
-                                        : "bg-muted rounded-bl-md",
-                                    )}
-                                  >
-                                    {!isOwn && (
-                                      <p className="text-xs font-medium mb-1 opacity-70">
-                                        {message.sender_name || message.user_name}
-                                      </p>
-                                    )}
+                            return (
+                              <MessageVisibilityTracker
+                                key={message.id}
+                                messageId={message.id}
+                                channelId={selectedChannelId || ""}
+                                isOwnMessage={isOwn}
+                                onVisible={markAsRead}
+                              >
+                                <div className={cn("flex py-1", isOwn ? "justify-end" : "justify-start")}>
+                                  <div className="group flex items-start gap-1 max-w-[70%]">
+                                    <div
+                                      id={`chat-message-${message.id}`}
+                                      className={cn(
+                                        "rounded-2xl px-4 py-2",
+                                        isOwn
+                                          ? "bg-primary text-primary-foreground rounded-br-md"
+                                          : "bg-muted rounded-bl-md",
+                                      )}
+                                    >
+                                      {!isOwn && (
+                                        <p className="text-xs font-medium mb-1 opacity-70">
+                                          {message.sender_name || message.user_name}
+                                        </p>
+                                      )}
 
-                                    {isEditing ? (
-                                      <div className="flex flex-col gap-2">
-                                        <Input
-                                          value={editContent}
-                                          onChange={(e) => setEditContent(e.target.value)}
-                                          className="bg-background/20 border-0 text-inherit"
-                                          autoFocus
-                                        />
-                                        <div className="flex gap-1 justify-end">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 px-2"
-                                            onClick={handleCancelEdit}
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </Button>
-                                          <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleSaveEdit}>
-                                            <Check className="h-3 w-3" />
-                                          </Button>
+                                      {isEditing ? (
+                                        <div className="flex flex-col gap-2">
+                                          <Input
+                                            value={editContent}
+                                            onChange={(e) => setEditContent(e.target.value)}
+                                            className="bg-background/20 border-0 text-inherit"
+                                            autoFocus
+                                          />
+                                          <div className="flex gap-1 justify-end">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 px-2"
+                                              onClick={handleCancelEdit}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 px-2"
+                                              onClick={handleSaveEdit}
+                                            >
+                                              <Check className="h-3 w-3" />
+                                            </Button>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ) : (
-                                      <div className={cn("text-sm break-words")}>
-                                        <ReactMarkdown
-                                          remarkPlugins={[remarkGfm]}
-                                          rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                                          components={{
-                                            p: ({ children }) => (
-                                              <p className="my-0.5 break-words leading-relaxed">{children}</p>
-                                            ),
-                                            strong: ({ children }) => {
-                                              // Check if this is a mention (starts with @)
-                                              const text = String(children);
-                                              if (text.startsWith("@")) {
-                                                return (
-                                                  <span
-                                                    className={cn(
-                                                      "font-semibold px-1 py-0.5 rounded",
-                                                      isOwn
-                                                        ? "bg-primary-foreground/20 text-primary-foreground"
-                                                        : "bg-primary/10 text-primary",
-                                                    )}
-                                                  >
-                                                    {children}
-                                                  </span>
-                                                );
-                                              }
-                                              return <strong className="font-bold">{children}</strong>;
-                                            },
-                                            em: ({ children }) => <em className="italic">{children}</em>,
-                                            ul: ({ children }) => (
-                                              <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
-                                            ),
-                                            ol: ({ children }) => (
-                                              <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>
-                                            ),
-                                            li: ({ children }) => <li className="my-0 leading-relaxed">{children}</li>,
-                                            a: ({ href, children }) => (
-                                              <a
-                                                href={href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={cn(
-                                                  "hover:opacity-80 break-all underline",
-                                                  isOwn ? "text-primary-foreground" : "text-primary",
-                                                )}
-                                              >
-                                                {children}
-                                              </a>
-                                            ),
-                                            code: ({ children }) => (
-                                              <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
-                                                {children}
-                                              </code>
-                                            ),
-                                            pre: ({ children }) => (
-                                              <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
-                                                {children}
-                                              </pre>
-                                            ),
-                                            h1: ({ children }) => (
-                                              <h1 className="text-base font-bold my-2">{children}</h1>
-                                            ),
-                                            h2: ({ children }) => (
-                                              <h2 className="text-sm font-bold my-1.5">{children}</h2>
-                                            ),
-                                            h3: ({ children }) => (
-                                              <h3 className="text-sm font-semibold my-1">{children}</h3>
-                                            ),
-                                          }}
+                                      ) : (
+                                        <div className={cn("text-sm break-words")}>
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                                            components={{
+                                              p: ({ children }) => (
+                                                <p className="my-0.5 break-words leading-relaxed">{children}</p>
+                                              ),
+                                              strong: ({ children }) => {
+                                                // Check if this is a mention (starts with @)
+                                                const text = String(children);
+                                                if (text.startsWith("@")) {
+                                                  return (
+                                                    <span
+                                                      className={cn(
+                                                        "font-semibold px-1 py-0.5 rounded",
+                                                        isOwn
+                                                          ? "bg-primary-foreground/20 text-primary-foreground"
+                                                          : "bg-primary/10 text-primary",
+                                                      )}
+                                                    >
+                                                      {children}
+                                                    </span>
+                                                  );
+                                                }
+                                                return <strong className="font-bold">{children}</strong>;
+                                              },
+                                              em: ({ children }) => <em className="italic">{children}</em>,
+                                              ul: ({ children }) => (
+                                                <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>
+                                              ),
+                                              ol: ({ children }) => (
+                                                <ol className="list-decimal list-inside my-1 space-y-0.5">
+                                                  {children}
+                                                </ol>
+                                              ),
+                                              li: ({ children }) => (
+                                                <li className="my-0 leading-relaxed">{children}</li>
+                                              ),
+                                              a: ({ href, children }) => (
+                                                <a
+                                                  href={href}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className={cn(
+                                                    "hover:opacity-80 break-all underline",
+                                                    isOwn ? "text-primary-foreground" : "text-primary",
+                                                  )}
+                                                >
+                                                  {children}
+                                                </a>
+                                              ),
+                                              code: ({ children }) => (
+                                                <code className="bg-black/20 px-1 py-0.5 rounded text-xs font-mono">
+                                                  {children}
+                                                </code>
+                                              ),
+                                              pre: ({ children }) => (
+                                                <pre className="bg-black/20 p-2 rounded my-2 overflow-x-auto text-xs">
+                                                  {children}
+                                                </pre>
+                                              ),
+                                              h1: ({ children }) => (
+                                                <h1 className="text-base font-bold my-2">{children}</h1>
+                                              ),
+                                              h2: ({ children }) => (
+                                                <h2 className="text-sm font-bold my-1.5">{children}</h2>
+                                              ),
+                                              h3: ({ children }) => (
+                                                <h3 className="text-sm font-semibold my-1">{children}</h3>
+                                              ),
+                                            }}
+                                          >
+                                            {renderMessageContent(message.content, isOwn)}
+                                          </ReactMarkdown>
+                                        </div>
+                                      )}
+
+                                      {/* Attachments Display */}
+                                      {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
+                                        <ChatAttachmentDisplay
+                                          attachments={messageAttachments[message.id]}
+                                          isOwn={isOwn}
+                                        />
+                                      )}
+
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <p
+                                          className={cn(
+                                            "text-xs",
+                                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
+                                          )}
                                         >
-                                          {renderMessageContent(message.content, isOwn)}
-                                        </ReactMarkdown>
+                                          {new Date(message.created_at).toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                          })}
+                                          {message.edited_at && <span className="ml-1 italic">(edited)</span>}
+                                        </p>
                                       </div>
-                                    )}
 
-                                    {/* Attachments Display */}
-                                    {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
-                                      <ChatAttachmentDisplay attachments={messageAttachments[message.id]} isOwn={isOwn} />
-                                    )}
-
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <p
-                                        className={cn(
-                                          "text-xs",
-                                          isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
-                                        )}
-                                      >
-                                        {new Date(message.created_at).toLocaleTimeString("en-US", {
-                                          hour: "numeric",
-                                          minute: "2-digit",
-                                        })}
-                                        {message.edited_at && <span className="ml-1 italic">(edited)</span>}
-                                      </p>
+                                      <MessageReactions
+                                        reactions={getAggregatedReactions(message)}
+                                        onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                        isOwn={isOwn}
+                                      />
                                     </div>
 
-                                    <MessageReactions
-                                      reactions={getAggregatedReactions(message)}
-                                      onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
+                                    {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
+                                    <ChatMessageActions
                                       isOwn={isOwn}
+                                      onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
+                                      onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
+                                      onReact={(emoji) => toggleReaction(message.id, emoji)}
+                                      canConvertToTask={isAdmin}
+                                      onConvertToTask={() => {
+                                        setSelectedMessageForTask({
+                                          content: message.content,
+                                          sender: message.sender_name || message.user_name || "Unknown",
+                                          timestamp: new Date(message.created_at).toLocaleString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                          }),
+                                          channel: selectedChannel?.name || "Unknown",
+                                        });
+                                        setConvertToTaskOpen(true);
+                                      }}
                                     />
                                   </div>
-
-                                  {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
-                                  <ChatMessageActions
-                                    isOwn={isOwn}
-                                    onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
-                                    onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
-                                    onReact={(emoji) => toggleReaction(message.id, emoji)}
-                                    canConvertToTask={isAdmin}
-                                    onConvertToTask={() => {
-                                      setSelectedMessageForTask({
-                                        content: message.content,
-                                        sender: message.sender_name || message.user_name || 'Unknown',
-                                        timestamp: new Date(message.created_at).toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric',
-                                          hour: 'numeric',
-                                          minute: '2-digit',
-                                        }),
-                                        channel: selectedChannel?.name || 'Unknown',
-                                      });
-                                      setConvertToTaskOpen(true);
-                                    }}
-                                  />
                                 </div>
-                              </div>
-                            </MessageVisibilityTracker>
-                          );
-                        })
-                      )}
+                              </MessageVisibilityTracker>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
+                  </ChatDropZone>
+                </div>
+
+                {/* Input with Mentions and File Attachments - Fixed at bottom and compact */}
+                <div className="border-t bg-card flex-shrink-0">
+                  {/* File Preview - only shown when there are attachments */}
+                  {attachments.length > 0 && <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />}
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf,audio/mpeg,audio/wav,audio/x-m4a,audio/ogg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,video/mp4,video/quicktime,video/webm"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  <div className="max-w-3xl mx-auto px-4 w-full">
+                    <form onSubmit={handleSendMessage} className="py-2">
+                      <div className="flex items-center gap-2">
+                        <ChatRichTextInput
+                          value={newMessage}
+                          onChange={(value, newMentions) => {
+                            setNewMessage(value);
+                            setMentions(newMentions);
+                          }}
+                          placeholder={`Message #${selectedChannel.name.toLowerCase()}`}
+                          onSubmit={() => handleSendMessage()}
+                          onAttachmentClick={() => fileInputRef.current?.click()}
+                        />
+
+                        <Button
+                          type="submit"
+                          size="icon"
+                          className="shrink-0 h-9 w-9"
+                          disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
+                        >
+                          {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </form>
                   </div>
-                </ChatDropZone>
-              </div>
-
-              {/* Input with Mentions and File Attachments - Fixed at bottom and compact */}
-              <div className="border-t bg-card flex-shrink-0">
-                {/* File Preview - only shown when there are attachments */}
-                {attachments.length > 0 && <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />}
-
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf,audio/mpeg,audio/wav,audio/x-m4a,audio/ogg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,video/mp4,video/quicktime,video/webm"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-
-                <div className="max-w-3xl mx-auto px-4 w-full">
-                  <form onSubmit={handleSendMessage} className="py-2">
-                    <div className="flex items-center gap-2">
-                      <ChatRichTextInput
-                        value={newMessage}
-                        onChange={(value, newMentions) => {
-                          setNewMessage(value);
-                          setMentions(newMentions);
-                        }}
-                        placeholder={`Message #${selectedChannel.name.toLowerCase()}`}
-                        onSubmit={() => handleSendMessage()}
-                        onAttachmentClick={() => fileInputRef.current?.click()}
-                      />
-
-                      <Button
-                        type="submit"
-                        size="icon"
-                        className="shrink-0 h-9 w-9"
-                        disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                      >
-                        {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </form>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                    <Hash className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium text-foreground">Select a channel</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Choose a channel to start messaging</p>
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
-                  <Hash className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-medium text-foreground">Select a channel</h3>
-                <p className="text-sm text-muted-foreground mt-1">Choose a channel to start messaging</p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </MainLayout>
+      </MainLayout>
 
-    {/* Convert to Task Dialog - only rendered for admins */}
-    {selectedMessageForTask && (
-      <ConvertToTaskDialog
-        open={convertToTaskOpen}
-        onOpenChange={(open) => {
-          setConvertToTaskOpen(open);
-          if (!open) setSelectedMessageForTask(null);
-        }}
-        message={selectedMessageForTask}
-      />
-    )}
+      {/* Convert to Task Dialog - only rendered for admins */}
+      {selectedMessageForTask && (
+        <ConvertToTaskDialog
+          open={convertToTaskOpen}
+          onOpenChange={(open) => {
+            setConvertToTaskOpen(open);
+            if (!open) setSelectedMessageForTask(null);
+          }}
+          message={selectedMessageForTask}
+        />
+      )}
     </>
   );
 }
