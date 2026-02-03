@@ -7,7 +7,7 @@ import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
 import { useChatAttachments, fetchMessageAttachments, UploadedAttachment } from "@/hooks/useChatAttachments";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { Search, Hash, Send, X, Check, Paperclip, Loader2 } from "lucide-react";
+import { Search, Hash, Send, X, Check, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -89,17 +89,6 @@ export default function Chat() {
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Debug: Log unread counts whenever they change
-  useEffect(() => {
-    console.log("=== UNREAD COUNTS DEBUG ===");
-    console.log("All unread counts:", unreadCounts);
-    console.log("Current user ID:", user?.id);
-    console.log(
-      "Channels:",
-      channels.map((c) => ({ id: c.id, name: c.name })),
-    );
-  }, [unreadCounts, user, channels]);
-
   // Fetch user roles for department mention expansion
   useEffect(() => {
     const fetchUsersWithRoles = async () => {
@@ -171,7 +160,6 @@ export default function Chat() {
     for (const dept of DEPARTMENTS) {
       const pattern = new RegExp(`@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\\n|!)`, "i");
       if (pattern.test(text)) {
-        // Find all users with this role and add them
         const deptUsers = usersWithRoles.filter((u) => u.roles?.includes(dept.role));
         for (const u of deptUsers) {
           if (!found.includes(u.user_id)) found.push(u.user_id);
@@ -200,21 +188,15 @@ export default function Chat() {
 
     setIsSending(true);
     const messageContent = newMessage;
-    // Compute mentions at send-time to avoid missing tags due to async state updates.
     const messageMentions = extractMentionIdsFromText(messageContent);
 
     try {
-      // Mark all previous messages as read when sending a new message
       await markChannelAsRead(selectedChannelId);
-
-      // Send the message with mentions
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions);
 
-      // Upload attachments if any
       if (messageId && attachments.length > 0) {
         const uploaded = await uploadAttachments(messageId);
         if (uploaded.length > 0) {
-          // Update local state with new attachments
           setMessageAttachments((prev) => ({
             ...prev,
             [messageId]: uploaded,
@@ -223,7 +205,6 @@ export default function Chat() {
         clearAttachments();
       }
 
-      // Create notifications for mentioned users
       if (messageId && messageMentions.length > 0) {
         await createMentionNotifications(
           messageMentions,
@@ -252,23 +233,18 @@ export default function Chat() {
     addFiles(files);
   };
 
-  // Helper to render mentions in message content with styled spans
   const renderMessageContent = (content: string, isOwn: boolean): string => {
     if (!content) return content;
 
     let processedContent = content;
-
-    // Sort profiles by name length (longest first) to avoid partial replacements
     const sortedProfiles = [...profiles].sort((a, b) => b.full_name.length - a.full_name.length);
 
     for (const p of sortedProfiles) {
       const escapedName = escapeRegExp(p.full_name);
       const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, "gi");
-      // Replace with styled markdown that will be rendered as bold
       processedContent = processedContent.replace(mentionPattern, `**@${p.full_name}**`);
     }
 
-    // Also style department mentions
     const deptNames = ["Admin Team", "Dev Team", "Ops Team"];
     for (const deptName of deptNames) {
       const escapedName = escapeRegExp(deptName);
@@ -303,7 +279,6 @@ export default function Chat() {
     }
   };
 
-  // Group messages by date for separators
   const getMessagesWithSeparators = () => {
     const result: {
       type: "separator" | "message" | "unread-divider";
@@ -314,11 +289,7 @@ export default function Chat() {
     let lastDate: string | null = null;
     let unreadDividerInserted = false;
 
-    // Get unread count for current channel
     const currentUnreadCount = selectedChannelId ? getUnreadCount(selectedChannelId) : 0;
-
-    // Find first unread message index (messages not from current user that are unread)
-    // For simplicity, we'll place the divider based on unread count from the end
     const totalMessages = messages.length;
     const firstUnreadIndex = currentUnreadCount > 0 ? Math.max(0, totalMessages - currentUnreadCount) : -1;
 
@@ -329,7 +300,6 @@ export default function Chat() {
         lastDate = messageDate;
       }
 
-      // Insert unread divider before the first unread message
       if (
         !unreadDividerInserted &&
         currentUnreadCount > 0 &&
@@ -346,7 +316,6 @@ export default function Chat() {
     return result;
   };
 
-  // Aggregate reactions for display
   const getAggregatedReactions = (message: (typeof messages)[0]) => {
     const reactionMap = new Map<string, { count: number; hasReacted: boolean }>();
 
@@ -396,7 +365,6 @@ export default function Chat() {
                 ) : (
                   filteredChannels.map((channel) => {
                     const unreadCount = getUnreadCount(channel.id);
-                    console.log(`Channel: ${channel.name} (${channel.id}), Unread Count: ${unreadCount}`);
                     return (
                       <button
                         key={channel.id}
@@ -414,23 +382,9 @@ export default function Chat() {
                           )}
                         </div>
                         {unreadCount > 0 && (
-                          <div
-                            style={{
-                              width: "24px",
-                              height: "24px",
-                              borderRadius: "50%",
-                              backgroundColor: "#ef4444",
-                              color: "#ffffff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "11px",
-                              fontWeight: "bold",
-                              flexShrink: 0,
-                            }}
-                          >
+                          <span className="flex-shrink-0 h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground">
                             {unreadCount > 99 ? "99+" : unreadCount}
-                          </div>
+                          </span>
                         )}
                       </button>
                     );
@@ -444,7 +398,7 @@ export default function Chat() {
           <div className="flex-1 flex flex-col bg-background overflow-hidden">
             {selectedChannel ? (
               <>
-                {/* Chat Header - Fixed and compact */}
+                {/* Chat Header */}
                 <div className="flex items-center justify-between border-b bg-card px-4 py-2.5 flex-shrink-0">
                   <div className="flex items-center gap-3">
                     <Hash className="h-5 w-5 text-muted-foreground" />
@@ -465,7 +419,7 @@ export default function Chat() {
                   </div>
                 </div>
 
-                {/* Messages - Scrollable area */}
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={scrollRef}>
                   <ChatDropZone onFilesDropped={handleFilesDropped}>
                     <div className="max-w-3xl mx-auto px-4 w-full">
@@ -554,7 +508,6 @@ export default function Chat() {
                                                 <p className="my-0.5 break-words leading-relaxed">{children}</p>
                                               ),
                                               strong: ({ children }) => {
-                                                // Check if this is a mention (starts with @)
                                                 const text = String(children);
                                                 if (text.startsWith("@")) {
                                                   return (
@@ -623,7 +576,6 @@ export default function Chat() {
                                         </div>
                                       )}
 
-                                      {/* Attachments Display */}
                                       {messageAttachments[message.id] && messageAttachments[message.id].length > 0 && (
                                         <ChatAttachmentDisplay
                                           attachments={messageAttachments[message.id]}
@@ -653,7 +605,6 @@ export default function Chat() {
                                       />
                                     </div>
 
-                                    {/* Actions (reactions + edit/delete menu for own messages + convert to task for admins) */}
                                     <ChatMessageActions
                                       isOwn={isOwn}
                                       onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
@@ -687,12 +638,10 @@ export default function Chat() {
                   </ChatDropZone>
                 </div>
 
-                {/* Input with Mentions and File Attachments - Fixed at bottom and compact */}
+                {/* Input */}
                 <div className="border-t bg-card flex-shrink-0">
-                  {/* File Preview - only shown when there are attachments */}
                   {attachments.length > 0 && <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />}
 
-                  {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -744,7 +693,6 @@ export default function Chat() {
         </div>
       </MainLayout>
 
-      {/* Convert to Task Dialog - only rendered for admins */}
       {selectedMessageForTask && (
         <ConvertToTaskDialog
           open={convertToTaskOpen}
