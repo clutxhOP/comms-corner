@@ -7,17 +7,24 @@ interface ChannelUnreadBadgeProps {
 }
 
 export function ChannelUnreadBadge({ count, className }: ChannelUnreadBadgeProps) {
-  if (count <= 0) return null;
+  console.log("ChannelUnreadBadge render - count:", count, "type:", typeof count);
+
+  if (count <= 0) {
+    console.log("Badge hidden - count is 0 or negative");
+    return null;
+  }
 
   // Format count (show 99+ for large numbers)
-  const displayCount = count > 99 ? '99+' : count;
+  const displayCount = count > 99 ? "99+" : count;
+
+  console.log("Badge SHOWING - displayCount:", displayCount);
 
   return (
-    <Badge 
-      variant="destructive" 
+    <Badge
+      variant="destructive"
       className={cn(
-        "ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold flex items-center justify-center rounded-full",
-        className
+        "ml-auto h-6 min-w-[24px] px-2 text-xs font-bold flex items-center justify-center rounded-full bg-red-500 text-white z-50",
+        className,
       )}
     >
       {displayCount}
