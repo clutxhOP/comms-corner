@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useChatChannels, useChannelMessages } from "@/hooks/useChatChannels";
+import { useChatChannels, useChannelMessages, ChannelMessage } from "@/hooks/useChatChannels";
 import { useAuth } from "@/hooks/useAuth";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useProfilesDisplay } from "@/hooks/useProfilesDisplay";
@@ -37,7 +37,7 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
     <div className="flex items-center gap-2 px-4 py-2 bg-muted border-l-4 border-primary">
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-primary">{userName}</div>
-        <div className="text-sm text-muted-foreground truncate">{content}</div>
+        <div className="text-sm text-primary/70 truncate">{content}</div>
       </div>
       <Button variant="ghost" size="sm" onClick={onCancel} className="h-6 w-6 p-0">
         <X className="h-4 w-4" />
@@ -46,15 +46,28 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
   );
 }
 
-// Replied Message Component (inline)
-function RepliedMessage({ userName, content, onClick }: { userName: string; content: string; onClick?: () => void }) {
+// Replied Message Component (inline) - FIXED with isOwn prop
+function RepliedMessage({
+  userName,
+  content,
+  isOwn,
+  onClick,
+}: {
+  userName: string;
+  content: string;
+  isOwn: boolean;
+  onClick?: () => void;
+}) {
   return (
     <div
-      className="pl-3 border-l-2 border-primary/50 mb-2 cursor-pointer hover:border-primary transition-colors"
       onClick={onClick}
+      className={cn(
+        "mb-2 pl-3 border-l-2 cursor-pointer hover:opacity-80 transition-opacity",
+        isOwn ? "border-white/40" : "border-primary/60",
+      )}
     >
-      <div className="text-xs font-semibold text-primary">{userName}</div>
-      <div className="text-sm text-muted-foreground line-clamp-2">{content}</div>
+      <div className={cn("text-xs font-semibold", isOwn ? "text-white/80" : "text-primary")}>{userName}</div>
+      <div className={cn("text-sm line-clamp-2", isOwn ? "text-white/70" : "text-primary/70")}>{content}</div>
     </div>
   );
 }
@@ -123,6 +136,12 @@ export default function Chat() {
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
   const filteredChannels = channels.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // Helper to resolve replied message from ID
+  const getRepliedMessage = (replyToId?: string | null) => {
+    if (!replyToId) return null;
+    return messages.find((m) => m.id === replyToId) || null;
+  };
 
   // Fetch user roles for department mention expansion
   useEffect(() => {
@@ -198,7 +217,7 @@ export default function Chat() {
     return () => scrollElement.removeEventListener("scroll", handleScroll);
   }, [selectedChannelId, getUnreadCount, markChannelAsRead]);
 
-  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[]\\]/g, "\\$&");
 
   const extractMentionIdsFromText = (text: string): string[] => {
     if (!text || profiles.length === 0) return [];
@@ -207,7 +226,11 @@ export default function Chat() {
 
     // Check for individual user mentions
     for (const p of profiles) {
-      const pattern = new RegExp(`@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\\n|!)`, "i");
+      const pattern = new RegExp(
+        `@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\
+|!)`,
+        "i",
+      );
       if (pattern.test(text)) {
         if (!found.includes(p.user_id)) found.push(p.user_id);
       }
@@ -215,7 +238,11 @@ export default function Chat() {
 
     // Check for department mentions and expand to all users with that role
     for (const dept of DEPARTMENTS) {
-      const pattern = new RegExp(`@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\\n|!)`, "i");
+      const pattern = new RegExp(
+        `@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\
+|!)`,
+        "i",
+      );
       if (pattern.test(text)) {
         const deptUsers = usersWithRoles.filter((u) => u.roles?.includes(dept.role));
         for (const u of deptUsers) {
@@ -249,7 +276,7 @@ export default function Chat() {
 
     try {
       await markChannelAsRead(selectedChannelId);
-      // NEW: Pass replyingTo.id to sendMessage
+      // Pass replyingTo.id as third parameter
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions, replyingTo?.id);
 
       if (messageId && attachments.length > 0) {
@@ -275,7 +302,7 @@ export default function Chat() {
 
       setNewMessage("");
       setMentions([]);
-      setReplyingTo(null); // NEW: Clear reply after sending
+      setReplyingTo(null); // Clear reply after sending
     } finally {
       setIsSending(false);
     }
@@ -300,14 +327,22 @@ export default function Chat() {
 
     for (const p of sortedProfiles) {
       const escapedName = escapeRegExp(p.full_name);
-      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, "gi");
+      const mentionPattern = new RegExp(
+        `@${escapedName}(?=\\s|$|,|\\.|\
+|!)`,
+        "gi",
+      );
       processedContent = processedContent.replace(mentionPattern, `**@${p.full_name}**`);
     }
 
     const deptNames = ["Admin Team", "Dev Team", "Ops Team"];
     for (const deptName of deptNames) {
       const escapedName = escapeRegExp(deptName);
-      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, "gi");
+      const mentionPattern = new RegExp(
+        `@${escapedName}(?=\\s|$|,|\\.|\
+|!)`,
+        "gi",
+      );
       processedContent = processedContent.replace(mentionPattern, `**@${deptName}**`);
     }
 
@@ -338,12 +373,12 @@ export default function Chat() {
     }
   };
 
-  // NEW: Handle reply
+  // Handle reply
   const handleReply = (messageId: string, content: string, userName: string) => {
     setReplyingTo({ id: messageId, content, userName });
   };
 
-  // NEW: Scroll to replied message
+  // Scroll to replied message
   const scrollToMessage = (messageId: string) => {
     const el = document.getElementById(`chat-message-${messageId}`);
     if (el) {
@@ -358,7 +393,7 @@ export default function Chat() {
     const result: {
       type: "separator" | "message" | "unread-divider";
       date?: string;
-      message?: (typeof messages)[0];
+      message?: ChannelMessage;
       unreadCount?: number;
     }[] = [];
     let lastDate: string | null = null;
@@ -391,7 +426,7 @@ export default function Chat() {
     return result;
   };
 
-  const getAggregatedReactions = (message: (typeof messages)[0]) => {
+  const getAggregatedReactions = (message: ChannelMessage) => {
     const reactionMap = new Map<string, { count: number; hasReacted: boolean }>();
 
     message.reactions?.forEach((reaction) => {
@@ -520,6 +555,7 @@ export default function Chat() {
                             const message = item.message!;
                             const isOwn = message.user_id === user?.id;
                             const isEditing = editingMessageId === message.id;
+                            const repliedMessage = getRepliedMessage(message.reply_to);
 
                             return (
                               <MessageVisibilityTracker
@@ -544,15 +580,6 @@ export default function Chat() {
                                         <p className="text-xs font-medium mb-1 opacity-70">
                                           {message.sender_name || message.user_name}
                                         </p>
-                                      )}
-
-                                      {/* NEW: Show replied message if exists */}
-                                      {message.replied_message && (
-                                        <RepliedMessage
-                                          userName={message.replied_message.user_name}
-                                          content={message.replied_message.content}
-                                          onClick={() => scrollToMessage(message.replied_message!.id)}
-                                        />
                                       )}
 
                                       {isEditing ? (
@@ -584,6 +611,19 @@ export default function Chat() {
                                         </div>
                                       ) : (
                                         <div className={cn("text-sm break-words")}>
+                                          {/* Render replied message BEFORE the main content with isOwn prop */}
+                                          {repliedMessage && (
+                                            <RepliedMessage
+                                              userName={
+                                                profiles.find((p) => p.user_id === repliedMessage.user_id)?.full_name ||
+                                                "Unknown"
+                                              }
+                                              content={repliedMessage.content}
+                                              isOwn={isOwn}
+                                              onClick={() => scrollToMessage(repliedMessage.id)}
+                                            />
+                                          )}
+
                                           <ReactMarkdown
                                             remarkPlugins={[remarkGfm]}
                                             rehypePlugins={[rehypeRaw, rehypeSanitize]}
@@ -727,7 +767,7 @@ export default function Chat() {
 
                 {/* Input */}
                 <div className="border-t bg-card flex-shrink-0">
-                  {/* NEW: Show reply preview if replying */}
+                  {/* Show reply preview if replying */}
                   {replyingTo && (
                     <ReplyPreview
                       userName={replyingTo.userName}
