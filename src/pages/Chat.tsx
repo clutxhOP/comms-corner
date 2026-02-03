@@ -37,11 +37,8 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
     <div className="flex items-center gap-2 px-4 py-2 bg-muted border-l-4 border-primary">
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-primary">{userName}</div>
-
-        {/* CHANGED LINE */}
-        <div className="text-sm text-amber-200 truncate">{content}</div>
+        <div className="text-sm text-primary/70 truncate">{content}</div>
       </div>
-
       <Button variant="ghost" size="sm" onClick={onCancel} className="h-6 w-6 p-0">
         <X className="h-4 w-4" />
       </Button>
@@ -57,9 +54,7 @@ function RepliedMessage({ userName, content, onClick }: { userName: string; cont
       onClick={onClick}
     >
       <div className="text-xs font-semibold text-primary">{userName}</div>
-
-      {/* CHANGED LINE */}
-      <div className="text-sm text-amber-200 line-clamp-2">{content}</div>
+      <div className="text-sm text-primary/70 line-clamp-2">{content}</div>
     </div>
   );
 }
