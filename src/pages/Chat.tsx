@@ -31,6 +31,34 @@ import { format, isSameDay, parseISO } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
+// Reply Preview Component (inline)
+function ReplyPreview({ userName, content, onCancel }: { userName: string; content: string; onCancel: () => void }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-muted border-l-4 border-primary">
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-semibold text-primary">{userName}</div>
+        <div className="text-sm text-muted-foreground truncate">{content}</div>
+      </div>
+      <Button variant="ghost" size="sm" onClick={onCancel} className="h-6 w-6 p-0">
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+// Replied Message Component (inline)
+function RepliedMessage({ userName, content, onClick }: { userName: string; content: string; onClick?: () => void }) {
+  return (
+    <div
+      className="pl-3 border-l-2 border-primary/50 mb-2 cursor-pointer hover:border-primary transition-colors"
+      onClick={onClick}
+    >
+      <div className="text-xs font-semibold text-primary">{userName}</div>
+      <div className="text-sm text-muted-foreground line-clamp-2">{content}</div>
+    </div>
+  );
+}
+
 const DEPARTMENTS = [
   { id: "dept_admin", name: "Admin Team", role: "admin" },
   { id: "dept_dev", name: "Dev Team", role: "dev" },
@@ -73,6 +101,13 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get("message");
+
+  // NEW: Reply state
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    content: string;
+    userName: string;
+  } | null>(null);
 
   // State for Convert to Task dialog
   const [convertToTaskOpen, setConvertToTaskOpen] = useState(false);
@@ -214,7 +249,8 @@ export default function Chat() {
 
     try {
       await markChannelAsRead(selectedChannelId);
-      const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions);
+      // NEW: Pass replyingTo.id to sendMessage
+      const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions, replyingTo?.id);
 
       if (messageId && attachments.length > 0) {
         const uploaded = await uploadAttachments(messageId);
@@ -239,6 +275,7 @@ export default function Chat() {
 
       setNewMessage("");
       setMentions([]);
+      setReplyingTo(null); // NEW: Clear reply after sending
     } finally {
       setIsSending(false);
     }
@@ -298,6 +335,22 @@ export default function Chat() {
   const handleDelete = async (messageId: string) => {
     if (confirm("Are you sure you want to delete this message?")) {
       await deleteMessage(messageId);
+    }
+  };
+
+  // NEW: Handle reply
+  const handleReply = (messageId: string, content: string, userName: string) => {
+    setReplyingTo({ id: messageId, content, userName });
+  };
+
+  // NEW: Scroll to replied message
+  const scrollToMessage = (messageId: string) => {
+    const el = document.getElementById(`chat-message-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Highlight the message briefly
+      el.classList.add("bg-primary/10");
+      setTimeout(() => el.classList.remove("bg-primary/10"), 2000);
     }
   };
 
@@ -481,7 +534,7 @@ export default function Chat() {
                                     <div
                                       id={`chat-message-${message.id}`}
                                       className={cn(
-                                        "rounded-2xl px-4 py-2",
+                                        "rounded-2xl px-4 py-2 transition-colors",
                                         isOwn
                                           ? "bg-primary text-primary-foreground rounded-br-md"
                                           : "bg-muted rounded-bl-md",
@@ -491,6 +544,15 @@ export default function Chat() {
                                         <p className="text-xs font-medium mb-1 opacity-70">
                                           {message.sender_name || message.user_name}
                                         </p>
+                                      )}
+
+                                      {/* NEW: Show replied message if exists */}
+                                      {message.replied_message && (
+                                        <RepliedMessage
+                                          userName={message.replied_message.user_name}
+                                          content={message.replied_message.content}
+                                          onClick={() => scrollToMessage(message.replied_message!.id)}
+                                        />
                                       )}
 
                                       {isEditing ? (
@@ -632,6 +694,9 @@ export default function Chat() {
                                       onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
                                       onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
                                       onReact={(emoji) => toggleReaction(message.id, emoji)}
+                                      onReply={() =>
+                                        handleReply(message.id, message.content, message.user_name || "Unknown")
+                                      }
                                       canConvertToTask={isAdmin}
                                       onConvertToTask={() => {
                                         setSelectedMessageForTask({
@@ -662,6 +727,15 @@ export default function Chat() {
 
                 {/* Input */}
                 <div className="border-t bg-card flex-shrink-0">
+                  {/* NEW: Show reply preview if replying */}
+                  {replyingTo && (
+                    <ReplyPreview
+                      userName={replyingTo.userName}
+                      content={replyingTo.content}
+                      onCancel={() => setReplyingTo(null)}
+                    />
+                  )}
+
                   {attachments.length > 0 && <ChatFilePreview attachments={attachments} onRemove={removeAttachment} />}
 
                   <input
