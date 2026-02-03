@@ -72,7 +72,6 @@ export function CompletedLeadsSection() {
       id: selectedAssignment.lead_id,
       icp: selectedAssignment.icp || "",
       contactInfo: selectedAssignment.contact_info,
-      other_contact: selectedAssignment.client_whatsapp,
       proofLink: selectedAssignment.post_url,
       requirement: selectedAssignment.requirement,
       recordId: selectedAssignment.record_id || selectedAssignment.client_id,
