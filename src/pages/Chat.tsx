@@ -46,15 +46,15 @@ function ReplyPreview({ userName, content, onCancel }: { userName: string; conte
   );
 }
 
-// Replied Message Component (inline)
+// Replied Message Component (inline) - UPDATED STYLING
 function RepliedMessage({ userName, content, onClick }: { userName: string; content: string; onClick?: () => void }) {
   return (
     <div
-      className="pl-3 border-l-2 border-primary/50 mb-2 cursor-pointer hover:border-primary transition-colors"
+      className="pl-3 border-l-2 border-primary/70 mb-2 cursor-pointer hover:border-primary transition-colors bg-black/10 py-1 rounded"
       onClick={onClick}
     >
       <div className="text-xs font-semibold text-primary">{userName}</div>
-      <div className="text-sm text-muted-foreground line-clamp-2">{content}</div>
+      <div className="text-sm text-foreground/80 line-clamp-2">{content}</div>
     </div>
   );
 }
@@ -102,7 +102,7 @@ export default function Chat() {
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get("message");
 
-  // NEW: Reply state
+  // Reply state
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     content: string;
