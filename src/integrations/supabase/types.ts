@@ -126,6 +126,7 @@ export type Database = {
           edited_at: string | null
           id: string
           mentions: string[] | null
+          reply_to: string | null
           sender_name: string | null
           user_id: string
         }
@@ -137,6 +138,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mentions?: string[] | null
+          reply_to?: string | null
           sender_name?: string | null
           user_id: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mentions?: string[] | null
+          reply_to?: string | null
           sender_name?: string | null
           user_id?: string
         }
@@ -157,6 +160,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
