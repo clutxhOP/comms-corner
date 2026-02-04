@@ -226,11 +226,7 @@ export default function Chat() {
 
     // Check for individual user mentions
     for (const p of profiles) {
-      const pattern = new RegExp(
-        `@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\
-|!)`,
-        "i",
-      );
+      const pattern = new RegExp(`@${escapeRegExp(p.full_name)}(?=\\s|$|,|\\.|\\n|!)`, "i");
       if (pattern.test(text)) {
         if (!found.includes(p.user_id)) found.push(p.user_id);
       }
@@ -238,11 +234,7 @@ export default function Chat() {
 
     // Check for department mentions and expand to all users with that role
     for (const dept of DEPARTMENTS) {
-      const pattern = new RegExp(
-        `@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\
-|!)`,
-        "i",
-      );
+      const pattern = new RegExp(`@${escapeRegExp(dept.name)}(?=\\s|$|,|\\.|\\n|!)`, "i");
       if (pattern.test(text)) {
         const deptUsers = usersWithRoles.filter((u) => u.roles?.includes(dept.role));
         for (const u of deptUsers) {
@@ -290,6 +282,7 @@ export default function Chat() {
         clearAttachments();
       }
 
+      // Create notifications for mentioned users
       if (messageId && messageMentions.length > 0) {
         await createMentionNotifications(
           messageMentions,
@@ -298,6 +291,21 @@ export default function Chat() {
           profile?.full_name || "Someone",
           messageContent,
         );
+      }
+
+      // NEW: Create notification for the user being replied to
+      if (messageId && replyingTo) {
+        const repliedMessage = messages.find((m) => m.id === replyingTo.id);
+        if (repliedMessage && repliedMessage.user_id !== user?.id) {
+          // Only notify if the replied-to user is not the current user
+          await createMentionNotifications(
+            [repliedMessage.user_id],
+            messageId,
+            selectedChannelId,
+            profile?.full_name || "Someone",
+            `replied to your message: ${messageContent}`,
+          );
+        }
       }
 
       setNewMessage("");
@@ -327,22 +335,14 @@ export default function Chat() {
 
     for (const p of sortedProfiles) {
       const escapedName = escapeRegExp(p.full_name);
-      const mentionPattern = new RegExp(
-        `@${escapedName}(?=\\s|$|,|\\.|\
-|!)`,
-        "gi",
-      );
+      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, "gi");
       processedContent = processedContent.replace(mentionPattern, `**@${p.full_name}**`);
     }
 
     const deptNames = ["Admin Team", "Dev Team", "Ops Team"];
     for (const deptName of deptNames) {
       const escapedName = escapeRegExp(deptName);
-      const mentionPattern = new RegExp(
-        `@${escapedName}(?=\\s|$|,|\\.|\
-|!)`,
-        "gi",
-      );
+      const mentionPattern = new RegExp(`@${escapedName}(?=\\s|$|,|\\.|\\n|!)`, "gi");
       processedContent = processedContent.replace(mentionPattern, `**@${deptName}**`);
     }
 
