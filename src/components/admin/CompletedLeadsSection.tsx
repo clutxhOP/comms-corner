@@ -2,20 +2,37 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, RefreshCcw, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ExternalLink, RefreshCcw, CheckCircle2, XCircle, ArrowRight, Trash2 } from "lucide-react";
 import { useLeadAssignments, LeadAssignment } from "@/hooks/useLeadAssignments";
 import { useBusinesses, Business } from "@/hooks/useBusinesses";
 import { useUsers } from "@/hooks/useUsers";
 import { useWebhooks } from "@/hooks/useWebhooks";
 import { ReassignLeadDialog } from "@/components/tasks/ReassignLeadDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export function CompletedLeadsSection() {
-  const { assignments, loading, reassignById } = useLeadAssignments();
+  const { assignments, loading, reassignById, refetch } = useLeadAssignments();
   const { allBusinesses } = useBusinesses();
   const { users } = useUsers();
   const { triggerWebhook } = useWebhooks();
+  const { toast } = useToast();
   const [selectedAssignment, setSelectedAssignment] = useState<LeadAssignment | null>(null);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter for completed leads only (approved or disapproved)
   const completedAssignments = assignments.filter(
@@ -84,6 +101,60 @@ export function CompletedLeadsSection() {
     });
   };
 
+  // Selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === completedAssignments.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(completedAssignments.map((a) => a.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // Delete handlers
+  const handleDeleteClick = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from("lead_assignments").delete().in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedIds.size} lead${selectedIds.size > 1 ? "s" : ""} deleted successfully`,
+      });
+
+      setSelectedIds(new Set());
+      setDeleteDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting leads:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete leads. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -106,10 +177,28 @@ export function CompletedLeadsSection() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5" />
-            Completed Leads ({completedAssignments.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5" />
+              Completed Leads ({completedAssignments.length})
+            </CardTitle>
+            {completedAssignments.length > 0 && (
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <>
+                    <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+                    <Button variant="destructive" size="sm" onClick={handleDeleteClick}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete ({selectedIds.size})
+                    </Button>
+                  </>
+                )}
+                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                  {selectedIds.size === completedAssignments.length ? "Deselect All" : "Select All"}
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {completedAssignments.length === 0 ? (
@@ -119,35 +208,48 @@ export function CompletedLeadsSection() {
               {completedAssignments.map((assignment) => {
                 const reassignedNames = getBusinessNames(assignment.reassigned_business_ids);
                 const hasReassignments = reassignedNames || assignment.reassigned_business_id;
+                const isSelected = selectedIds.has(assignment.id);
 
                 return (
-                  <div key={assignment.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                  <div
+                    key={assignment.id}
+                    className={`rounded-lg border bg-card p-4 shadow-sm transition-colors ${
+                      isSelected ? "ring-2 ring-primary" : ""
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={
-                              assignment.approval_status === "approved"
-                                ? "bg-success/10 text-success border-success/20"
-                                : "bg-destructive/10 text-destructive border-destructive/20"
-                            }
-                          >
-                            {assignment.approval_status === "approved" ? (
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                            ) : (
-                              <XCircle className="h-3 w-3 mr-1" />
-                            )}
-                            {assignment.approval_status}
-                          </Badge>
-                          {hasReassignments && (
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                              Reassigned
+                      <div className="flex items-start gap-2 flex-1">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelect(assignment.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className={
+                                assignment.approval_status === "approved"
+                                  ? "bg-success/10 text-success border-success/20"
+                                  : "bg-destructive/10 text-destructive border-destructive/20"
+                              }
+                            >
+                              {assignment.approval_status === "approved" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {assignment.approval_status}
                             </Badge>
-                          )}
+                            {hasReassignments && (
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                Reassigned
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="font-medium text-sm">{assignment.client_name || "Unknown Client"}</h4>
+                          <p className="text-xs text-muted-foreground">{assignment.category}</p>
                         </div>
-                        <h4 className="font-medium text-sm">{assignment.client_name || "Unknown Client"}</h4>
-                        <p className="text-xs text-muted-foreground">{assignment.category}</p>
                       </div>
                     </div>
 
@@ -233,6 +335,30 @@ export function CompletedLeadsSection() {
         onConfirm={handleReassignConfirm}
         leadTitle={selectedAssignment?.client_name || undefined}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedIds.size} Lead{selectedIds.size > 1 ? "s" : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.size} selected lead{selectedIds.size > 1 ? "s" : ""}? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
