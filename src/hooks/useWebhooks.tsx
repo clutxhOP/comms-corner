@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
@@ -46,6 +46,9 @@ export function useWebhooks() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Track in-flight webhook triggers to prevent duplicates
+  const triggeringRef = useRef<Set<string>>(new Set());
+
   const fetchWebhooks = async () => {
     if (!user) return;
 
@@ -54,7 +57,6 @@ export function useWebhooks() {
 
       if (error) throw error;
 
-      // Map the database field name to our interface
       const mappedData = (data || []).map((w: any) => ({
         ...w,
         trigger_actions: w.trigger_action || [],
@@ -110,7 +112,7 @@ export function useWebhooks() {
         .insert({
           name: webhook.name,
           url: webhook.url,
-          trigger_action: webhook.trigger_actions, // DB column is trigger_action (array)
+          trigger_action: webhook.trigger_actions,
           enabled: webhook.enabled,
           user_id: user.id,
         })
@@ -145,7 +147,6 @@ export function useWebhooks() {
     updates: Partial<{ name: string; url: string; trigger_actions: string[]; enabled: boolean }>,
   ) => {
     try {
-      // Map trigger_actions back to trigger_action for the DB
       const dbUpdates: any = { ...updates };
       if (updates.trigger_actions) {
         dbUpdates.trigger_action = updates.trigger_actions;
@@ -192,69 +193,101 @@ export function useWebhooks() {
     }
   };
 
-  // Trigger webhooks and log the results
+  // Trigger webhooks with deduplication and fresh data fetch
   const triggerWebhook = useCallback(
     async (action: string, payload: Record<string, unknown>) => {
-      // Find webhooks that have this action in their trigger_actions array
-      const matchingWebhooks = webhooks.filter((w) => w.trigger_actions.includes(action) && w.enabled);
+      // Create a unique key for deduplication
+      const triggerKey = `${action}-${JSON.stringify(payload)}`;
 
-      console.log(`Triggering webhooks for action: ${action}, found ${matchingWebhooks.length} matching webhooks`);
+      // Check if this exact trigger is already in progress
+      if (triggeringRef.current.has(triggerKey)) {
+        console.log(`⚠️ Skipping duplicate trigger for ${action}`);
+        return;
+      }
 
-      for (const webhook of matchingWebhooks) {
-        const requestPayload = {
-          action,
-          timestamp: new Date().toISOString(),
-          ...payload,
-        };
+      // Mark as triggering
+      triggeringRef.current.add(triggerKey);
 
-        let success = false;
-        let responseStatus: number | null = null;
-        let responseBody: string | null = null;
-        let errorMessage: string | null = null;
+      try {
+        // Fetch fresh webhooks directly from database to avoid stale state
+        const { data: freshWebhooks, error } = await supabase.from("webhooks").select("*").eq("enabled", true);
 
-        try {
-          console.log(`Triggering webhook: ${webhook.name} to ${webhook.url}`);
+        if (error) {
+          console.error("Error fetching webhooks for trigger:", error);
+          return;
+        }
 
-          const response = await fetch(webhook.url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestPayload),
-          });
+        // Map database field name and filter by action
+        const matchingWebhooks = (freshWebhooks || [])
+          .map((w: any) => ({
+            ...w,
+            trigger_actions: w.trigger_action || [],
+          }))
+          .filter((w: Webhook) => w.trigger_actions.includes(action));
 
-          responseStatus = response.status;
+        console.log(`🎯 Triggering webhooks for action: ${action}, found ${matchingWebhooks.length} matching webhooks`);
+
+        for (const webhook of matchingWebhooks) {
+          const requestPayload = {
+            action,
+            timestamp: new Date().toISOString(),
+            ...payload,
+          };
+
+          let success = false;
+          let responseStatus: number | null = null;
+          let responseBody: string | null = null;
+          let errorMessage: string | null = null;
+
           try {
-            responseBody = await response.text();
-          } catch {
-            responseBody = null;
+            console.log(`📡 Triggering webhook: ${webhook.name} to ${webhook.url}`);
+
+            const response = await fetch(webhook.url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestPayload),
+            });
+
+            responseStatus = response.status;
+            try {
+              responseBody = await response.text();
+            } catch {
+              responseBody = null;
+            }
+            success = response.ok;
+
+            console.log(`✅ Webhook ${webhook.name} response: ${responseStatus}`);
+          } catch (error: any) {
+            console.error(`❌ Failed to trigger webhook ${webhook.name}:`, error);
+            errorMessage = error.message || "Unknown error";
+            success = false;
           }
-          success = response.ok;
 
-          console.log(`Webhook ${webhook.name} response: ${responseStatus}`);
-        } catch (error: any) {
-          console.error(`Failed to trigger webhook ${webhook.name}:`, error);
-          errorMessage = error.message || "Unknown error";
-          success = false;
+          // Log the webhook execution
+          try {
+            await supabase.from("webhook_logs").insert({
+              webhook_id: webhook.id,
+              webhook_name: webhook.name,
+              trigger_action: action,
+              request_url: webhook.url,
+              request_payload: requestPayload,
+              response_status: responseStatus,
+              response_body: responseBody,
+              error_message: errorMessage,
+              success,
+            });
+          } catch (logError) {
+            console.error("Failed to log webhook execution:", logError);
+          }
         }
-
-        // Log the webhook execution
-        try {
-          await supabase.from("webhook_logs").insert({
-            webhook_id: webhook.id,
-            webhook_name: webhook.name,
-            trigger_action: action,
-            request_url: webhook.url,
-            request_payload: requestPayload,
-            response_status: responseStatus,
-            response_body: responseBody,
-            error_message: errorMessage,
-            success,
-          });
-        } catch (logError) {
-          console.error("Failed to log webhook execution:", logError);
-        }
+      } finally {
+        // Remove from tracking after 2 seconds to allow legitimate retriggers
+        setTimeout(() => {
+          triggeringRef.current.delete(triggerKey);
+        }, 2000);
       }
     },
-    [webhooks],
+    [], // Empty dependency array - fetches fresh data internally
   );
 
   return {
