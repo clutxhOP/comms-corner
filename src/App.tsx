@@ -21,6 +21,7 @@ import WebhookLogs from "./pages/admin/WebhookLogs";
 import CompletedTasks from "./pages/admin/CompletedTasks";
 import ChannelManagement from "./pages/admin/ChannelManagement";
 import CustomerDashboard from "./pages/admin/CustomerDashboard";
+import Outreach from "./pages/Outreach";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,11 @@ const App = () => (
               <Route path="/customers" element={
                 <ProtectedRoute requireOpsOrAdmin>
                   <CustomerDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/outreach" element={
+                <ProtectedRoute requireOpsOrAdmin>
+                  <Outreach />
                 </ProtectedRoute>
               } />
               {/* Keep old route for backwards compatibility */}

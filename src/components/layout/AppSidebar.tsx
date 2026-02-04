@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive, ScrollText, Hash, Building2 } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive, ScrollText, Hash, Building2, Share2 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -27,6 +27,7 @@ const adminNavItems = [
   { title: 'Admin Dashboard', url: '/admin', icon: Shield },
   { title: 'Manage Users', url: '/admin/users', icon: Users },
   { title: 'Customers', url: '/customers', icon: Building2 },
+  { title: 'Outreach', url: '/outreach', icon: Share2 },
   { title: 'Create Task', url: '/admin/create-task', icon: Plus },
   { title: 'Completed Tasks', url: '/admin/completed-tasks', icon: Archive },
   { title: 'Access Tokens', url: '/tokens', icon: Key },
@@ -47,6 +48,7 @@ const devNavItems = [
 // Items accessible by ops role
 const opsNavItems = [
   { title: 'Customers', url: '/customers', icon: Building2 },
+  { title: 'Outreach', url: '/outreach', icon: Share2 },
 ];
 
 export function AppSidebar() {
