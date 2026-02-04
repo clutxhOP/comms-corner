@@ -444,6 +444,45 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_entries: {
+        Row: {
+          comment: string
+          completed: boolean | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          date: string
+          id: string
+          link: string
+          notes: string | null
+          platform: string
+        }
+        Insert: {
+          comment: string
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          link: string
+          notes?: string | null
+          platform: string
+        }
+        Update: {
+          comment?: string
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          link?: string
+          notes?: string | null
+          platform?: string
+        }
+        Relationships: []
+      }
       personal_access_tokens: {
         Row: {
           created_at: string
