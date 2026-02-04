@@ -39,6 +39,13 @@ export function CompletedLeadsSection() {
     (assignment) => assignment.approval_status === "approved" || assignment.approval_status === "disapproved",
   );
 
+  // DEBUG LOGS
+  console.log("=== COMPLETED LEADS DEBUG ===");
+  console.log("Total assignments:", assignments.length);
+  console.log("Completed assignments count:", completedAssignments.length);
+  console.log("Selected IDs:", Array.from(selectedIds));
+  console.log("Selected count:", selectedIds.size);
+
   const getBusinessName = (businessId: string | null) => {
     if (!businessId) return "Unknown";
     const business = allBusinesses.find((b: Business) => b.id === businessId);
@@ -103,25 +110,33 @@ export function CompletedLeadsSection() {
 
   // Selection handlers
   const toggleSelectAll = () => {
+    console.log("Toggle select all clicked");
     if (selectedIds.size === completedAssignments.length) {
+      console.log("Deselecting all");
       setSelectedIds(new Set());
     } else {
+      console.log("Selecting all");
       setSelectedIds(new Set(completedAssignments.map((a) => a.id)));
     }
   };
 
   const toggleSelect = (id: string) => {
+    console.log("Toggle select clicked for ID:", id);
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
+      console.log("Removing from selection");
       newSelected.delete(id);
     } else {
+      console.log("Adding to selection");
       newSelected.add(id);
     }
     setSelectedIds(newSelected);
+    console.log("New selected IDs:", Array.from(newSelected));
   };
 
   // Delete handlers
   const handleDeleteClick = () => {
+    console.log("Delete button clicked");
     if (selectedIds.size === 0) return;
     setDeleteDialogOpen(true);
   };
@@ -173,6 +188,8 @@ export function CompletedLeadsSection() {
     );
   }
 
+  console.log("Rendering with completedAssignments.length:", completedAssignments.length);
+
   return (
     <>
       <Card>
@@ -210,6 +227,8 @@ export function CompletedLeadsSection() {
                 const hasReassignments = reassignedNames || assignment.reassigned_business_id;
                 const isSelected = selectedIds.has(assignment.id);
 
+                console.log(`Rendering card for ${assignment.id}, selected: ${isSelected}`);
+
                 return (
                   <div
                     key={assignment.id}
@@ -219,11 +238,16 @@ export function CompletedLeadsSection() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-2 flex-1">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelect(assignment.id)}
-                          className="mt-1"
-                        />
+                        <div style={{ border: "2px solid red" }}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => {
+                              console.log("Checkbox clicked for:", assignment.id);
+                              toggleSelect(assignment.id);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Badge
