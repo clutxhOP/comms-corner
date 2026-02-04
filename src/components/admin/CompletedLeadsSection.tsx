@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function CompletedLeadsSection() {
-  const { assignments, loading, reassignById, refetch } = useLeadAssignments();
+  const { assignments, loading, reassignById, fetchAssignments } = useLeadAssignments();
   const { allBusinesses } = useBusinesses();
   const { users } = useUsers();
   const { triggerWebhook } = useWebhooks();
@@ -142,7 +142,7 @@ export function CompletedLeadsSection() {
 
       setSelectedIds(new Set());
       setDeleteDialogOpen(false);
-      refetch();
+      fetchAssignments();
     } catch (error) {
       console.error("Error deleting leads:", error);
       toast({
