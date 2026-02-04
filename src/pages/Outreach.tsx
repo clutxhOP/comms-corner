@@ -482,8 +482,8 @@ export default function Outreach() {
     <MainLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Social Media Outreach</h1>
-          <p className="text-muted-foreground">Manage outreach entries across platforms</p>
+          <h1 className="text-2xl font-bold">Social Media Engagement</h1>
+          <p className="text-muted-foreground">Manage engagement entries across platforms</p>
         </div>
 
         <Tabs defaultValue="reddit" className="space-y-6">
