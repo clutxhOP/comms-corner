@@ -2,7 +2,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash } from "lucide-react";
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -199,7 +199,7 @@ export default function ApiDocs() {
 
         {/* Endpoints */}
         <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Tasks
@@ -215,6 +215,10 @@ export default function ApiDocs() {
             <TabsTrigger value="channels" className="flex items-center gap-2">
               <Hash className="h-4 w-4" />
               Channels
+            </TabsTrigger>
+            <TabsTrigger value="outreach" className="flex items-center gap-2">
+              <Share2 className="h-4 w-4" />
+              Outreach
             </TabsTrigger>
           </TabsList>
 
@@ -631,6 +635,172 @@ export default function ApiDocs() {
                       /channels
                     </a>
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Outreach API */}
+          <TabsContent value="outreach" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5" />
+                  Outreach API
+                </CardTitle>
+                <CardDescription>
+                  Add social media outreach entries and manage old entries. Designed for n8n integration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Endpoint
+                  method="POST"
+                  path="/outreach-add-entry"
+                  description="Add a new outreach entry from Reddit, LinkedIn, or X. No authentication required (uses service role)."
+                  auth="None (public endpoint)"
+                  requestBody={`{
+  "source": "reddit",           // Required: "reddit" | "linkedin" | "X"
+  "date": "2026-02-04",         // Required: ISO date (YYYY-MM-DD)
+  "link": "https://...",        // Required: URL string
+  "comment": "Your comment",    // Required: string
+  "notes": "Optional notes"     // Optional: string
+}`}
+                  responseExample={`{
+  "success": true,
+  "message": "Entry added successfully",
+  "data": {
+    "id": "uuid-here",
+    "platform": "reddit",
+    "date": "2026-02-04",
+    "link": "https://..."
+  }
+}`}
+                />
+
+                {/* Error Examples */}
+                <div className="border rounded-lg p-4 space-y-4 bg-destructive/5 border-destructive/20">
+                  <h4 className="font-medium text-foreground">Error Responses</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Badge variant="outline" className="mb-2 border-destructive/30 text-destructive">
+                        400 - Missing Fields
+                      </Badge>
+                      <CodeBlock code={`{
+  "error": "Missing required fields",
+  "required": {
+    "source": "reddit | linkedin | X",
+    "date": "ISO date string (YYYY-MM-DD)",
+    "link": "string (URL)",
+    "comment": "string"
+  },
+  "optional": {
+    "notes": "string"
+  }
+}`} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2 border-destructive/30 text-destructive">
+                        400 - Invalid Source
+                      </Badge>
+                      <CodeBlock code={`{
+  "error": "Invalid source. Must be: reddit, linkedin, or X"
+}`} />
+                    </div>
+                  </div>
+                </div>
+
+                <Endpoint
+                  method="POST"
+                  path="/outreach-delete-old"
+                  description="Delete entries older than a specified number of days. Optionally filter by platform."
+                  auth="None (public endpoint)"
+                  requestBody={`{
+  "days_old": 30,              // Required: number > 0
+  "platform": "reddit"         // Optional: "reddit" | "linkedin" | "X"
+}`}
+                  responseExample={`{
+  "success": true,
+  "message": "Deleted entries older than 30 days",
+  "deleted_count": 15,
+  "cutoff_date": "2026-01-05",
+  "platform": "reddit"
+}`}
+                />
+
+                {/* n8n Integration Examples */}
+                <div className="border rounded-lg p-4 space-y-4 bg-primary/5 border-primary/20">
+                  <h4 className="font-medium text-foreground">n8n Integration Examples</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Ready-to-use configurations for n8n HTTP Request nodes.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Badge variant="outline" className="mb-2">
+                        Add Entry from Reddit Scrape
+                      </Badge>
+                      <CodeBlock code={`// HTTP Request Node Configuration
+Method: POST
+URL: ${BASE_URL}/outreach-add-entry
+Headers: Content-Type: application/json
+Body:
+{
+  "source": "reddit",
+  "date": "{{ $now.format('YYYY-MM-DD') }}",
+  "link": "{{ $json.post_url }}",
+  "comment": "{{ $json.suggested_comment }}"
+}`} />
+                    </div>
+                    
+                    <div>
+                      <Badge variant="outline" className="mb-2">
+                        Daily Cleanup (Cron Trigger)
+                      </Badge>
+                      <CodeBlock code={`// Schedule: 0 0 * * * (daily at midnight)
+// HTTP Request Node Configuration
+Method: POST
+URL: ${BASE_URL}/outreach-delete-old
+Headers: Content-Type: application/json
+Body:
+{
+  "days_old": 30
+}`} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* cURL Examples */}
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                  <h4 className="font-medium text-foreground">cURL Commands</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Badge variant="outline" className="mb-2">
+                        Add Entry
+                      </Badge>
+                      <CodeBlock code={`curl -X POST "${BASE_URL}/outreach-add-entry" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "source": "reddit",
+    "date": "2026-02-04",
+    "link": "https://reddit.com/r/example/post",
+    "comment": "Great insight! Have you considered...",
+    "notes": "High priority lead"
+  }'`} />
+                    </div>
+                    
+                    <div>
+                      <Badge variant="outline" className="mb-2">
+                        Delete Old Entries
+                      </Badge>
+                      <CodeBlock code={`curl -X POST "${BASE_URL}/outreach-delete-old" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "days_old": 30,
+    "platform": "reddit"
+  }'`} />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

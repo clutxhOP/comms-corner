@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.manage-users]
 verify_jwt = false
+
+[functions.outreach-add-entry]
+verify_jwt = false
+
+[functions.outreach-delete-old]
+verify_jwt = false
