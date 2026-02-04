@@ -1,30 +1,17 @@
-import { useState, useMemo } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useAuth } from '@/hooks/useAuth';
-import { useOutreachEntries, useOutreachDailyStats, OutreachEntry } from '@/hooks/useOutreachEntries';
-import { Navigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState, useMemo } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useAuth } from "@/hooks/useAuth";
+import { useOutreachEntries, useOutreachDailyStats, OutreachEntry } from "@/hooks/useOutreachEntries";
+import { Navigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
+} from "@/components/ui/alert-dialog";
+import { format } from "date-fns";
 import {
   ExternalLink,
   RefreshCw,
@@ -49,7 +36,11 @@ import {
   Percent,
   Loader2,
   MessageSquare,
-} from 'lucide-react';
+  Copy,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Platform icons
 function RedditIcon({ className }: { className?: string }) {
@@ -76,22 +67,23 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
+function PlatformTab({ platform }: { platform: "reddit" | "linkedin" | "X" }) {
   const { entries, loading, toggleCompleted, updateNotes, bulkDelete, refetch } = useOutreachEntries(platform);
   const { stats, loading: statsLoading } = useOutreachDailyStats(platform);
   const { isAdmin } = useAuth();
+  const { toast } = useToast();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteValue, setEditingNoteValue] = useState('');
+  const [editingNoteValue, setEditingNoteValue] = useState("");
+  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   // Filter entries
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
-      // Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         !searchQuery ||
@@ -99,11 +91,10 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
         entry.comment.toLowerCase().includes(searchLower) ||
         (entry.notes?.toLowerCase().includes(searchLower) ?? false);
 
-      // Status filter
       const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'completed' && entry.completed) ||
-        (statusFilter === 'pending' && !entry.completed);
+        statusFilter === "all" ||
+        (statusFilter === "completed" && entry.completed) ||
+        (statusFilter === "pending" && !entry.completed);
 
       return matchesSearch && matchesStatus;
     });
@@ -144,20 +135,42 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
   // Notes editing handlers
   const startEditingNotes = (entry: OutreachEntry) => {
     setEditingNoteId(entry.id);
-    setEditingNoteValue(entry.notes || '');
+    setEditingNoteValue(entry.notes || "");
   };
 
   const saveNotes = async () => {
     if (editingNoteId) {
       await updateNotes(editingNoteId, editingNoteValue);
       setEditingNoteId(null);
-      setEditingNoteValue('');
+      setEditingNoteValue("");
     }
   };
 
   const cancelEditingNotes = () => {
     setEditingNoteId(null);
-    setEditingNoteValue('');
+    setEditingNoteValue("");
+  };
+
+  // Comment expand/collapse handler
+  const toggleCommentExpansion = (id: string) => {
+    setExpandedCommentId(expandedCommentId === id ? null : id);
+  };
+
+  // Copy comment handler
+  const copyComment = async (comment: string) => {
+    try {
+      await navigator.clipboard.writeText(comment);
+      toast({
+        title: "Copied!",
+        description: "Comment copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy comment to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -293,9 +306,9 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
             <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-lg font-medium">No entries found</p>
             <p className="text-muted-foreground">
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Entries will appear here when added via API'}
+              {searchQuery || statusFilter !== "all"
+                ? "Try adjusting your filters"
+                : "Entries will appear here when added via API"}
             </p>
           </CardContent>
         </Card>
@@ -325,14 +338,11 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
                 <TableRow key={entry.id}>
                   {isAdmin && (
                     <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(entry.id)}
-                        onCheckedChange={() => toggleSelect(entry.id)}
-                      />
+                      <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggleSelect(entry.id)} />
                     </TableCell>
                   )}
                   <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                  <TableCell>{format(new Date(entry.date), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{format(new Date(entry.date), "MMM d, yyyy")}</TableCell>
                   <TableCell>
                     <a
                       href={entry.link}
@@ -345,7 +355,44 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
                     </a>
                   </TableCell>
                   <TableCell>
-                    <p className="line-clamp-2 text-sm">{entry.comment}</p>
+                    <div className="relative group">
+                      <div
+                        className={`text-sm ${
+                          expandedCommentId === entry.id ? "" : "line-clamp-2"
+                        } whitespace-pre-wrap`}
+                      >
+                        {entry.comment}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => toggleCommentExpansion(entry.id)}
+                        >
+                          {expandedCommentId === entry.id ? (
+                            <>
+                              <ChevronUp className="h-3 w-3 mr-1" />
+                              Show less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                              Read more
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => copyComment(entry.comment)}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {editingNoteId === entry.id ? (
@@ -395,8 +442,8 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedIds.size} Entries</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedIds.size} selected{' '}
-              {selectedIds.size === 1 ? 'entry' : 'entries'}? This action cannot be undone.
+              Are you sure you want to delete {selectedIds.size} selected {selectedIds.size === 1 ? "entry" : "entries"}
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -417,7 +464,6 @@ function PlatformTab({ platform }: { platform: 'reddit' | 'linkedin' | 'X' }) {
 export default function Outreach() {
   const { isAdmin, isOps, loading } = useAuth();
 
-  // Loading state
   if (loading) {
     return (
       <MainLayout>
@@ -428,7 +474,6 @@ export default function Outreach() {
     );
   }
 
-  // Access check - only admin and ops
   if (!isAdmin && !isOps) {
     return <Navigate to="/" replace />;
   }
