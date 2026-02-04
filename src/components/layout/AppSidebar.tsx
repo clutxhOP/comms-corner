@@ -1,8 +1,24 @@
-import { LayoutDashboard, CheckSquare, MessageCircle, LogOut, Shield, Users, Plus, Code, Key, Webhook, Archive, ScrollText, Hash, Building2, Share2 } from 'lucide-react';
-import { NavLink } from '@/components/NavLink';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRoles } from '@/hooks/useUserRoles';
-import { Button } from '@/components/ui/button';
+import {
+  LayoutDashboard,
+  CheckSquare,
+  MessageCircle,
+  LogOut,
+  Shield,
+  Users,
+  Plus,
+  Code,
+  Key,
+  Webhook,
+  Archive,
+  ScrollText,
+  Hash,
+  Building2,
+  Share2,
+} from "lucide-react";
+import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -14,49 +30,49 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-} from '@/components/ui/sidebar';
-import logoImage from '@/assets/logo.png';
+} from "@/components/ui/sidebar";
+import logoImage from "@/assets/logo.png";
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Tasks', url: '/tasks', icon: CheckSquare },
-  { title: 'Chat', url: '/chat', icon: MessageCircle },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Chat", url: "/chat", icon: MessageCircle },
 ];
 
 const adminNavItems = [
-  { title: 'Admin Dashboard', url: '/admin', icon: Shield },
-  { title: 'Manage Users', url: '/admin/users', icon: Users },
-  { title: 'Customers', url: '/customers', icon: Building2 },
-  { title: 'Outreach', url: '/outreach', icon: Share2 },
-  { title: 'Create Task', url: '/admin/create-task', icon: Plus },
-  { title: 'Completed Tasks', url: '/admin/completed-tasks', icon: Archive },
-  { title: 'Access Tokens', url: '/tokens', icon: Key },
-  { title: 'Webhooks', url: '/webhooks', icon: Webhook },
-  { title: 'Webhook Logs', url: '/webhook-logs', icon: ScrollText },
-  { title: 'Channels', url: '/channels', icon: Hash },
+  { title: "Admin Dashboard", url: "/admin", icon: Shield },
+  { title: "Manage Users", url: "/admin/users", icon: Users },
+  { title: "Customers", url: "/customers", icon: Building2 },
+  { title: "Social Engagement", url: "/outreach", icon: Share2 },
+  { title: "Create Task", url: "/admin/create-task", icon: Plus },
+  { title: "Completed Tasks", url: "/admin/completed-tasks", icon: Archive },
+  { title: "Access Tokens", url: "/tokens", icon: Key },
+  { title: "Webhooks", url: "/webhooks", icon: Webhook },
+  { title: "Webhook Logs", url: "/webhook-logs", icon: ScrollText },
+  { title: "Channels", url: "/channels", icon: Hash },
 ];
 
 // Items accessible by dev and ops (non-admin)
 const devNavItems = [
-  { title: 'API Docs', url: '/api-docs', icon: Code },
-  { title: 'Access Tokens', url: '/tokens', icon: Key },
-  { title: 'Webhooks', url: '/webhooks', icon: Webhook },
-  { title: 'Webhook Logs', url: '/webhook-logs', icon: ScrollText },
-  { title: 'Channels', url: '/channels', icon: Hash },
+  { title: "API Docs", url: "/api-docs", icon: Code },
+  { title: "Access Tokens", url: "/tokens", icon: Key },
+  { title: "Webhooks", url: "/webhooks", icon: Webhook },
+  { title: "Webhook Logs", url: "/webhook-logs", icon: ScrollText },
+  { title: "Channels", url: "/channels", icon: Hash },
 ];
 
 // Items accessible by ops role
 const opsNavItems = [
-  { title: 'Customers', url: '/customers', icon: Building2 },
-  { title: 'Outreach', url: '/outreach', icon: Share2 },
+  { title: "Customers", url: "/customers", icon: Building2 },
+  { title: "Social Engagement", url: "/outreach", icon: Share2 },
 ];
 
 export function AppSidebar() {
   const { profile, isAdmin, signOut, user } = useAuth();
   const { roles } = useUserRoles(user?.id);
-  
-  const isDev = roles.includes('dev');
-  const isOps = roles.includes('ops');
+
+  const isDev = roles.includes("dev");
+  const isOps = roles.includes("ops");
   const canAccessApiDocs = isAdmin || isDev;
 
   return (
@@ -81,9 +97,9 @@ export function AppSidebar() {
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === '/'}
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/"}
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                     >
@@ -97,7 +113,7 @@ export function AppSidebar() {
               {canAccessApiDocs && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <NavLink 
+                    <NavLink
                       to="/api-docs"
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
@@ -122,8 +138,8 @@ export function AppSidebar() {
                 {adminNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
+                      <NavLink
+                        to={item.url}
                         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                       >
@@ -149,8 +165,8 @@ export function AppSidebar() {
                 {devNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
+                      <NavLink
+                        to={item.url}
                         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                       >
@@ -176,8 +192,8 @@ export function AppSidebar() {
                 {opsNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
+                      <NavLink
+                        to={item.url}
                         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                       >
@@ -197,20 +213,24 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent">
             <span className="text-xs font-medium text-sidebar-foreground">
-              {profile?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'TM'}
+              {profile?.full_name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2) || "TM"}
             </span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {profile?.full_name || 'Team Member'}
+              {profile?.full_name || "Team Member"}
             </p>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {isAdmin ? 'Admin' : isDev ? 'Developer' : 'Operations'}
+              {isAdmin ? "Admin" : isDev ? "Developer" : "Operations"}
             </p>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={signOut}
           >
