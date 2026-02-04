@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Task, LeadApprovalDetails } from "@/types";
 import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,14 +28,9 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const { roles } = useUserRoles(user?.id);
   const { createAssignment, reassignLead, getAssignmentByLeadId } = useLeadAssignments();
   const { allBusinesses } = useBusinesses();
-  const { triggerWebhook, webhooks, fetchWebhooks } = useWebhooks();
+  const { triggerWebhook } = useWebhooks();
   const canDelete = roles.includes("admin") || roles.includes("dev");
   const canReassign = roles.includes("admin") || roles.includes("ops");
-
-  // Force fetch webhooks on mount
-  useEffect(() => {
-    fetchWebhooks();
-  }, []);
 
   const extractLeadData = (businessId: string, status: "approved" | "disapproved"): CreateLeadAssignmentData => ({
     lead_id: task.id,
@@ -54,67 +49,44 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   });
 
   const handleApprove = async () => {
-    // Save to lead_assignments table with the client_id as business_id reference
     const assignmentData = extractLeadData(details.clientId, "approved");
     await createAssignment(assignmentData);
-
-    // Call original approve handler
     onApprove?.(task.id);
   };
 
   const handleDisapprove = async () => {
-    // Save to lead_assignments table with the client_id as business_id reference
     const assignmentData = extractLeadData(details.clientId, "disapproved");
     await createAssignment(assignmentData);
-
-    // Call original disapprove handler
     onDisapprove?.(task.id);
   };
 
   const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
     console.log("🔍 Starting reassignment process...");
     console.log("🔍 Selected business IDs:", data.businessIds);
-    console.log("🔍 Current user roles:", roles);
-    console.log("🔍 Webhooks loaded count:", webhooks.length);
-    console.log("🔍 Webhooks array:", webhooks);
-
-    // Ensure webhooks are loaded before triggering
-    if (webhooks.length === 0) {
-      console.log("⚠️ Webhooks not loaded, fetching now...");
-      await fetchWebhooks();
-    }
 
     const existingAssignment = getAssignmentByLeadId(task.id);
 
     if (existingAssignment) {
-      // Update existing assignment with reassignment details
       await reassignLead(task.id, {
         business_ids: data.businessIds,
         whatsapp: data.whatsapp,
         reason: data.reason,
       });
     } else {
-      // Create new assignment with selected business as the initial assignment
-      // Use the first business ID from the array
       const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
 
-    // Get full business details for selected businesses
     const selectedBusinesses = allBusinesses.filter((b: Business) => data.businessIds.includes(b.id));
 
     console.log("🔍 Selected businesses:", selectedBusinesses);
 
-    // Build webhook payload
     const reassignedTo = selectedBusinesses.map((business: Business) => ({
-      // Business details (from businesses table - different for each business)
       clientId: business.id,
       clientName: business.name || "Unknown Business",
       whatsapp: business.whatsapp || "",
       website: business.website || null,
       category: business.category || "",
-
-      // Lead details (from task details - same for all businesses)
       id: task.id,
       icp: details.icp || "",
       contactInfo: details.contactInfo,
@@ -128,10 +100,6 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
       reassigned_to: reassignedTo,
     });
 
-    // Small delay to ensure webhooks are loaded from the fetch above
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Trigger webhook
     await triggerWebhook("lead_reassigned", {
       event: "lead.reassigned",
       reassigned_to: reassignedTo,
