@@ -266,10 +266,17 @@ export default function Chat() {
     const messageContent = newMessage;
     const messageMentions = extractMentionIdsFromText(messageContent);
 
+    console.log("=== SEND MESSAGE DEBUG ===");
+    console.log("Current user:", user?.id);
+    console.log("Profile name:", profile?.full_name);
+    console.log("Reply data:", replyingTo);
+    console.log("Message content:", messageContent);
+
     try {
       await markChannelAsRead(selectedChannelId);
-      // Pass replyingTo.id as third parameter
       const messageId = await sendMessage(messageContent || "📎 Attachment", messageMentions, replyingTo?.id);
+
+      console.log("Message sent with ID:", messageId);
 
       if (messageId && attachments.length > 0) {
         const uploaded = await uploadAttachments(messageId);
@@ -284,6 +291,7 @@ export default function Chat() {
 
       // Create notifications for mentioned users
       if (messageId && messageMentions.length > 0) {
+        console.log("Creating mention notifications for:", messageMentions);
         await createMentionNotifications(
           messageMentions,
           messageId,
@@ -295,22 +303,56 @@ export default function Chat() {
 
       // NEW: Create notification for the user being replied to
       if (messageId && replyingTo) {
+        console.log("Processing reply notification...");
         const repliedMessage = messages.find((m) => m.id === replyingTo.id);
-        if (repliedMessage && repliedMessage.user_id !== user?.id) {
-          // Only notify if the replied-to user is not the current user
-          await createMentionNotifications(
-            [repliedMessage.user_id],
-            messageId,
-            selectedChannelId,
-            profile?.full_name || "Someone",
-            `replied to your message: ${messageContent}`,
+        console.log("Found replied message:", repliedMessage);
+
+        if (repliedMessage) {
+          console.log("Replied message user_id:", repliedMessage.user_id);
+          console.log("Current user id:", user?.id);
+          console.log("Are they different?", repliedMessage.user_id !== user?.id);
+
+          if (repliedMessage.user_id !== user?.id) {
+            console.log("✅ Creating reply notification for user:", repliedMessage.user_id);
+            console.log("Notification params:", {
+              userIds: [repliedMessage.user_id],
+              messageId,
+              channelId: selectedChannelId,
+              senderName: profile?.full_name || "Someone",
+              preview: `replied to your message: ${messageContent}`,
+            });
+
+            try {
+              await createMentionNotifications(
+                [repliedMessage.user_id],
+                messageId,
+                selectedChannelId,
+                profile?.full_name || "Someone",
+                `replied to your message: ${messageContent}`,
+              );
+              console.log("✅ Reply notification created successfully");
+            } catch (error) {
+              console.error("❌ Error creating reply notification:", error);
+            }
+          } else {
+            console.log("⚠️ Not creating notification - replying to own message");
+          }
+        } else {
+          console.log("❌ Could not find replied message in messages array");
+          console.log(
+            "Available message IDs:",
+            messages.map((m) => m.id),
           );
         }
+      } else {
+        console.log("⚠️ No reply data or messageId:", { messageId, replyingTo });
       }
 
       setNewMessage("");
       setMentions([]);
-      setReplyingTo(null); // Clear reply after sending
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("❌ Error in handleSendMessage:", error);
     } finally {
       setIsSending(false);
     }
@@ -375,6 +417,7 @@ export default function Chat() {
 
   // Handle reply
   const handleReply = (messageId: string, content: string, userName: string) => {
+    console.log("Setting reply to:", { messageId, content, userName });
     setReplyingTo({ id: messageId, content, userName });
   };
 
