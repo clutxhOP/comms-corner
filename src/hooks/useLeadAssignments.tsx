@@ -148,14 +148,27 @@ export function useLeadAssignments() {
           if (checkError) {
             console.error("Error checking for duplicate assignments:", checkError);
           } else if (existingAssignments && existingAssignments.length > 0) {
+            // Build a map of business_id -> client_name from existing assignments
+            const businessIdToNameMap = new Map<string, string>();
+
+            existingAssignments.forEach((assignment) => {
+              // Map original business_id to client_name
+              businessIdToNameMap.set(assignment.business_id, assignment.client_name || "Unknown Business");
+
+              // Map reassigned business IDs to client_name (they would have the same name)
+              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
+                assignment.reassigned_business_ids.forEach((id) => {
+                  businessIdToNameMap.set(id, assignment.client_name || "Unknown Business");
+                });
+              }
+            });
+
             // Collect all business IDs that this lead has been assigned to
             const alreadyAssignedBusinessIds = new Set<string>();
 
             existingAssignments.forEach((assignment) => {
-              // Add original business_id
               alreadyAssignedBusinessIds.add(assignment.business_id);
 
-              // Add reassigned business IDs if they exist
               if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
                 assignment.reassigned_business_ids.forEach((id) => alreadyAssignedBusinessIds.add(id));
               }
@@ -167,15 +180,9 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Map duplicate business IDs to their names from the passed business_names array
+              // Get business names from the map
               const duplicateNames = duplicateBusinessIds
-                .map((duplicateId) => {
-                  const indexInBusinessIds = data.business_ids.indexOf(duplicateId);
-                  if (indexInBusinessIds !== -1 && data.business_names && data.business_names[indexInBusinessIds]) {
-                    return data.business_names[indexInBusinessIds];
-                  }
-                  return "Unknown Business";
-                })
+                .map((id) => businessIdToNameMap.get(id) || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
@@ -270,14 +277,27 @@ export function useLeadAssignments() {
           if (checkError) {
             console.error("Error checking for duplicate assignments:", checkError);
           } else if (existingAssignments && existingAssignments.length > 0) {
+            // Build a map of business_id -> client_name from existing assignments
+            const businessIdToNameMap = new Map<string, string>();
+
+            existingAssignments.forEach((assignment) => {
+              // Map original business_id to client_name
+              businessIdToNameMap.set(assignment.business_id, assignment.client_name || "Unknown Business");
+
+              // Map reassigned business IDs to client_name
+              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
+                assignment.reassigned_business_ids.forEach((id) => {
+                  businessIdToNameMap.set(id, assignment.client_name || "Unknown Business");
+                });
+              }
+            });
+
             // Collect all business IDs that this lead has been assigned to
             const alreadyAssignedBusinessIds = new Set<string>();
 
             existingAssignments.forEach((assignment) => {
-              // Add original business_id
               alreadyAssignedBusinessIds.add(assignment.business_id);
 
-              // Add reassigned business IDs if they exist
               if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
                 assignment.reassigned_business_ids.forEach((id) => alreadyAssignedBusinessIds.add(id));
               }
@@ -289,15 +309,9 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Map duplicate business IDs to their names from the passed business_names array
+              // Get business names from the map
               const duplicateNames = duplicateBusinessIds
-                .map((duplicateId) => {
-                  const indexInBusinessIds = data.business_ids.indexOf(duplicateId);
-                  if (indexInBusinessIds !== -1 && data.business_names && data.business_names[indexInBusinessIds]) {
-                    return data.business_names[indexInBusinessIds];
-                  }
-                  return "Unknown Business";
-                })
+                .map((id) => businessIdToNameMap.get(id) || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
