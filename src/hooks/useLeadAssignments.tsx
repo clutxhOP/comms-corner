@@ -48,6 +48,7 @@ export interface ReassignLeadData {
   business_ids: string[];
   whatsapp?: string;
   reason?: string;
+  business_names?: string[]; // Add this to pass business names
 }
 
 export function useLeadAssignments() {
@@ -166,21 +167,18 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Find business names for better error message
-              const duplicateNames = existingAssignments
-                .filter(
-                  (a) =>
-                    duplicateBusinessIds.includes(a.business_id) ||
-                    (a.reassigned_business_ids &&
-                      a.reassigned_business_ids.some((id) => duplicateBusinessIds.includes(id))),
-                )
-                .map((a) => a.client_name || "Unknown Business")
+              // Get the names of businesses being attempted (passed from the component)
+              const attemptedBusinessNames = data.business_names || duplicateBusinessIds.map(() => "Unknown Business");
+
+              // Match duplicate IDs with their names
+              const duplicateNames = duplicateBusinessIds
+                .map((id, index) => attemptedBusinessNames[data.business_ids.indexOf(id)] || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
               toast({
                 title: "Duplicate Assignment Detected",
-                description: `This lead (Record ID: ${recordId}) has already been assigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
+                description: `This lead (Record ID: ${recordId}) has already been reassigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
                 variant: "destructive",
               });
               return false;
@@ -288,21 +286,18 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Find business names for better error message
-              const duplicateNames = existingAssignments
-                .filter(
-                  (a) =>
-                    duplicateBusinessIds.includes(a.business_id) ||
-                    (a.reassigned_business_ids &&
-                      a.reassigned_business_ids.some((id) => duplicateBusinessIds.includes(id))),
-                )
-                .map((a) => a.client_name || "Unknown Business")
+              // Get the names of businesses being attempted (passed from the component)
+              const attemptedBusinessNames = data.business_names || duplicateBusinessIds.map(() => "Unknown Business");
+
+              // Match duplicate IDs with their names
+              const duplicateNames = duplicateBusinessIds
+                .map((id, index) => attemptedBusinessNames[data.business_ids.indexOf(id)] || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
               toast({
                 title: "Duplicate Assignment Detected",
-                description: `This lead (Record ID: ${recordId}) has already been assigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
+                description: `This lead (Record ID: ${recordId}) has already been reassigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
                 variant: "destructive",
               });
               return false;
