@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Task, LeadApprovalDetails } from "@/types";
-import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2, RefreshCcw } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TaskCommentsDialog } from "./TaskCommentsDialog";
@@ -24,6 +24,7 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   const isApprovedOrDisapproved = task.status === "approved" || task.status === "disapproved";
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
   const { createAssignment, reassignLead, getAssignmentByLeadId } = useLeadAssignments();
@@ -49,15 +50,35 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
   });
 
   const handleApprove = async () => {
-    const assignmentData = extractLeadData(details.clientId, "approved");
-    await createAssignment(assignmentData);
-    onApprove?.(task.id);
+    if (isProcessing) {
+      console.log("⚠️ Already processing, ignoring duplicate click");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const assignmentData = extractLeadData(details.clientId, "approved");
+      await createAssignment(assignmentData);
+      onApprove?.(task.id);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDisapprove = async () => {
-    const assignmentData = extractLeadData(details.clientId, "disapproved");
-    await createAssignment(assignmentData);
-    onDisapprove?.(task.id);
+    if (isProcessing) {
+      console.log("⚠️ Already processing, ignoring duplicate click");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const assignmentData = extractLeadData(details.clientId, "disapproved");
+      await createAssignment(assignmentData);
+      onDisapprove?.(task.id);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleReassign = async (data: { businessIds: string[]; whatsapp?: string; reason?: string }) => {
@@ -221,13 +242,42 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
         {!isCompleted && !isApprovedOrDisapproved && (
           <div className="flex flex-col gap-2 mt-4">
             <div className="flex gap-2">
-              <Button size="sm" className="flex-1 bg-success hover:bg-success/90" onClick={handleApprove}>
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                Approve
+              <Button
+                size="sm"
+                className="flex-1 bg-success hover:bg-success/90"
+                onClick={handleApprove}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Approve
+                  </>
+                )}
               </Button>
-              <Button size="sm" variant="destructive" className="flex-1" onClick={handleDisapprove}>
-                <XCircle className="h-4 w-4 mr-1" />
-                Disapprove
+              <Button
+                size="sm"
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDisapprove}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Disapproving...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-1" />
+                    Disapprove
+                  </>
+                )}
               </Button>
             </div>
             {canReassign && (
