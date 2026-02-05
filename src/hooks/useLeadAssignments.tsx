@@ -125,38 +125,99 @@ export function useLeadAssignments() {
         // Check if assignment exists for this lead
         const existing = assignments.find((a) => a.lead_id === leadId);
 
-        if (existing) {
-          // Update existing record with multiple business IDs
-          const { error } = await supabase
-            .from("lead_assignments")
-            .update({
-              reassigned_business_id: data.business_ids[0] || null,
-              reassigned_business_ids: data.business_ids,
-              reassigned_whatsapp: data.whatsapp || null,
-              reassigned_by: user.id,
-              reassignment_reason: data.reason || null,
-              reassigned_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-
-          if (error) throw error;
-
-          setAssignments((prev) =>
-            prev.map((a) =>
-              a.id === existing.id
-                ? {
-                    ...a,
-                    reassigned_business_id: data.business_ids[0] || null,
-                    reassigned_business_ids: data.business_ids,
-                    reassigned_whatsapp: data.whatsapp || null,
-                    reassigned_by: user.id,
-                    reassignment_reason: data.reason || null,
-                    reassigned_at: new Date().toISOString(),
-                  }
-                : a,
-            ),
-          );
+        if (!existing) {
+          toast({
+            title: "Error",
+            description: "Lead assignment not found",
+            variant: "destructive",
+          });
+          return false;
         }
+
+        // Check for duplicate reassignments based on recordId + business combination
+        const recordId = existing.record_id;
+
+        if (recordId) {
+          // Query database to check if this lead (recordId) has already been assigned to any of the target businesses
+          const { data: existingAssignments, error: checkError } = await supabase
+            .from("lead_assignments")
+            .select("client_id, client_whatsapp, client_name, business_id, reassigned_business_ids")
+            .eq("record_id", recordId);
+
+          if (checkError) {
+            console.error("Error checking for duplicate assignments:", checkError);
+          } else if (existingAssignments && existingAssignments.length > 0) {
+            // Collect all business IDs that this lead has been assigned to
+            const alreadyAssignedBusinessIds = new Set<string>();
+
+            existingAssignments.forEach((assignment) => {
+              // Add original business_id
+              alreadyAssignedBusinessIds.add(assignment.business_id);
+
+              // Add reassigned business IDs if they exist
+              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
+                assignment.reassigned_business_ids.forEach((id) => alreadyAssignedBusinessIds.add(id));
+              }
+            });
+
+            // Check if any of the new business_ids are already assigned
+            const duplicateBusinessIds = data.business_ids.filter((businessId) =>
+              alreadyAssignedBusinessIds.has(businessId),
+            );
+
+            if (duplicateBusinessIds.length > 0) {
+              // Find business names for better error message
+              const duplicateNames = existingAssignments
+                .filter(
+                  (a) =>
+                    duplicateBusinessIds.includes(a.business_id) ||
+                    (a.reassigned_business_ids &&
+                      a.reassigned_business_ids.some((id) => duplicateBusinessIds.includes(id))),
+                )
+                .map((a) => a.client_name || "Unknown Business")
+                .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+                .join(", ");
+
+              toast({
+                title: "Duplicate Assignment Detected",
+                description: `This lead (Record ID: ${recordId}) has already been assigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
+                variant: "destructive",
+              });
+              return false;
+            }
+          }
+        }
+
+        // Proceed with reassignment if no duplicates found
+        const { error } = await supabase
+          .from("lead_assignments")
+          .update({
+            reassigned_business_id: data.business_ids[0] || null,
+            reassigned_business_ids: data.business_ids,
+            reassigned_whatsapp: data.whatsapp || null,
+            reassigned_by: user.id,
+            reassignment_reason: data.reason || null,
+            reassigned_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+
+        setAssignments((prev) =>
+          prev.map((a) =>
+            a.id === existing.id
+              ? {
+                  ...a,
+                  reassigned_business_id: data.business_ids[0] || null,
+                  reassigned_business_ids: data.business_ids,
+                  reassigned_whatsapp: data.whatsapp || null,
+                  reassigned_by: user.id,
+                  reassignment_reason: data.reason || null,
+                  reassigned_at: new Date().toISOString(),
+                }
+              : a,
+          ),
+        );
 
         const businessCount = data.business_ids.length;
         toast({
@@ -183,6 +244,73 @@ export function useLeadAssignments() {
       if (!user) return false;
 
       try {
+        // Get the assignment to check for duplicates
+        const assignment = assignments.find((a) => a.id === assignmentId);
+
+        if (!assignment) {
+          toast({
+            title: "Error",
+            description: "Assignment not found",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        // Check for duplicate reassignments based on recordId + business combination
+        const recordId = assignment.record_id;
+
+        if (recordId) {
+          // Query database to check if this lead (recordId) has already been assigned to any of the target businesses
+          const { data: existingAssignments, error: checkError } = await supabase
+            .from("lead_assignments")
+            .select("client_id, client_whatsapp, client_name, business_id, reassigned_business_ids")
+            .eq("record_id", recordId);
+
+          if (checkError) {
+            console.error("Error checking for duplicate assignments:", checkError);
+          } else if (existingAssignments && existingAssignments.length > 0) {
+            // Collect all business IDs that this lead has been assigned to
+            const alreadyAssignedBusinessIds = new Set<string>();
+
+            existingAssignments.forEach((assignment) => {
+              // Add original business_id
+              alreadyAssignedBusinessIds.add(assignment.business_id);
+
+              // Add reassigned business IDs if they exist
+              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
+                assignment.reassigned_business_ids.forEach((id) => alreadyAssignedBusinessIds.add(id));
+              }
+            });
+
+            // Check if any of the new business_ids are already assigned
+            const duplicateBusinessIds = data.business_ids.filter((businessId) =>
+              alreadyAssignedBusinessIds.has(businessId),
+            );
+
+            if (duplicateBusinessIds.length > 0) {
+              // Find business names for better error message
+              const duplicateNames = existingAssignments
+                .filter(
+                  (a) =>
+                    duplicateBusinessIds.includes(a.business_id) ||
+                    (a.reassigned_business_ids &&
+                      a.reassigned_business_ids.some((id) => duplicateBusinessIds.includes(id))),
+                )
+                .map((a) => a.client_name || "Unknown Business")
+                .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+                .join(", ");
+
+              toast({
+                title: "Duplicate Assignment Detected",
+                description: `This lead (Record ID: ${recordId}) has already been assigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
+                variant: "destructive",
+              });
+              return false;
+            }
+          }
+        }
+
+        // Proceed with reassignment if no duplicates found
         const { error } = await supabase
           .from("lead_assignments")
           .update({
@@ -230,7 +358,7 @@ export function useLeadAssignments() {
         return false;
       }
     },
-    [user, toast],
+    [user, toast, assignments],
   );
 
   const getAssignmentByLeadId = useCallback(
