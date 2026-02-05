@@ -87,18 +87,21 @@ export function LeadApprovalCard({ task, onApprove, onDisapprove, onDelete }: Le
 
     const existingAssignment = getAssignmentByLeadId(task.id);
 
+    // Get selected businesses and their names
+    const selectedBusinesses = allBusinesses.filter((b: Business) => data.businessIds.includes(b.id));
+    const businessNames = selectedBusinesses.map((b: Business) => b.name || "Unknown Business");
+
     if (existingAssignment) {
       await reassignLead(task.id, {
         business_ids: data.businessIds,
         whatsapp: data.whatsapp,
         reason: data.reason,
+        business_names: businessNames, // Pass business names for error messages
       });
     } else {
       const assignmentData = extractLeadData(data.businessIds[0], "approved");
       await createAssignment(assignmentData);
     }
-
-    const selectedBusinesses = allBusinesses.filter((b: Business) => data.businessIds.includes(b.id));
 
     console.log("🔍 Selected businesses:", selectedBusinesses);
 
