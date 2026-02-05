@@ -148,21 +148,6 @@ export function useLeadAssignments() {
           if (checkError) {
             console.error("Error checking for duplicate assignments:", checkError);
           } else if (existingAssignments && existingAssignments.length > 0) {
-            // Build a map of business_id -> client_name from existing assignments
-            const businessIdToNameMap = new Map<string, string>();
-
-            existingAssignments.forEach((assignment) => {
-              // Map original business_id to client_name
-              businessIdToNameMap.set(assignment.business_id, assignment.client_name || "Unknown Business");
-
-              // Map reassigned business IDs to client_name (they would have the same name)
-              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
-                assignment.reassigned_business_ids.forEach((id) => {
-                  businessIdToNameMap.set(id, assignment.client_name || "Unknown Business");
-                });
-              }
-            });
-
             // Collect all business IDs that this lead has been assigned to
             const alreadyAssignedBusinessIds = new Set<string>();
 
@@ -180,9 +165,21 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Get business names from the map
+              // Fetch business names from the customers table
+              const { data: customers, error: customerError } = await supabase
+                .from("customers")
+                .select("id, name")
+                .in("id", duplicateBusinessIds);
+
+              if (customerError) {
+                console.error("Error fetching customer names:", customerError);
+              }
+
+              // Map business IDs to their names
+              const businessNameMap = new Map((customers || []).map((c) => [c.id, c.name || "Unknown Business"]));
+
               const duplicateNames = duplicateBusinessIds
-                .map((id) => businessIdToNameMap.get(id) || "Unknown Business")
+                .map((id) => businessNameMap.get(id) || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
@@ -277,21 +274,6 @@ export function useLeadAssignments() {
           if (checkError) {
             console.error("Error checking for duplicate assignments:", checkError);
           } else if (existingAssignments && existingAssignments.length > 0) {
-            // Build a map of business_id -> client_name from existing assignments
-            const businessIdToNameMap = new Map<string, string>();
-
-            existingAssignments.forEach((assignment) => {
-              // Map original business_id to client_name
-              businessIdToNameMap.set(assignment.business_id, assignment.client_name || "Unknown Business");
-
-              // Map reassigned business IDs to client_name
-              if (assignment.reassigned_business_ids && Array.isArray(assignment.reassigned_business_ids)) {
-                assignment.reassigned_business_ids.forEach((id) => {
-                  businessIdToNameMap.set(id, assignment.client_name || "Unknown Business");
-                });
-              }
-            });
-
             // Collect all business IDs that this lead has been assigned to
             const alreadyAssignedBusinessIds = new Set<string>();
 
@@ -309,9 +291,21 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Get business names from the map
+              // Fetch business names from the customers table
+              const { data: customers, error: customerError } = await supabase
+                .from("customers")
+                .select("id, name")
+                .in("id", duplicateBusinessIds);
+
+              if (customerError) {
+                console.error("Error fetching customer names:", customerError);
+              }
+
+              // Map business IDs to their names
+              const businessNameMap = new Map((customers || []).map((c) => [c.id, c.name || "Unknown Business"]));
+
               const duplicateNames = duplicateBusinessIds
-                .map((id) => businessIdToNameMap.get(id) || "Unknown Business")
+                .map((id) => businessNameMap.get(id) || "Unknown Business")
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
