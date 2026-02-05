@@ -196,62 +196,73 @@ export function useWebhooks() {
   // Trigger webhooks with deduplication and fresh data fetch
   const triggerWebhook = useCallback(
     async (action: string, payload: Record<string, unknown>) => {
-      // Create a unique key for deduplication
-      const triggerKey = `${action}-${JSON.stringify(payload)}`;
+      // Create a stable deduplication key using only the task ID
+      const taskId = (payload.task as any)?.id || "no-id";
+      const triggerKey = `${action}-${taskId}`;
+
+      console.log(`🔑 Deduplication key: ${triggerKey}`);
 
       // Check if this exact trigger is already in progress
       if (triggeringRef.current.has(triggerKey)) {
-        console.log(`⚠️ Skipping duplicate trigger for ${action}`);
+        console.log(`⚠️ DUPLICATE BLOCKED: ${action} for task ${taskId}`);
         return;
       }
 
       // Mark as triggering
       triggeringRef.current.add(triggerKey);
+      console.log(`✅ ADDED to dedup set: ${triggerKey}`);
 
-      // Handle task-specific webhook URLs
-      const taskPayload = payload as { task?: { details?: { approvalWebhookUrl?: string; disapprovalWebhookUrl?: string } } };
-      
-      if (action === "task_approve" && taskPayload.task?.details?.approvalWebhookUrl) {
-        const taskSpecificUrl = taskPayload.task.details.approvalWebhookUrl;
-        console.log(`📡 Triggering task-specific approval webhook: ${taskSpecificUrl}`);
-        
-        try {
-          const response = await fetch(taskSpecificUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action,
-              timestamp: new Date().toISOString(),
-              ...payload,
-            }),
-          });
-          console.log(`✅ Task-specific approval webhook response: ${response.status}`);
-        } catch (error) {
-          console.error(`❌ Failed to trigger task-specific approval webhook:`, error);
-        }
-      }
-
-      if (action === "task_disapprove" && taskPayload.task?.details?.disapprovalWebhookUrl) {
-        const taskSpecificUrl = taskPayload.task.details.disapprovalWebhookUrl;
-        console.log(`📡 Triggering task-specific disapproval webhook: ${taskSpecificUrl}`);
-        
-        try {
-          const response = await fetch(taskSpecificUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action,
-              timestamp: new Date().toISOString(),
-              ...payload,
-            }),
-          });
-          console.log(`✅ Task-specific disapproval webhook response: ${response.status}`);
-        } catch (error) {
-          console.error(`❌ Failed to trigger task-specific disapproval webhook:`, error);
-        }
-      }
+      // Track URLs we've already called to prevent duplicates
+      const calledUrls = new Set<string>();
 
       try {
+        // Handle task-specific webhook URLs
+        const taskPayload = payload as {
+          task?: { details?: { approvalWebhookUrl?: string; disapprovalWebhookUrl?: string } };
+        };
+
+        if (action === "task_approve" && taskPayload.task?.details?.approvalWebhookUrl) {
+          const taskSpecificUrl = taskPayload.task.details.approvalWebhookUrl;
+          console.log(`📡 Triggering task-specific approval webhook: ${taskSpecificUrl}`);
+
+          try {
+            const response = await fetch(taskSpecificUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action,
+                timestamp: new Date().toISOString(),
+                ...payload,
+              }),
+            });
+            console.log(`✅ Task-specific approval webhook response: ${response.status}`);
+            calledUrls.add(taskSpecificUrl);
+          } catch (error) {
+            console.error(`❌ Failed to trigger task-specific approval webhook:`, error);
+          }
+        }
+
+        if (action === "task_disapprove" && taskPayload.task?.details?.disapprovalWebhookUrl) {
+          const taskSpecificUrl = taskPayload.task.details.disapprovalWebhookUrl;
+          console.log(`📡 Triggering task-specific disapproval webhook: ${taskSpecificUrl}`);
+
+          try {
+            const response = await fetch(taskSpecificUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action,
+                timestamp: new Date().toISOString(),
+                ...payload,
+              }),
+            });
+            console.log(`✅ Task-specific disapproval webhook response: ${response.status}`);
+            calledUrls.add(taskSpecificUrl);
+          } catch (error) {
+            console.error(`❌ Failed to trigger task-specific disapproval webhook:`, error);
+          }
+        }
+
         // Fetch fresh webhooks directly from database to avoid stale state
         const { data: freshWebhooks, error } = await supabase.from("webhooks").select("*").eq("enabled", true);
 
@@ -271,6 +282,12 @@ export function useWebhooks() {
         console.log(`🎯 Triggering webhooks for action: ${action}, found ${matchingWebhooks.length} matching webhooks`);
 
         for (const webhook of matchingWebhooks) {
+          // Skip if we already called this URL
+          if (calledUrls.has(webhook.url)) {
+            console.log(`⏭️ SKIPPING duplicate URL: ${webhook.url} (already called as task-specific)`);
+            continue;
+          }
+
           const requestPayload = {
             action,
             timestamp: new Date().toISOString(),
@@ -324,10 +341,11 @@ export function useWebhooks() {
           }
         }
       } finally {
-        // Remove from tracking after 2 seconds to allow legitimate retriggers
+        // Remove from tracking after 3 seconds to allow legitimate retriggers
         setTimeout(() => {
           triggeringRef.current.delete(triggerKey);
-        }, 2000);
+          console.log(`🗑️ REMOVED from dedup set: ${triggerKey}`);
+        }, 3000);
       }
     },
     [], // Empty dependency array - fetches fresh data internally
