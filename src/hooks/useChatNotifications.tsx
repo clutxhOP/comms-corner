@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface ChatNotification {
   id: string;
@@ -21,19 +21,19 @@ export function useChatNotifications() {
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
-        .from('chat_notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .from("chat_notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
       setNotifications(data || []);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
     }
@@ -45,19 +45,32 @@ export function useChatNotifications() {
 
       // Subscribe to realtime notifications
       const channel = supabase
-        .channel('chat-notifications')
+        .channel("chat-notifications")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_notifications',
+            event: "INSERT",
+            schema: "public",
+            table: "chat_notifications",
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             const newNotification = payload.new as ChatNotification;
-            setNotifications(prev => [newNotification, ...prev]);
-          }
+            setNotifications((prev) => [newNotification, ...prev]);
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "chat_notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const deletedId = payload.old.id as string;
+            setNotifications((prev) => prev.filter((n) => n.id !== deletedId));
+          },
         )
         .subscribe();
 
@@ -67,29 +80,25 @@ export function useChatNotifications() {
     }
   }, [user, fetchNotifications]);
 
-  const unreadCount = notifications.filter(n => !n.read_at).length;
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
 
     try {
       const { error } = await supabase
-        .from('chat_notifications')
+        .from("chat_notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
-      setNotifications(prev =>
-        prev.map(n =>
-          n.id === notificationId
-            ? { ...n, read_at: new Date().toISOString() }
-            : n
-        )
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)),
       );
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
     }
   };
 
@@ -98,18 +107,48 @@ export function useChatNotifications() {
 
     try {
       const { error } = await supabase
-        .from('chat_notifications')
+        .from("chat_notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null);
+        .eq("user_id", user.id)
+        .is("read_at", null);
 
       if (error) throw error;
 
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
-      );
+      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error("Error marking all notifications as read:", error);
+    }
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("chat_notifications")
+        .delete()
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from("chat_notifications").delete().eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setNotifications([]);
+    } catch (error) {
+      console.error("Error clearing all notifications:", error);
     }
   };
 
@@ -118,16 +157,16 @@ export function useChatNotifications() {
     messageId: string,
     channelId: string,
     senderName: string,
-    messagePreview: string
+    messagePreview: string,
   ) => {
     if (!user || mentions.length === 0) return;
 
     // Filter out self-mentions
-    const validMentions = mentions.filter(id => id !== user.id);
+    const validMentions = mentions.filter((id) => id !== user.id);
     if (validMentions.length === 0) return;
 
     try {
-      const notifications = validMentions.map(userId => ({
+      const notifications = validMentions.map((userId) => ({
         user_id: userId,
         message_id: messageId,
         channel_id: channelId,
@@ -136,13 +175,11 @@ export function useChatNotifications() {
         message_preview: messagePreview.slice(0, 100),
       }));
 
-      const { error } = await supabase
-        .from('chat_notifications')
-        .insert(notifications);
+      const { error } = await supabase.from("chat_notifications").insert(notifications);
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error creating mention notifications:', error);
+      console.error("Error creating mention notifications:", error);
     }
   };
 
@@ -152,6 +189,8 @@ export function useChatNotifications() {
     unreadCount,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
+    clearAllNotifications,
     createMentionNotifications,
     fetchNotifications,
   };
