@@ -48,7 +48,7 @@ export interface ReassignLeadData {
   business_ids: string[];
   whatsapp?: string;
   reason?: string;
-  business_names?: string[]; // Add this to pass business names
+  business_names?: string[];
 }
 
 export function useLeadAssignments() {
@@ -167,12 +167,15 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Get the names of businesses being attempted (passed from the component)
-              const attemptedBusinessNames = data.business_names || duplicateBusinessIds.map(() => "Unknown Business");
-
-              // Match duplicate IDs with their names
+              // Map duplicate business IDs to their names from the passed business_names array
               const duplicateNames = duplicateBusinessIds
-                .map((id, index) => attemptedBusinessNames[data.business_ids.indexOf(id)] || "Unknown Business")
+                .map((duplicateId) => {
+                  const indexInBusinessIds = data.business_ids.indexOf(duplicateId);
+                  if (indexInBusinessIds !== -1 && data.business_names && data.business_names[indexInBusinessIds]) {
+                    return data.business_names[indexInBusinessIds];
+                  }
+                  return "Unknown Business";
+                })
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
@@ -286,12 +289,15 @@ export function useLeadAssignments() {
             );
 
             if (duplicateBusinessIds.length > 0) {
-              // Get the names of businesses being attempted (passed from the component)
-              const attemptedBusinessNames = data.business_names || duplicateBusinessIds.map(() => "Unknown Business");
-
-              // Match duplicate IDs with their names
+              // Map duplicate business IDs to their names from the passed business_names array
               const duplicateNames = duplicateBusinessIds
-                .map((id, index) => attemptedBusinessNames[data.business_ids.indexOf(id)] || "Unknown Business")
+                .map((duplicateId) => {
+                  const indexInBusinessIds = data.business_ids.indexOf(duplicateId);
+                  if (indexInBusinessIds !== -1 && data.business_names && data.business_names[indexInBusinessIds]) {
+                    return data.business_names[indexInBusinessIds];
+                  }
+                  return "Unknown Business";
+                })
                 .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
                 .join(", ");
 
