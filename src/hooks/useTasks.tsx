@@ -102,33 +102,7 @@ export function useTasks() {
           ),
         );
 
-        // Call the specific approval webhook from task details
-        if (task?.details?.approvalWebhookUrl) {
-          try {
-            await fetch(task.details.approvalWebhookUrl as string, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "task_approve",
-                timestamp: new Date().toISOString(),
-                task: {
-                  id: task.id,
-                  title: task.title,
-                  type: task.type,
-                  details: task.details,
-                },
-                user: {
-                  id: user.id,
-                  name: profile?.full_name,
-                },
-              }),
-            });
-          } catch (webhookError) {
-            console.error("Failed to call approval webhook:", webhookError);
-          }
-        }
-
-        // Also trigger general webhooks
+        // Trigger webhooks (includes both general and task-specific via approvalWebhookUrl in details)
         await triggerWebhook("task_approve", {
           task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
           user: { id: user.id, name: profile?.full_name },
@@ -183,34 +157,7 @@ export function useTasks() {
           ),
         );
 
-        // Call the specific disapproval webhook from task details
-        if (task?.details?.disapprovalWebhookUrl) {
-          try {
-            await fetch(task.details.disapprovalWebhookUrl as string, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "task_disapprove",
-                timestamp: new Date().toISOString(),
-                task: {
-                  id: task.id,
-                  title: task.title,
-                  type: task.type,
-                  details: task.details,
-                  disapproval_reason: reason,
-                },
-                user: {
-                  id: user.id,
-                  name: profile?.full_name,
-                },
-              }),
-            });
-          } catch (webhookError) {
-            console.error("Failed to call disapproval webhook:", webhookError);
-          }
-        }
-
-        // Also trigger general webhooks
+        // Trigger webhooks (includes both general and task-specific via disapprovalWebhookUrl in details)
         await triggerWebhook("task_disapprove", {
           task: task
             ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
