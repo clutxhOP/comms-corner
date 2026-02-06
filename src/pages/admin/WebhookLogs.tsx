@@ -148,11 +148,17 @@ export default function WebhookLogs() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Users</SelectItem>
-              {uniqueUsers.map((user) => (
-                <SelectItem key={user} value={user}>
-                  {user}
+              {uniqueUsers.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No users found
                 </SelectItem>
-              ))}
+              ) : (
+                uniqueUsers.map((user) => (
+                  <SelectItem key={user} value={user}>
+                    {user}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           <Select value={teamFilter} onValueChange={setTeamFilter}>
@@ -161,11 +167,17 @@ export default function WebhookLogs() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Teams</SelectItem>
-              {uniqueTeams.map((team) => (
-                <SelectItem key={team} value={team}>
-                  {team}
+              {uniqueTeams.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No teams found
                 </SelectItem>
-              ))}
+              ) : (
+                uniqueTeams.map((team) => (
+                  <SelectItem key={team} value={team}>
+                    {team}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -183,7 +195,11 @@ export default function WebhookLogs() {
         <Card>
           <CardHeader>
             <CardTitle>Execution History</CardTitle>
-            <CardDescription>Showing {filteredLogs.length} of last 100 webhook executions</CardDescription>
+            <CardDescription>
+              {filteredLogs.length === webhookLogs.length
+                ? "Last 100 webhook executions and activities"
+                : `Showing ${filteredLogs.length} of ${webhookLogs.length} webhook executions and activities`}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {logsLoading ? (
