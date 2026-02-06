@@ -185,7 +185,7 @@ export function useLeadAssignments() {
 
               toast({
                 title: "Duplicate Assignment Detected",
-                description: `This lead (Record ID: ${recordId}) has already been reassigned to: ${duplicateNames}. A lead can only be reassigned to a different business.`,
+                description: `This lead (Record ID: ${recordId}) has already been reassigned to: ${duplicateNames}. A lead can only be reassigned to business once.`,
                 variant: "destructive",
               });
               return false;
