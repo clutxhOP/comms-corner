@@ -26,6 +26,9 @@ export interface WebhookLog {
   error_message: string | null;
   success: boolean;
   executed_at: string;
+  user_name?: string;
+  user_id?: string;
+  team_name?: string;
 }
 
 export const TRIGGER_ACTIONS = [
@@ -215,6 +218,16 @@ export function useWebhooks() {
       // Track URLs we've already called to prevent duplicates
       const calledUrls = new Set<string>();
 
+      // Extract user and team info from payload
+      const userName =
+        (payload.task as any)?.assigned_to_name ||
+        (payload.user as any)?.name ||
+        (payload as any)?.userName ||
+        "System";
+      const userId =
+        (payload.task as any)?.assigned_to || (payload.user as any)?.id || (payload as any)?.userId || null;
+      const teamName = (payload.task as any)?.team_name || (payload as any)?.teamName || null;
+
       try {
         // Handle task-specific webhook URLs
         const taskPayload = payload as {
@@ -335,6 +348,9 @@ export function useWebhooks() {
               response_body: responseBody,
               error_message: errorMessage,
               success,
+              user_name: userName,
+              user_id: userId,
+              team_name: teamName,
             });
           } catch (logError) {
             console.error("Failed to log webhook execution:", logError);
