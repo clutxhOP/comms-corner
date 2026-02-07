@@ -231,7 +231,13 @@ export function useWebhooks() {
       try {
         // Handle task-specific webhook URLs
         const taskPayload = payload as {
-          task?: { details?: { approvalWebhookUrl?: string; disapprovalWebhookUrl?: string } };
+          task?: {
+            details?: {
+              approvalWebhookUrl?: string;
+              disapprovalWebhookUrl?: string;
+              completedWebhookUrl?: string;
+            };
+          };
         };
 
         if (action === "task_approve" && taskPayload.task?.details?.approvalWebhookUrl) {
@@ -273,6 +279,35 @@ export function useWebhooks() {
             calledUrls.add(taskSpecificUrl);
           } catch (error) {
             console.error(`❌ Failed to trigger task-specific disapproval webhook:`, error);
+          }
+        }
+
+        // Handle completion webhook - fires for both approve and disapprove
+        if (
+          (action === "task_approve" || action === "task_disapprove") &&
+          taskPayload.task?.details?.completedWebhookUrl
+        ) {
+          const completedUrl = taskPayload.task.details.completedWebhookUrl;
+
+          if (!calledUrls.has(completedUrl)) {
+            console.log(`📡 Triggering completion webhook: ${completedUrl}`);
+
+            try {
+              const response = await fetch(completedUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "task_done",
+                  originalAction: action,
+                  timestamp: new Date().toISOString(),
+                  ...payload,
+                }),
+              });
+              console.log(`✅ Completion webhook response: ${response.status}`);
+              calledUrls.add(completedUrl);
+            } catch (error) {
+              console.error(`❌ Failed to trigger completion webhook:`, error);
+            }
           }
         }
 
