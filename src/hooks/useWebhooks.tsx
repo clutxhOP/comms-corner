@@ -238,6 +238,11 @@ export function useWebhooks() {
           const taskSpecificUrl = taskPayload.task.details.approvalWebhookUrl;
           console.log(`📡 Triggering task-specific approval webhook: ${taskSpecificUrl}`);
 
+          let success = false;
+          let responseStatus: number | null = null;
+          let responseBody: string | null = null;
+          let errorMessage: string | null = null;
+
           try {
             const response = await fetch(taskSpecificUrl, {
               method: "POST",
@@ -248,10 +253,45 @@ export function useWebhooks() {
                 ...payload,
               }),
             });
+
+            responseStatus = response.status;
+            try {
+              responseBody = await response.text();
+            } catch {
+              responseBody = null;
+            }
+            success = response.ok;
+
             console.log(`✅ Task-specific approval webhook response: ${response.status}`);
             calledUrls.add(taskSpecificUrl);
-          } catch (error) {
+          } catch (error: any) {
             console.error(`❌ Failed to trigger task-specific approval webhook:`, error);
+            errorMessage = error.message || "Unknown error";
+            success = false;
+          }
+
+          // Log the task-specific approval webhook execution
+          try {
+            await supabase.from("webhook_logs").insert({
+              webhook_id: null,
+              webhook_name: "Task-Specific Approval Webhook",
+              trigger_action: action,
+              request_url: taskSpecificUrl,
+              request_payload: {
+                action,
+                timestamp: new Date().toISOString(),
+                ...payload,
+              },
+              response_status: responseStatus,
+              response_body: responseBody,
+              error_message: errorMessage,
+              success,
+              user_name: userName,
+              user_id: userId,
+              team_name: teamName,
+            });
+          } catch (logError) {
+            console.error("Failed to log task-specific approval webhook execution:", logError);
           }
         }
 
@@ -259,6 +299,11 @@ export function useWebhooks() {
           const taskSpecificUrl = taskPayload.task.details.disapprovalWebhookUrl;
           console.log(`📡 Triggering task-specific disapproval webhook: ${taskSpecificUrl}`);
 
+          let success = false;
+          let responseStatus: number | null = null;
+          let responseBody: string | null = null;
+          let errorMessage: string | null = null;
+
           try {
             const response = await fetch(taskSpecificUrl, {
               method: "POST",
@@ -269,10 +314,45 @@ export function useWebhooks() {
                 ...payload,
               }),
             });
+
+            responseStatus = response.status;
+            try {
+              responseBody = await response.text();
+            } catch {
+              responseBody = null;
+            }
+            success = response.ok;
+
             console.log(`✅ Task-specific disapproval webhook response: ${response.status}`);
             calledUrls.add(taskSpecificUrl);
-          } catch (error) {
+          } catch (error: any) {
             console.error(`❌ Failed to trigger task-specific disapproval webhook:`, error);
+            errorMessage = error.message || "Unknown error";
+            success = false;
+          }
+
+          // Log the task-specific disapproval webhook execution
+          try {
+            await supabase.from("webhook_logs").insert({
+              webhook_id: null,
+              webhook_name: "Task-Specific Disapproval Webhook",
+              trigger_action: action,
+              request_url: taskSpecificUrl,
+              request_payload: {
+                action,
+                timestamp: new Date().toISOString(),
+                ...payload,
+              },
+              response_status: responseStatus,
+              response_body: responseBody,
+              error_message: errorMessage,
+              success,
+              user_name: userName,
+              user_id: userId,
+              team_name: teamName,
+            });
+          } catch (logError) {
+            console.error("Failed to log task-specific disapproval webhook execution:", logError);
           }
         }
 
