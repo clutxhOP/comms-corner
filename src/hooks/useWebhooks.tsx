@@ -274,7 +274,7 @@ export function useWebhooks() {
           try {
             await supabase.from("webhook_logs").insert({
               webhook_id: null,
-              webhook_name: "Task-Specific Approval Webhook",
+              webhook_name: "onApproved",
               trigger_action: action,
               request_url: taskSpecificUrl,
               request_payload: {
@@ -335,7 +335,7 @@ export function useWebhooks() {
           try {
             await supabase.from("webhook_logs").insert({
               webhook_id: null,
-              webhook_name: "Task-Specific Disapproval Webhook",
+              webhook_name: "onDisapproved",
               trigger_action: action,
               request_url: taskSpecificUrl,
               request_payload: {
