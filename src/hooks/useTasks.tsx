@@ -108,7 +108,7 @@ export function useTasks() {
           user: { id: user.id, name: profile?.full_name },
         });
 
-        // For awaiting-business tasks, also fire the specific webhook
+        // For awaiting-business tasks, also fire the specific webhook and task_done
         if (task?.type === "awaiting-business") {
           const details = task.details as Record<string, unknown>;
           await triggerWebhook("awaiting_business_approved", {
@@ -127,6 +127,12 @@ export function useTasks() {
               matchedBusinessWebsite: details.matchedBusinessWebsite || "",
               matchedBusinessCategory: details.matchedBusinessCategory || "",
             },
+          });
+
+          // Fire task_done webhook for awaiting-business decisions
+          await triggerWebhook("task_done", {
+            task: { id: task.id, title: task.title, type: task.type, details: task.details },
+            user: { id: user.id, name: profile?.full_name },
           });
         }
 
@@ -187,7 +193,7 @@ export function useTasks() {
           user: { id: user.id, name: profile?.full_name },
         });
 
-        // For awaiting-business tasks, also fire the specific webhook
+        // For awaiting-business tasks, also fire the specific webhook and task_done
         if (task?.type === "awaiting-business") {
           const details = task.details as Record<string, unknown>;
           await triggerWebhook("awaiting_business_disapproved", {
@@ -206,6 +212,12 @@ export function useTasks() {
               matchedBusinessWebsite: details.matchedBusinessWebsite || "",
               matchedBusinessCategory: details.matchedBusinessCategory || "",
             },
+          });
+
+          // Fire task_done webhook for awaiting-business decisions
+          await triggerWebhook("task_done", {
+            task: { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason },
+            user: { id: user.id, name: profile?.full_name },
           });
         }
 
