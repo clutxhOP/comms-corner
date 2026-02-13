@@ -87,15 +87,14 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
   const canDelete = roles.includes("admin") || roles.includes("dev");
 
   const buildWebhookPayload = () => ({
-    seekerId: details.seekerId,
-    seekerName: details.seekerName,
-    seekerWhatsapp: details.seekerWhatsapp,
-    serviceRequested: details.serviceRequested,
-    matchedBusinessId: details.matchedBusinessId,
-    matchedBusinessName: details.matchedBusinessName,
-    matchedBusinessWhatsapp: details.matchedBusinessWhatsapp,
+    seekerName: details.seekerName || "",
+    seekerWhatsapp: details.seekerWhatsapp || "",
+    serviceRequested: details.serviceRequested || "",
+    matchedBusinessId: details.matchedBusinessId || "",
+    matchedBusinessName: details.matchedBusinessName || "",
+    matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
     matchedBusinessWebsite: details.matchedBusinessWebsite || "",
-    matchedBusinessCategory: details.matchedBusinessCategory,
+    matchedBusinessCategory: details.matchedBusinessCategory || "",
   });
 
   const handleApprove = async () => {
@@ -172,16 +171,16 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
         <div className="space-y-3 text-sm">
           <div>
             <p className="font-medium text-foreground">Seeker Information</p>
-            <RichTextField label="Name" value={details.seekerName} />
-            <RichTextField label="WhatsApp" value={details.seekerWhatsapp} />
-            <RichTextField label="Service Requested" value={details.serviceRequested} />
+            {details.seekerName && <RichTextField label="Name" value={details.seekerName} />}
+            {details.seekerWhatsapp && <RichTextField label="WhatsApp" value={details.seekerWhatsapp} />}
+            {details.serviceRequested && <RichTextField label="Service Requested" value={details.serviceRequested} />}
           </div>
 
           <div className="border-t border-dashed pt-3">
             <p className="font-medium text-foreground">Matched Business</p>
-            <RichTextField label="Business Name" value={details.matchedBusinessName} />
-            <RichTextField label="Category" value={details.matchedBusinessCategory} />
-            <RichTextField label="WhatsApp" value={details.matchedBusinessWhatsapp} />
+            {details.matchedBusinessName && <RichTextField label="Business Name" value={details.matchedBusinessName} />}
+            {details.matchedBusinessCategory && <RichTextField label="Category" value={details.matchedBusinessCategory} />}
+            {details.matchedBusinessWhatsapp && <RichTextField label="WhatsApp" value={details.matchedBusinessWhatsapp} />}
             {details.matchedBusinessWebsite && (
               <RichTextField label="Website" value={details.matchedBusinessWebsite} />
             )}

@@ -41,16 +41,15 @@ export interface LeadOutreachDetails {
 }
 
 export interface AwaitingBusinessDetails {
-  seekerId: number;
-  seekerName: string;
-  seekerWhatsapp: string;
-  serviceRequested: string;
-  matchedBusinessId: string;
-  matchedBusinessName: string;
-  matchedBusinessWhatsapp: string;
+  seekerName?: string;
+  seekerWhatsapp?: string;
+  serviceRequested?: string;
+  matchedBusinessId?: string;
+  matchedBusinessName?: string;
+  matchedBusinessWhatsapp?: string;
   matchedBusinessWebsite?: string;
-  matchedBusinessCategory: string;
-  createdAt: string;
+  matchedBusinessCategory?: string;
+  createdAt?: string;
 }
 
 export interface Task {
