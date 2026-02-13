@@ -669,7 +669,10 @@ export type Database = {
           response_body: string | null
           response_status: number | null
           success: boolean
+          team_name: string | null
           trigger_action: string
+          user_id: string | null
+          user_name: string | null
           webhook_id: string | null
           webhook_name: string
         }
@@ -682,7 +685,10 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           success?: boolean
+          team_name?: string | null
           trigger_action: string
+          user_id?: string | null
+          user_name?: string | null
           webhook_id?: string | null
           webhook_name: string
         }
@@ -695,7 +701,10 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           success?: boolean
+          team_name?: string | null
           trigger_action?: string
+          user_id?: string | null
+          user_name?: string | null
           webhook_id?: string | null
           webhook_name?: string
         }
