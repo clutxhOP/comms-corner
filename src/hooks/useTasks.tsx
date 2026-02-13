@@ -136,6 +136,12 @@ export function useTasks() {
             task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
             user: { id: user.id, name: profile?.full_name },
           });
+
+          // Fire task_done webhook for all task decisions
+          await triggerWebhook("task_done", {
+            task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
+            user: { id: user.id, name: profile?.full_name },
+          });
         }
 
         toast({
@@ -218,6 +224,14 @@ export function useTasks() {
         } else {
           // Trigger general webhooks for non-awaiting-business tasks (lead-approval, etc.)
           await triggerWebhook("task_disapprove", {
+            task: task
+              ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
+              : { id: taskId },
+            user: { id: user.id, name: profile?.full_name },
+          });
+
+          // Fire task_done webhook for all task decisions
+          await triggerWebhook("task_done", {
             task: task
               ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
               : { id: taskId },
