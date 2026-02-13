@@ -405,31 +405,42 @@ export default function ApiDocs() {
                       <CodeBlock
                         code={`{
   "seekerId": "number (required) - ID from awaiting-business table",
-  "seekerName": "string (required) - Name of the person seeking service",
-  "seekerWhatsapp": "string (required) - WhatsApp number of seeker",
-  "serviceRequested": "string (required) - Service they are looking for",
+  "seekerName": "string | HTML | markdown | URL (required) - Name of the person seeking service",
+  "seekerWhatsapp": "string | HTML | markdown | URL (required) - WhatsApp number of seeker",
+  "serviceRequested": "string | HTML | markdown | URL (required) - Service they are looking for",
   "matchedBusinessId": "string (required) - UUID of the matched business",
-  "matchedBusinessName": "string (required) - Name of matched business",
-  "matchedBusinessWhatsapp": "string (required) - WhatsApp of matched business",
-  "matchedBusinessWebsite": "string (optional) - Website of matched business",
-  "matchedBusinessCategory": "string (required) - Category of matched business",
+  "matchedBusinessName": "string | HTML | markdown | URL (required) - Name of matched business",
+  "matchedBusinessWhatsapp": "string | HTML | markdown | URL (required) - WhatsApp of matched business",
+  "matchedBusinessWebsite": "string | HTML | markdown | URL (optional) - Website of matched business",
+  "matchedBusinessCategory": "string | HTML | markdown | URL (required) - Category of matched business",
   "createdAt": "string (required) - ISO timestamp of match creation"
 }
 
-// Example:
+// Content Type Support:
+// All string fields (except seekerId, matchedBusinessId, createdAt)
+// accept and intelligently render multiple content formats:
+//
+// 1. Plain Text: "Ayobamms" → renders as-is
+// 2. HTML: "<strong>Ayobamms</strong>" → rendered with sanitization
+// 3. Markdown: "**Ayobamms** *(Premium)*" → parsed and formatted
+// 4. URL: "https://example.com" → clickable link (opens in new tab)
+//
+// Detection is automatic. No special flags required.
+
+// Example with mixed content types:
 {
   "type": "awaiting-business",
-  "title": "Business Match: Ayobamms → 12067085457",
+  "title": "Business Match: Ayobamms → Victory Empire",
   "assigned_to": "ops@backendglamor.com",
   "details": {
     "seekerId": 3,
-    "seekerName": "Ayobamms",
+    "seekerName": "**Ayobamms** *(Premium)*",
     "seekerWhatsapp": "2347034240802",
-    "serviceRequested": "architectural design",
+    "serviceRequested": "<strong>Architectural Design</strong> - High-end residential",
     "matchedBusinessId": "964137dd-6b11-40e7-a784-f0d60d274757",
-    "matchedBusinessName": "12067085457",
+    "matchedBusinessName": "Victory Empire Studios",
     "matchedBusinessWhatsapp": "12067085457",
-    "matchedBusinessWebsite": "victoryempire.co",
+    "matchedBusinessWebsite": "https://victoryempire.co",
     "matchedBusinessCategory": "Video Production",
     "createdAt": "2026-02-13T15:11:42.253283+00:00"
   }
