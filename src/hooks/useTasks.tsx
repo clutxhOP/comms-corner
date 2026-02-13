@@ -234,6 +234,7 @@ export function useTasks() {
               ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
               : { id: taskId },
             user: { id: user.id, name: profile?.full_name },
+            _codeVersion: "v3",
           });
 
           // Fire task_done webhook for all task decisions
