@@ -261,7 +261,7 @@ export default function ApiDocs() {
                   description="Create a new task. Admin only. All details fields are mandatory based on task type."
                   auth="Admin only"
                   requestBody={`{
-  "type": "lead-approval | lead-alert | lead-outreach | other",
+  "type": "lead-approval | lead-alert | lead-outreach | awaiting-business | other",
   "title": "Task title (required)",
   "assigned_to": "string or string[] (optional) - see assignment options below",
   "details": { ... } // Required fields depend on task type (see below)
@@ -394,6 +394,45 @@ export default function ApiDocs() {
                       <CodeBlock
                         code={`{
   "description": "string"
+}`}
+                      />
+                    </div>
+
+                    <div>
+                      <Badge className="mb-2 bg-warning/10 text-warning border-warning/20">
+                        awaiting-business
+                      </Badge>
+                      <CodeBlock
+                        code={`{
+  "seekerId": "number (required) - ID from awaiting-business table",
+  "seekerName": "string (required) - Name of the person seeking service",
+  "seekerWhatsapp": "string (required) - WhatsApp number of seeker",
+  "serviceRequested": "string (required) - Service they are looking for",
+  "matchedBusinessId": "string (required) - UUID of the matched business",
+  "matchedBusinessName": "string (required) - Name of matched business",
+  "matchedBusinessWhatsapp": "string (required) - WhatsApp of matched business",
+  "matchedBusinessWebsite": "string (optional) - Website of matched business",
+  "matchedBusinessCategory": "string (required) - Category of matched business",
+  "createdAt": "string (required) - ISO timestamp of match creation"
+}
+
+// Example:
+{
+  "type": "awaiting-business",
+  "title": "Business Match: Ayobamms → 12067085457",
+  "assigned_to": "ops@backendglamor.com",
+  "details": {
+    "seekerId": 3,
+    "seekerName": "Ayobamms",
+    "seekerWhatsapp": "2347034240802",
+    "serviceRequested": "architectural design",
+    "matchedBusinessId": "964137dd-6b11-40e7-a784-f0d60d274757",
+    "matchedBusinessName": "12067085457",
+    "matchedBusinessWhatsapp": "12067085457",
+    "matchedBusinessWebsite": "victoryempire.co",
+    "matchedBusinessCategory": "Video Production",
+    "createdAt": "2026-02-13T15:11:42.253283+00:00"
+  }
 }`}
                       />
                     </div>
