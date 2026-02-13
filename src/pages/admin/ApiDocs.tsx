@@ -402,20 +402,19 @@ export default function ApiDocs() {
                       <Badge className="mb-2 bg-warning/10 text-warning border-warning/20">awaiting-business</Badge>
                       <CodeBlock
                         code={`{
-  "seekerId": "number (required) - ID from awaiting-business table",
-  "seekerName": "string | HTML | markdown | URL (required) - Name of the person seeking service",
-  "seekerWhatsapp": "string | HTML | markdown | URL (required) - WhatsApp number of seeker",
-  "serviceRequested": "string | HTML | markdown | URL (required) - Service they are looking for",
-  "matchedBusinessId": "string (required) - UUID of the matched business",
-  "matchedBusinessName": "string | HTML | markdown | URL (required) - Name of matched business",
-  "matchedBusinessWhatsapp": "string | HTML | markdown | URL (required) - WhatsApp of matched business",
+  "seekerName": "string | HTML | markdown | URL (optional) - Name of the person seeking service",
+  "seekerWhatsapp": "string | HTML | markdown | URL (optional) - WhatsApp number of seeker",
+  "serviceRequested": "string | HTML | markdown | URL (optional) - Service they are looking for",
+  "matchedBusinessId": "string (optional) - UUID of the matched business",
+  "matchedBusinessName": "string | HTML | markdown | URL (optional) - Name of matched business",
+  "matchedBusinessWhatsapp": "string | HTML | markdown | URL (optional) - WhatsApp of matched business",
   "matchedBusinessWebsite": "string | HTML | markdown | URL (optional) - Website of matched business",
-  "matchedBusinessCategory": "string | HTML | markdown | URL (required) - Category of matched business",
-  "createdAt": "string (required) - ISO timestamp of match creation"
+  "matchedBusinessCategory": "string | HTML | markdown | URL (optional) - Category of matched business",
+  "createdAt": "string (optional) - ISO timestamp of match creation"
 }
 
 // Content Type Support:
-// All string fields (except seekerId, matchedBusinessId, createdAt)
+// All string fields (except matchedBusinessId, createdAt)
 // accept and intelligently render multiple content formats:
 //
 // 1. Plain Text: "Name" → renders as-is
@@ -431,7 +430,6 @@ export default function ApiDocs() {
   "title": "Business Match: Dev → New Empire",
   "assigned_to": "ops@backendglamor.com",
   "details": {
-    "seekerId": 3,
     "seekerName": "**Abdullahi** *(Premium)*",
     "seekerWhatsapp": "+2347034240802",
     "serviceRequested": "<strong>Architectural Design</strong> - High-end residential",

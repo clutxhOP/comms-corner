@@ -64,7 +64,7 @@ const requiredFields: Record<string, string[]> = {
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
   "error-alert": ["description"], // description is required, supports plain text, HTML, and Markdown
-  "awaiting-business": ["seekerId", "seekerName", "seekerWhatsapp", "serviceRequested", "matchedBusinessId", "matchedBusinessName", "matchedBusinessWhatsapp", "matchedBusinessCategory", "createdAt"],
+  "awaiting-business": [],
   other: ["description"],
 };
 
@@ -273,16 +273,15 @@ Deno.serve(async (req) => {
             description: "string (required) - accepts plain text, HTML, and Markdown formatting",
           },
           "awaiting-business": {
-            seekerId: "number (required) - ID from awaiting-business table",
-            seekerName: "string (required) - Name of the person seeking service",
-            seekerWhatsapp: "string (required) - WhatsApp number of seeker",
-            serviceRequested: "string (required) - Service they are looking for",
-            matchedBusinessId: "string (required) - UUID of the matched business",
-            matchedBusinessName: "string (required) - Name of matched business",
-            matchedBusinessWhatsapp: "string (required) - WhatsApp of matched business",
+            seekerName: "string (optional) - Name of the person seeking service",
+            seekerWhatsapp: "string (optional) - WhatsApp number of seeker",
+            serviceRequested: "string (optional) - Service they are looking for",
+            matchedBusinessId: "string (optional) - UUID of the matched business",
+            matchedBusinessName: "string (optional) - Name of matched business",
+            matchedBusinessWhatsapp: "string (optional) - WhatsApp of matched business",
             matchedBusinessWebsite: "string (optional) - Website of matched business",
-            matchedBusinessCategory: "string (required) - Category of matched business",
-            createdAt: "string (required) - ISO timestamp of match creation",
+            matchedBusinessCategory: "string (optional) - Category of matched business",
+            createdAt: "string (optional) - ISO timestamp of match creation",
           },
           other: {
             description: "string (required)",
