@@ -52,7 +52,7 @@ async function getAuthUserId(req: Request, supabase: any): Promise<{ userId: str
 }
 
 interface TaskPayload {
-  type: "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "other";
+  type: "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "awaiting-business" | "other";
   title: string;
   assigned_to?: string | string[]; // Can be email(s), profile ID(s), or department email
   details?: Record<string, unknown>;
@@ -64,6 +64,7 @@ const requiredFields: Record<string, string[]> = {
   "lead-alert": ["clientName", "category", "whatsapp", "clientStatus", "alertLevel", "issue", "timeSinceLastLead"],
   "lead-outreach": ["requirement", "contactInfo", "post", "comment"],
   "error-alert": ["description"], // description is required, supports plain text, HTML, and Markdown
+  "awaiting-business": ["seekerId", "seekerName", "seekerWhatsapp", "serviceRequested", "matchedBusinessId", "matchedBusinessName", "matchedBusinessWhatsapp", "matchedBusinessCategory", "createdAt"],
   other: ["description"],
 };
 
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
           JSON.stringify({
             error: "Missing required fields",
             required: {
-              type: "lead-approval | lead-alert | lead-outreach | other",
+              type: "lead-approval | lead-alert | lead-outreach | awaiting-business | other",
               title: "string",
               details: "object - required fields depend on task type",
             },
@@ -227,7 +228,7 @@ Deno.serve(async (req) => {
       }
 
       // Validate task type
-      const validTypes = ["lead-approval", "lead-alert", "lead-outreach", "error-alert", "other"];
+      const validTypes = ["lead-approval", "lead-alert", "lead-outreach", "error-alert", "awaiting-business", "other"];
       if (!validTypes.includes(payload.type)) {
         return new Response(
           JSON.stringify({
@@ -270,6 +271,18 @@ Deno.serve(async (req) => {
           },
           "error-alert": {
             description: "string (required) - accepts plain text, HTML, and Markdown formatting",
+          },
+          "awaiting-business": {
+            seekerId: "number (required) - ID from awaiting-business table",
+            seekerName: "string (required) - Name of the person seeking service",
+            seekerWhatsapp: "string (required) - WhatsApp number of seeker",
+            serviceRequested: "string (required) - Service they are looking for",
+            matchedBusinessId: "string (required) - UUID of the matched business",
+            matchedBusinessName: "string (required) - Name of matched business",
+            matchedBusinessWhatsapp: "string (required) - WhatsApp of matched business",
+            matchedBusinessWebsite: "string (optional) - Website of matched business",
+            matchedBusinessCategory: "string (required) - Category of matched business",
+            createdAt: "string (required) - ISO timestamp of match creation",
           },
           other: {
             description: "string (required)",

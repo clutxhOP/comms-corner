@@ -5,6 +5,7 @@ import { LeadAlertCard } from '@/components/tasks/LeadAlertCard';
 import { LeadOutreachCard } from '@/components/tasks/LeadOutreachCard';
 import { OtherTaskCard } from '@/components/tasks/OtherTaskCard';
 import { ErrorAlertCard } from '@/components/tasks/ErrorAlertCard';
+import { AwaitingBusinessCard } from '@/components/tasks/AwaitingBusinessCard';
 import { DisapprovalDialog } from '@/components/tasks/DisapprovalDialog';
 import { BulkTaskActions } from '@/components/tasks/BulkTaskActions';
 import { SelectableTaskCard } from '@/components/tasks/SelectableTaskCard';
@@ -12,7 +13,7 @@ import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useMentionedTasks } from '@/hooks/useTaskComments';
 import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import { useAuth } from '@/hooks/useAuth';
-import { Task, ErrorAlertDetails } from '@/types';
+import { Task, ErrorAlertDetails, AwaitingBusinessDetails } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { 
   Search, CheckSquare, AlertCircle, Send, ClipboardCheck, 
-  MoreHorizontal, AlertTriangle, ArrowUpDown, Filter, AtSign
+  MoreHorizontal, AlertTriangle, ArrowUpDown, Filter, AtSign, Clock
 } from 'lucide-react';
 import { 
   filterTasksForUser, 
@@ -185,6 +186,7 @@ export default function Tasks() {
   const alertTasks = processedTasks.filter(t => t.type === 'lead-alert');
   const outreachTasks = processedTasks.filter(t => t.type === 'lead-outreach');
   const errorAlertTasks = processedTasks.filter(t => t.type === 'error-alert');
+  const awaitingBusinessTasks = processedTasks.filter(t => t.type === 'awaiting-business');
   const otherTasks = processedTasks.filter(t => t.type === 'other');
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
@@ -258,6 +260,18 @@ export default function Tasks() {
               details={dbTask.details as unknown as ErrorAlertDetails}
               status={dbTask.status}
               onMarkDone={handleMarkDone}
+            />
+          );
+        case 'awaiting-business':
+          return (
+            <AwaitingBusinessCard
+              task={{
+                ...task,
+                status: isActioned ? 'done' : 'pending',
+              }}
+              onApprove={handleApprove}
+              onDisapprove={handleDisapproveClick}
+              onDelete={handleDelete}
             />
           );
         default:
@@ -409,6 +423,12 @@ export default function Tasks() {
                 Other ({otherTasks.length})
               </TabsTrigger>
             )}
+            {isTabVisible('awaiting-business', userRoles) && (
+              <TabsTrigger value="awaiting-business" className="gap-1.5">
+                <Clock className="h-4 w-4" />
+                Awaiting Business ({awaitingBusinessTasks.length})
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
@@ -484,6 +504,17 @@ export default function Tasks() {
             {otherTasks.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No other tasks
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="awaiting-business" className="mt-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {awaitingBusinessTasks.map(renderTaskCard)}
+            </div>
+            {awaitingBusinessTasks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No awaiting business tasks
               </div>
             )}
           </TabsContent>

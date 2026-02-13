@@ -4,16 +4,16 @@ export type UserRole = 'admin' | 'dev' | 'ops';
 
 // Define which task types each role can see
 const ROLE_ALLOWED_TASK_TYPES: Record<UserRole, TaskType[]> = {
-  admin: ['lead-approval', 'lead-alert', 'lead-outreach', 'error-alert', 'other'],
-  dev: ['lead-alert', 'error-alert', 'other'], // Excludes lead-approval, lead-outreach
-  ops: ['lead-approval', 'lead-alert', 'lead-outreach', 'other'], // Excludes error-alert
+  admin: ['lead-approval', 'lead-alert', 'lead-outreach', 'error-alert', 'awaiting-business', 'other'],
+  dev: ['lead-alert', 'error-alert', 'other'], // Excludes lead-approval, lead-outreach, awaiting-business
+  ops: ['lead-approval', 'lead-alert', 'lead-outreach', 'awaiting-business', 'other'], // Excludes error-alert
 };
 
 // Define which tabs each role can see
 export const ROLE_VISIBLE_TABS: Record<UserRole, string[]> = {
-  admin: ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'errors', 'other'],
-  dev: ['all', 'mentioned', 'alerts', 'errors', 'other'], // No approvals, outreach
-  ops: ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'other'], // No errors
+  admin: ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'errors', 'awaiting-business', 'other'],
+  dev: ['all', 'mentioned', 'alerts', 'errors', 'other'], // No approvals, outreach, awaiting-business
+  ops: ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'awaiting-business', 'other'], // No errors
 };
 
 // Define which status filter options each role can see
@@ -75,7 +75,7 @@ export function getVisibleTabs(roles: UserRole[]): string[] {
   }
 
   // Return in the correct order
-  const orderedTabs = ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'errors', 'other'];
+  const orderedTabs = ['all', 'mentioned', 'approvals', 'alerts', 'outreach', 'errors', 'awaiting-business', 'other'];
   return orderedTabs.filter(tab => allTabs.has(tab));
 }
 
