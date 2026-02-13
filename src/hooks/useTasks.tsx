@@ -102,36 +102,24 @@ export function useTasks() {
           ),
         );
 
-        // Trigger webhooks (includes both general and task-specific via approvalWebhookUrl in details)
-        await triggerWebhook("task_approve", {
-          task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
-          user: { id: user.id, name: profile?.full_name },
-        });
-
-        // For awaiting-business tasks, also fire the specific webhook and task_done
+        // For awaiting-business tasks, use dedicated webhooks instead of general task_approve
         if (task?.type === "awaiting-business") {
-          const details = task.details as Record<string, unknown>;
           await triggerWebhook("awaiting_business_approved", {
-            trigger: "awaiting-business-approved",
-            taskId: task.id,
-            decision: "approved",
-            decidedBy: profile?.full_name || user.id,
-            decidedAt: new Date().toISOString(),
-            data: {
-              seekerName: details.seekerName || "",
-              seekerWhatsapp: details.seekerWhatsapp || "",
-              serviceRequested: details.serviceRequested || "",
-              matchedBusinessId: details.matchedBusinessId || "",
-              matchedBusinessName: details.matchedBusinessName || "",
-              matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
-              matchedBusinessWebsite: details.matchedBusinessWebsite || "",
-              matchedBusinessCategory: details.matchedBusinessCategory || "",
-            },
+            task: { id: task.id, title: task.title, type: task.type, details: task.details },
+            user: { id: user.id, name: profile?.full_name },
+            action: "task_approve",
+            timestamp: new Date().toISOString(),
           });
 
           // Fire task_done webhook for awaiting-business decisions
           await triggerWebhook("task_done", {
             task: { id: task.id, title: task.title, type: task.type, details: task.details },
+            user: { id: user.id, name: profile?.full_name },
+          });
+        } else {
+          // Trigger general webhooks for non-awaiting-business tasks (lead-approval, etc.)
+          await triggerWebhook("task_approve", {
+            task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
             user: { id: user.id, name: profile?.full_name },
           });
         }
@@ -185,38 +173,26 @@ export function useTasks() {
           ),
         );
 
-        // Trigger webhooks (includes both general and task-specific via disapprovalWebhookUrl in details)
-        await triggerWebhook("task_disapprove", {
-          task: task
-            ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
-            : { id: taskId },
-          user: { id: user.id, name: profile?.full_name },
-        });
-
-        // For awaiting-business tasks, also fire the specific webhook and task_done
+        // For awaiting-business tasks, use dedicated webhooks instead of general task_disapprove
         if (task?.type === "awaiting-business") {
-          const details = task.details as Record<string, unknown>;
           await triggerWebhook("awaiting_business_disapproved", {
-            trigger: "awaiting-business-disapproved",
-            taskId: task.id,
-            decision: "disapproved",
-            decidedBy: profile?.full_name || user.id,
-            decidedAt: new Date().toISOString(),
-            data: {
-              seekerName: details.seekerName || "",
-              seekerWhatsapp: details.seekerWhatsapp || "",
-              serviceRequested: details.serviceRequested || "",
-              matchedBusinessId: details.matchedBusinessId || "",
-              matchedBusinessName: details.matchedBusinessName || "",
-              matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
-              matchedBusinessWebsite: details.matchedBusinessWebsite || "",
-              matchedBusinessCategory: details.matchedBusinessCategory || "",
-            },
+            task: { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason },
+            user: { id: user.id, name: profile?.full_name },
+            action: "task_disapprove",
+            timestamp: new Date().toISOString(),
           });
 
           // Fire task_done webhook for awaiting-business decisions
           await triggerWebhook("task_done", {
             task: { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason },
+            user: { id: user.id, name: profile?.full_name },
+          });
+        } else {
+          // Trigger general webhooks for non-awaiting-business tasks (lead-approval, etc.)
+          await triggerWebhook("task_disapprove", {
+            task: task
+              ? { id: task.id, title: task.title, type: task.type, details: task.details, disapproval_reason: reason }
+              : { id: taskId },
             user: { id: user.id, name: profile?.full_name },
           });
         }
