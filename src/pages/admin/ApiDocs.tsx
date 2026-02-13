@@ -399,9 +399,7 @@ export default function ApiDocs() {
                     </div>
 
                     <div>
-                      <Badge className="mb-2 bg-warning/10 text-warning border-warning/20">
-                        awaiting-business
-                      </Badge>
+                      <Badge className="mb-2 bg-warning/10 text-warning border-warning/20">awaiting-business</Badge>
                       <CodeBlock
                         code={`{
   "seekerId": "number (required) - ID from awaiting-business table",
@@ -420,9 +418,9 @@ export default function ApiDocs() {
 // All string fields (except seekerId, matchedBusinessId, createdAt)
 // accept and intelligently render multiple content formats:
 //
-// 1. Plain Text: "Ayobamms" → renders as-is
-// 2. HTML: "<strong>Ayobamms</strong>" → rendered with sanitization
-// 3. Markdown: "**Ayobamms** *(Premium)*" → parsed and formatted
+// 1. Plain Text: "Name" → renders as-is
+// 2. HTML: "<strong>Name</strong>" → rendered with sanitization
+// 3. Markdown: "**Name** *(Premium)*" → parsed and formatted
 // 4. URL: "https://example.com" → clickable link (opens in new tab)
 //
 // Detection is automatic. No special flags required.
@@ -430,18 +428,18 @@ export default function ApiDocs() {
 // Example with mixed content types:
 {
   "type": "awaiting-business",
-  "title": "Business Match: Ayobamms → Victory Empire",
+  "title": "Business Match: Dev → New Empire",
   "assigned_to": "ops@backendglamor.com",
   "details": {
     "seekerId": 3,
-    "seekerName": "**Ayobamms** *(Premium)*",
-    "seekerWhatsapp": "2347034240802",
+    "seekerName": "**Abdullahi** *(Premium)*",
+    "seekerWhatsapp": "+2347034240802",
     "serviceRequested": "<strong>Architectural Design</strong> - High-end residential",
     "matchedBusinessId": "964137dd-6b11-40e7-a784-f0d60d274757",
-    "matchedBusinessName": "Victory Empire Studios",
-    "matchedBusinessWhatsapp": "12067085457",
-    "matchedBusinessWebsite": "https://victoryempire.co",
-    "matchedBusinessCategory": "Video Production",
+    "matchedBusinessName": "Testing  Studios",
+    "matchedBusinessWhatsapp": "+1234567890",
+    "matchedBusinessWebsite": "https://testing.co",
+    "matchedBusinessCategory": "Testing Production",
     "createdAt": "2026-02-13T15:11:42.253283+00:00"
   }
 }`}
@@ -735,7 +733,8 @@ export default function ApiDocs() {
                       <Badge variant="outline" className="mb-2 border-destructive/30 text-destructive">
                         400 - Missing Fields
                       </Badge>
-                      <CodeBlock code={`{
+                      <CodeBlock
+                        code={`{
   "error": "Missing required fields",
   "required": {
     "source": "reddit | linkedin | X",
@@ -746,15 +745,18 @@ export default function ApiDocs() {
   "optional": {
     "notes": "string"
   }
-}`} />
+}`}
+                      />
                     </div>
                     <div>
                       <Badge variant="outline" className="mb-2 border-destructive/30 text-destructive">
                         400 - Invalid Source
                       </Badge>
-                      <CodeBlock code={`{
+                      <CodeBlock
+                        code={`{
   "error": "Invalid source. Must be: reddit, linkedin, or X"
-}`} />
+}`}
+                      />
                     </div>
                   </div>
                 </div>
@@ -783,13 +785,14 @@ export default function ApiDocs() {
                   <p className="text-sm text-muted-foreground">
                     Ready-to-use configurations for n8n HTTP Request nodes.
                   </p>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <Badge variant="outline" className="mb-2">
                         Add Entry from Reddit Scrape
                       </Badge>
-                      <CodeBlock code={`// HTTP Request Node Configuration
+                      <CodeBlock
+                        code={`// HTTP Request Node Configuration
 Method: POST
 URL: ${BASE_URL}/outreach-add-entry
 Headers: Content-Type: application/json
@@ -799,14 +802,16 @@ Body:
   "date": "{{ $now.format('YYYY-MM-DD') }}",
   "link": "{{ $json.post_url }}",
   "comment": "{{ $json.suggested_comment }}"
-}`} />
+}`}
+                      />
                     </div>
-                    
+
                     <div>
                       <Badge variant="outline" className="mb-2">
                         Daily Cleanup (Cron Trigger)
                       </Badge>
-                      <CodeBlock code={`// Schedule: 0 0 * * * (daily at midnight)
+                      <CodeBlock
+                        code={`// Schedule: 0 0 * * * (daily at midnight)
 // HTTP Request Node Configuration
 Method: POST
 URL: ${BASE_URL}/outreach-delete-old
@@ -814,7 +819,8 @@ Headers: Content-Type: application/json
 Body:
 {
   "days_old": 30
-}`} />
+}`}
+                      />
                     </div>
                   </div>
                 </div>
@@ -822,13 +828,14 @@ Body:
                 {/* cURL Examples */}
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   <h4 className="font-medium text-foreground">cURL Commands</h4>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <Badge variant="outline" className="mb-2">
                         Add Entry
                       </Badge>
-                      <CodeBlock code={`curl -X POST "${BASE_URL}/outreach-add-entry" \\
+                      <CodeBlock
+                        code={`curl -X POST "${BASE_URL}/outreach-add-entry" \\
   -H "Content-Type: application/json" \\
   -d '{
     "source": "reddit",
@@ -836,19 +843,22 @@ Body:
     "link": "https://reddit.com/r/example/post",
     "comment": "Great insight! Have you considered...",
     "notes": "High priority lead"
-  }'`} />
+  }'`}
+                      />
                     </div>
-                    
+
                     <div>
                       <Badge variant="outline" className="mb-2">
                         Delete Old Entries
                       </Badge>
-                      <CodeBlock code={`curl -X POST "${BASE_URL}/outreach-delete-old" \\
+                      <CodeBlock
+                        code={`curl -X POST "${BASE_URL}/outreach-delete-old" \\
   -H "Content-Type: application/json" \\
   -d '{
     "days_old": 30,
     "platform": "reddit"
-  }'`} />
+  }'`}
+                      />
                     </div>
                   </div>
                 </div>
