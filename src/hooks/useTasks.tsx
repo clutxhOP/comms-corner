@@ -118,10 +118,10 @@ export function useTasks() {
 
         // For awaiting-business tasks, use dedicated webhooks instead of general task_approve
         if (task?.type === "awaiting-business") {
+          console.log("🔀 Awaiting-business approve branch: firing awaiting_business_approved + task_done");
           await triggerWebhook("awaiting_business_approved", {
             task: { id: task.id, title: task.title, type: task.type, details: task.details },
             user: { id: user.id, name: profile?.full_name },
-            action: "task_approve",
             timestamp: new Date().toISOString(),
           });
 
@@ -131,6 +131,7 @@ export function useTasks() {
             user: { id: user.id, name: profile?.full_name },
           });
         } else {
+          console.log("🔀 General approve branch: firing task_approve + task_done");
           // Trigger general webhooks for non-awaiting-business tasks (lead-approval, etc.)
           await triggerWebhook("task_approve", {
             task: task ? { id: task.id, title: task.title, type: task.type, details: task.details } : { id: taskId },
