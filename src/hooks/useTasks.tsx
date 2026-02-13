@@ -80,9 +80,23 @@ export function useTasks() {
     async (taskId: string) => {
       if (!user) return;
 
-      const task = tasks.find((t) => t.id === taskId);
-
       try {
+        // Fetch task directly from DB to avoid stale closure issues
+        const { data: taskData, error: fetchError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("id", taskId)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        const task = taskData ? {
+          ...taskData,
+          type: taskData.type as DbTask["type"],
+          status: taskData.status as DbTask["status"],
+          details: taskData.details as Record<string, unknown>,
+        } : null;
+
         const { error } = await supabase
           .from("tasks")
           .update({
@@ -137,16 +151,30 @@ export function useTasks() {
         });
       }
     },
-    [user, profile, tasks, triggerWebhook, toast],
+    [user, profile, triggerWebhook, toast],
   );
 
   const disapproveTask = useCallback(
     async (taskId: string, reason: string) => {
       if (!user) return;
 
-      const task = tasks.find((t) => t.id === taskId);
-
       try {
+        // Fetch task directly from DB to avoid stale closure issues
+        const { data: taskData, error: fetchError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("id", taskId)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        const task = taskData ? {
+          ...taskData,
+          type: taskData.type as DbTask["type"],
+          status: taskData.status as DbTask["status"],
+          details: taskData.details as Record<string, unknown>,
+        } : null;
+
         const { error } = await supabase
           .from("tasks")
           .update({
@@ -210,7 +238,7 @@ export function useTasks() {
         });
       }
     },
-    [user, profile, tasks, triggerWebhook, toast],
+    [user, profile, triggerWebhook, toast],
   );
 
   const markTaskDone = useCallback(
