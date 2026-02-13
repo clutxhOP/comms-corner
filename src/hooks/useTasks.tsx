@@ -108,6 +108,28 @@ export function useTasks() {
           user: { id: user.id, name: profile?.full_name },
         });
 
+        // For awaiting-business tasks, also fire the specific webhook
+        if (task?.type === "awaiting-business") {
+          const details = task.details as Record<string, unknown>;
+          await triggerWebhook("awaiting_business_approved", {
+            trigger: "awaiting-business-approved",
+            taskId: task.id,
+            decision: "approved",
+            decidedBy: profile?.full_name || user.id,
+            decidedAt: new Date().toISOString(),
+            data: {
+              seekerName: details.seekerName || "",
+              seekerWhatsapp: details.seekerWhatsapp || "",
+              serviceRequested: details.serviceRequested || "",
+              matchedBusinessId: details.matchedBusinessId || "",
+              matchedBusinessName: details.matchedBusinessName || "",
+              matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
+              matchedBusinessWebsite: details.matchedBusinessWebsite || "",
+              matchedBusinessCategory: details.matchedBusinessCategory || "",
+            },
+          });
+        }
+
         toast({
           title: "Task approved",
           description: "The lead has been approved successfully.",
@@ -164,6 +186,28 @@ export function useTasks() {
             : { id: taskId },
           user: { id: user.id, name: profile?.full_name },
         });
+
+        // For awaiting-business tasks, also fire the specific webhook
+        if (task?.type === "awaiting-business") {
+          const details = task.details as Record<string, unknown>;
+          await triggerWebhook("awaiting_business_disapproved", {
+            trigger: "awaiting-business-disapproved",
+            taskId: task.id,
+            decision: "disapproved",
+            decidedBy: profile?.full_name || user.id,
+            decidedAt: new Date().toISOString(),
+            data: {
+              seekerName: details.seekerName || "",
+              seekerWhatsapp: details.seekerWhatsapp || "",
+              serviceRequested: details.serviceRequested || "",
+              matchedBusinessId: details.matchedBusinessId || "",
+              matchedBusinessName: details.matchedBusinessName || "",
+              matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
+              matchedBusinessWebsite: details.matchedBusinessWebsite || "",
+              matchedBusinessCategory: details.matchedBusinessCategory || "",
+            },
+          });
+        }
 
         toast({
           title: "Task disapproved",

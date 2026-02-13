@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Task, AwaitingBusinessDetails } from "@/types";
-import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2, Loader2 } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TaskCommentsDialog } from "./TaskCommentsDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
-import { useWebhooks } from "@/hooks/useWebhooks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -80,58 +79,17 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
   const isCompleted = task.status === "done";
   const isApprovedOrDisapproved = task.status === "approved" || task.status === "disapproved";
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { user, profile } = useAuth();
+  
+  const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
-  const { triggerWebhook } = useWebhooks();
   const canDelete = roles.includes("admin") || roles.includes("dev");
 
-  const buildWebhookPayload = () => ({
-    seekerName: details.seekerName || "",
-    seekerWhatsapp: details.seekerWhatsapp || "",
-    serviceRequested: details.serviceRequested || "",
-    matchedBusinessId: details.matchedBusinessId || "",
-    matchedBusinessName: details.matchedBusinessName || "",
-    matchedBusinessWhatsapp: details.matchedBusinessWhatsapp || "",
-    matchedBusinessWebsite: details.matchedBusinessWebsite || "",
-    matchedBusinessCategory: details.matchedBusinessCategory || "",
-  });
-
-  const handleApprove = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    try {
-      // Trigger the awaiting-business-specific webhook
-      await triggerWebhook("awaiting_business_approved", {
-        trigger: "awaiting-business-approved",
-        taskId: task.id,
-        decision: "approved",
-        decidedBy: profile?.full_name || user?.id || "Unknown",
-        decidedAt: new Date().toISOString(),
-        data: buildWebhookPayload(),
-      });
-      onApprove?.(task.id);
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleApprove = () => {
+    onApprove?.(task.id);
   };
 
-  const handleDisapprove = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    try {
-      await triggerWebhook("awaiting_business_disapproved", {
-        trigger: "awaiting-business-disapproved",
-        taskId: task.id,
-        decision: "disapproved",
-        decidedBy: profile?.full_name || user?.id || "Unknown",
-        decidedAt: new Date().toISOString(),
-        data: buildWebhookPayload(),
-      });
-      onDisapprove?.(task.id);
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleDisapprove = () => {
+    onDisapprove?.(task.id);
   };
 
   return (
@@ -201,38 +159,18 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
               size="sm"
               className="flex-1 bg-success hover:bg-success/90"
               onClick={handleApprove}
-              disabled={isProcessing}
             >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Approving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                  Approve
-                </>
-              )}
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Approve
             </Button>
             <Button
               size="sm"
               variant="destructive"
               className="flex-1"
               onClick={handleDisapprove}
-              disabled={isProcessing}
             >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Disapproving...
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4 mr-1" />
-                  Disapprove
-                </>
-              )}
+              <XCircle className="h-4 w-4 mr-1" />
+              Disapprove
             </Button>
           </div>
         )}
