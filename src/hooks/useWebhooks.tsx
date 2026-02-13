@@ -39,6 +39,8 @@ export const TRIGGER_ACTIONS = [
   { value: "lead_sent", label: "Lead Sent" },
   { value: "human_mode_toggle", label: "Human Mode Toggle" },
   { value: "lead_reassigned", label: "Lead Reassigned" },
+  { value: "awaiting_business_approved", label: "Awaiting Business Approved" },
+  { value: "awaiting_business_disapproved", label: "Awaiting Business Disapproved" },
 ] as const;
 
 export function useWebhooks() {

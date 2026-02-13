@@ -6,7 +6,7 @@ import { useWebhooks } from "./useWebhooks";
 
 export interface DbTask {
   id: string;
-  type: "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "other";
+  type: "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "awaiting-business" | "other";
   title: string;
   status: "pending" | "done" | "approved" | "disapproved";
   details: Record<string, unknown>;

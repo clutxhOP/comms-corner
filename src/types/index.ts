@@ -1,4 +1,4 @@
-export type TaskType = "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "other";
+export type TaskType = "lead-approval" | "lead-alert" | "lead-outreach" | "error-alert" | "awaiting-business" | "other";
 
 export interface ErrorAlertDetails {
   error: string;
@@ -40,13 +40,26 @@ export interface LeadOutreachDetails {
   comment: string;
 }
 
+export interface AwaitingBusinessDetails {
+  seekerId: number;
+  seekerName: string;
+  seekerWhatsapp: string;
+  serviceRequested: string;
+  matchedBusinessId: string;
+  matchedBusinessName: string;
+  matchedBusinessWhatsapp: string;
+  matchedBusinessWebsite?: string;
+  matchedBusinessCategory: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   type: TaskType;
   title: string;
   status: "pending" | "done" | "approved" | "disapproved";
   createdAt: string;
-  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails;
+  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails | AwaitingBusinessDetails;
   disapprovalReason?: string;
 }
 

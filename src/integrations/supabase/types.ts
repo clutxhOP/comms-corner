@@ -819,6 +819,7 @@ export type Database = {
         | "lead-outreach"
         | "other"
         | "error-alert"
+        | "awaiting-business"
       user_role: "admin" | "dev" | "ops"
     }
     CompositeTypes: {
@@ -954,6 +955,7 @@ export const Constants = {
         "lead-outreach",
         "other",
         "error-alert",
+        "awaiting-business",
       ],
       user_role: ["admin", "dev", "ops"],
     },
