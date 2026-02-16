@@ -402,6 +402,7 @@ export default function ApiDocs() {
                       <Badge className="mb-2 bg-warning/10 text-warning border-warning/20">awaiting-business</Badge>
                       <CodeBlock
                         code={`{
+  "id": "string | HTML | markdown | URL (optional) - record id",
   "seekerName": "string | HTML | markdown | URL (optional) - Name of the person seeking service",
   "seekerWhatsapp": "string | HTML | markdown | URL (optional) - WhatsApp number of seeker",
   "serviceRequested": "string | HTML | markdown | URL (optional) - Service they are looking for",
@@ -430,6 +431,7 @@ export default function ApiDocs() {
   "title": "Business Match: Dev → New Empire",
   "assigned_to": "ops@backendglamor.com",
   "details": {
+    "id": "6",
     "seekerName": "**Abdullahi** *(Premium)*",
     "seekerWhatsapp": "+2347034240802",
     "serviceRequested": "<strong>Architectural Design</strong> - High-end residential",
