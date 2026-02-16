@@ -273,6 +273,7 @@ Deno.serve(async (req) => {
             description: "string (required) - accepts plain text, HTML, and Markdown formatting",
           },
           "awaiting-business": {
+            id: "string (optional) - record id",
             seekerName: "string (optional) - Name of the person seeking service",
             seekerWhatsapp: "string (optional) - WhatsApp number of seeker",
             serviceRequested: "string (optional) - Service they are looking for",
