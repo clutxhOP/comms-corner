@@ -134,7 +134,6 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
             {details.seekerWhatsapp && <RichTextField label="WhatsApp" value={details.seekerWhatsapp} />}
             {details.serviceRequested && <RichTextField label="Service Requested" value={details.serviceRequested} />}
           </div>
-
           <div className="border-t border-dashed pt-3">
             <p className="font-medium text-foreground">Matched Business</p>
             {details.matchedBusinessName && <RichTextField label="Business Name" value={details.matchedBusinessName} />}
