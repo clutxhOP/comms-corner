@@ -41,6 +41,7 @@ export interface LeadOutreachDetails {
 }
 
 export interface AwaitingBusinessDetails {
+  id?: string;
   seekerName?: string;
   seekerWhatsapp?: string;
   serviceRequested?: string;
@@ -58,7 +59,13 @@ export interface Task {
   title: string;
   status: "pending" | "done" | "approved" | "disapproved";
   createdAt: string;
-  details: LeadApprovalDetails | LeadAlertDetails | LeadOutreachDetails | ErrorAlertDetails | OtherTaskDetails | AwaitingBusinessDetails;
+  details:
+    | LeadApprovalDetails
+    | LeadAlertDetails
+    | LeadOutreachDetails
+    | ErrorAlertDetails
+    | OtherTaskDetails
+    | AwaitingBusinessDetails;
   disapprovalReason?: string;
 }
 
