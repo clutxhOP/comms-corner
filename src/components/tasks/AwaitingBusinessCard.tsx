@@ -79,7 +79,7 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
   const isCompleted = task.status === "done";
   const isApprovedOrDisapproved = task.status === "approved" || task.status === "disapproved";
   const [commentsOpen, setCommentsOpen] = useState(false);
-  
+
   const { user } = useAuth();
   const { roles } = useUserRoles(user?.id);
   const canDelete = roles.includes("admin") || roles.includes("dev");
@@ -129,6 +129,7 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
         <div className="space-y-3 text-sm">
           <div>
             <p className="font-medium text-foreground">Seeker Information</p>
+            {details.id && <RichTextField label="ID" value={details.id} />}
             {details.seekerName && <RichTextField label="Name" value={details.seekerName} />}
             {details.seekerWhatsapp && <RichTextField label="WhatsApp" value={details.seekerWhatsapp} />}
             {details.serviceRequested && <RichTextField label="Service Requested" value={details.serviceRequested} />}
@@ -137,11 +138,13 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
           <div className="border-t border-dashed pt-3">
             <p className="font-medium text-foreground">Matched Business</p>
             {details.matchedBusinessName && <RichTextField label="Business Name" value={details.matchedBusinessName} />}
-            {details.matchedBusinessCategory && <RichTextField label="Category" value={details.matchedBusinessCategory} />}
-            {details.matchedBusinessWhatsapp && <RichTextField label="WhatsApp" value={details.matchedBusinessWhatsapp} />}
-            {details.matchedBusinessWebsite && (
-              <RichTextField label="Website" value={details.matchedBusinessWebsite} />
+            {details.matchedBusinessCategory && (
+              <RichTextField label="Category" value={details.matchedBusinessCategory} />
             )}
+            {details.matchedBusinessWhatsapp && (
+              <RichTextField label="WhatsApp" value={details.matchedBusinessWhatsapp} />
+            )}
+            {details.matchedBusinessWebsite && <RichTextField label="Website" value={details.matchedBusinessWebsite} />}
           </div>
 
           {details.createdAt && (
@@ -155,20 +158,11 @@ export function AwaitingBusinessCard({ task, onApprove, onDisapprove, onDelete }
 
         {!isCompleted && !isApprovedOrDisapproved && (
           <div className="flex gap-2 mt-4">
-            <Button
-              size="sm"
-              className="flex-1 bg-success hover:bg-success/90"
-              onClick={handleApprove}
-            >
+            <Button size="sm" className="flex-1 bg-success hover:bg-success/90" onClick={handleApprove}>
               <CheckCircle2 className="h-4 w-4 mr-1" />
               Approve
             </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="flex-1"
-              onClick={handleDisapprove}
-            >
+            <Button size="sm" variant="destructive" className="flex-1" onClick={handleDisapprove}>
               <XCircle className="h-4 w-4 mr-1" />
               Disapprove
             </Button>
