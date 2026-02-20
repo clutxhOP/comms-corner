@@ -14,6 +14,7 @@ import {
   Hash,
   Building2,
   Share2,
+  Radio,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +51,7 @@ const adminNavItems = [
   { title: "Webhooks", url: "/webhooks", icon: Webhook },
   { title: "Webhook Logs", url: "/webhook-logs", icon: ScrollText },
   { title: "Channels", url: "/channels", icon: Hash },
+  { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
 ];
 
 // Items accessible by dev and ops (non-admin)
@@ -65,6 +67,7 @@ const devNavItems = [
 const opsNavItems = [
   { title: "Customers", url: "/customers", icon: Building2 },
   { title: "Social Engagement", url: "/outreach", icon: Share2 },
+  { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
 ];
 
 export function AppSidebar() {

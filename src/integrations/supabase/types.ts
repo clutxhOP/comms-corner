@@ -546,6 +546,30 @@ export type Database = {
         }
         Relationships: []
       }
+      subreddit_watch: {
+        Row: {
+          count: string | null
+          created_at: string
+          id: number
+          last_updated_at: string
+          subreddit: string | null
+        }
+        Insert: {
+          count?: string | null
+          created_at?: string
+          id?: number
+          last_updated_at?: string
+          subreddit?: string | null
+        }
+        Update: {
+          count?: string | null
+          created_at?: string
+          id?: number
+          last_updated_at?: string
+          subreddit?: string | null
+        }
+        Relationships: []
+      }
       task_comments: {
         Row: {
           content: string
