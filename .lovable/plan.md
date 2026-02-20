@@ -1,28 +1,29 @@
 
 
-# Subreddit Watch Table Improvements
+# Bulk Delete for Selected Subreddit Watch Rows
 
-## Changes
-
-### 1. Display sequential row numbers instead of database IDs
-The ID column will show a 1-based index (1, 2, 3...) instead of the actual database ID (10, 11, ...).
-
-### 2. Row selection with checkboxes
-Add a checkbox column on the left side of each row, allowing users to select individual rows or all rows at once via a header checkbox. Selected rows will be visually highlighted.
-
-### 3. Only subreddit column is editable
-Remove the ability to edit the "count" column from the inline edit mode. When editing, only the subreddit field will show an input. The count column will always display as read-only text.
+## Overview
+Add a "Delete Selected" button that appears when one or more rows are selected, with a confirmation dialog before performing the bulk deletion.
 
 ## Technical Details
 
 ### File: `src/pages/admin/SubredditWatch.tsx`
-- Add `selectedIds` state (`Set<number>`) to track selected rows
-- Add a checkbox in the table header for "select all" on the current page
-- Add a checkbox in each row tied to `selectedIds`
-- Change the ID column to display `page * PAGE_SIZE + index + 1` instead of `entry.id`
-- In edit mode, remove the `<Input>` for the count column -- show plain text instead
-- Update `saveEdit` to only pass subreddit (not count) to `updateEntry`
+
+1. **Add bulk delete state**: Add `bulkDeleting` boolean state for loading indicator during deletion.
+
+2. **Add bulk delete handler**: Create `handleBulkDelete` async function that iterates through `selectedIds`, calls `deleteEntry(id)` for each, then clears the selection.
+
+3. **Add bulk action bar**: When `selectedIds.size > 0`, render a bar between the search input and the table showing:
+   - Text: "{N} selected"
+   - "Clear selection" button
+   - "Delete selected" button (destructive variant)
+
+4. **Add confirmation dialog**: Wrap the "Delete selected" button in an `AlertDialog` with:
+   - Title: "Delete selected entries?"
+   - Description: "This will permanently remove {N} entries from the watch list."
+   - Cancel and Delete action buttons
+   - Disable the Delete button while `bulkDeleting` is true
 
 ### File: `src/hooks/useSubredditWatch.tsx`
-- Update `updateEntry` to only accept and update the `subreddit` field (remove `count` parameter from the update payload since count is managed externally by automations)
+No changes needed -- the existing `deleteEntry` function will be called per selected ID.
 
