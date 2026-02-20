@@ -89,10 +89,6 @@ export default function SubredditWatch() {
                       <Label>Subreddit</Label>
                       <Input value={newSubreddit} onChange={(e) => setNewSubreddit(e.target.value)} placeholder="e.g. r/webdev" />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Count</Label>
-                      <Input value={newCount} onChange={(e) => setNewCount(e.target.value)} placeholder="e.g. 50" />
-                    </div>
                   </div>
                   <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
