@@ -58,10 +58,10 @@ export function useSubredditWatch() {
     return true;
   };
 
-  const updateEntry = async (id: number, subreddit: string, count: string) => {
+  const updateEntry = async (id: number, subreddit: string) => {
     const { error } = await (supabase as any)
       .from('subreddit_watch')
-      .update({ subreddit, count, last_updated_at: new Date().toISOString() })
+      .update({ subreddit, last_updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {
