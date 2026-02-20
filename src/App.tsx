@@ -22,6 +22,7 @@ import CompletedTasks from "./pages/admin/CompletedTasks";
 import ChannelManagement from "./pages/admin/ChannelManagement";
 import CustomerDashboard from "./pages/admin/CustomerDashboard";
 import Outreach from "./pages/Outreach";
+import SubredditWatch from "./pages/admin/SubredditWatch";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,11 @@ const App = () => (
               <Route path="/outreach" element={
                 <ProtectedRoute requireOpsOrAdmin>
                   <Outreach />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/subreddits" element={
+                <ProtectedRoute requireOpsOrAdmin>
+                  <SubredditWatch />
                 </ProtectedRoute>
               } />
               {/* Keep old route for backwards compatibility */}
