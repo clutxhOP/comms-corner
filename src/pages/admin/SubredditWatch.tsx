@@ -31,6 +31,18 @@ export default function SubredditWatch() {
   const [editSubreddit, setEditSubreddit] = useState('');
   const [adding, setAdding] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    for (const id of selectedIds) {
+      await deleteEntry(id);
+    }
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+  };
 
   const filtered = entries.filter((e) =>
     !search || (e.subreddit ?? '').toLowerCase().includes(search.toLowerCase())
@@ -131,6 +143,44 @@ export default function SubredditWatch() {
                 onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               />
             </div>
+
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{selectedIds.size}</span> selected
+                </span>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="h-8">
+                    <X className="h-4 w-4 mr-1" />Clear
+                  </Button>
+                  <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" className="h-8">
+                        <Trash2 className="h-4 w-4 mr-1" />Delete ({selectedIds.size})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete selected entries?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove {selectedIds.size} entries from the watch list.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={handleBulkDelete}
+                          disabled={bulkDeleting}
+                        >
+                          {bulkDeleting ? 'Deleting…' : 'Delete All'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex justify-center py-12">
