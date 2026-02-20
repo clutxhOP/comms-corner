@@ -4,7 +4,7 @@ import { useSubredditWatch, SubredditWatchEntry } from '@/hooks/useSubredditWatc
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -27,11 +27,10 @@ export default function SubredditWatch() {
   const [page, setPage] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [newSubreddit, setNewSubreddit] = useState('');
-  const [newCount, setNewCount] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editSubreddit, setEditSubreddit] = useState('');
-  const [editCount, setEditCount] = useState('');
   const [adding, setAdding] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const filtered = entries.filter((e) =>
     !search || (e.subreddit ?? '').toLowerCase().includes(search.toLowerCase())
@@ -39,13 +38,38 @@ export default function SubredditWatch() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  const allPageSelected = paged.length > 0 && paged.every((e) => selectedIds.has(e.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allPageSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        paged.forEach((e) => next.delete(e.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        paged.forEach((e) => next.add(e.id));
+        return next;
+      });
+    }
+  };
+
   const handleAdd = async () => {
     setAdding(true);
-    const ok = await addEntry(newSubreddit, newCount);
+    const ok = await addEntry(newSubreddit, '');
     setAdding(false);
     if (ok) {
       setNewSubreddit('');
-      setNewCount('');
       setAddOpen(false);
     }
   };
@@ -53,12 +77,11 @@ export default function SubredditWatch() {
   const startEdit = (entry: SubredditWatchEntry) => {
     setEditingId(entry.id);
     setEditSubreddit(entry.subreddit ?? '');
-    setEditCount(entry.count ?? '');
   };
 
   const saveEdit = async () => {
     if (editingId == null) return;
-    const ok = await updateEntry(editingId, editSubreddit, editCount);
+    const ok = await updateEntry(editingId, editSubreddit);
     if (ok) setEditingId(null);
   };
 
@@ -86,7 +109,7 @@ export default function SubredditWatch() {
                   <DialogHeader><DialogTitle>Add Subreddit</DialogTitle></DialogHeader>
                   <div className="space-y-4 py-2">
                     <div className="space-y-2">
-                      <Label>Subreddit</Label>
+                      <label className="text-sm font-medium">Subreddit</label>
                       <Input value={newSubreddit} onChange={(e) => setNewSubreddit(e.target.value)} placeholder="e.g. r/webdev" />
                     </div>
                   </div>
@@ -121,7 +144,10 @@ export default function SubredditWatch() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">ID</TableHead>
+                        <TableHead className="w-10">
+                          <Checkbox checked={allPageSelected} onCheckedChange={toggleSelectAll} />
+                        </TableHead>
+                        <TableHead className="w-16">#</TableHead>
                         <TableHead>Subreddit</TableHead>
                         <TableHead>Count</TableHead>
                         <TableHead>Created</TableHead>
@@ -130,9 +156,12 @@ export default function SubredditWatch() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paged.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-mono text-xs">{entry.id}</TableCell>
+                      {paged.map((entry, index) => (
+                        <TableRow key={entry.id} data-state={selectedIds.has(entry.id) ? 'selected' : undefined}>
+                          <TableCell>
+                            <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggleSelect(entry.id)} />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{page * PAGE_SIZE + index + 1}</TableCell>
                           <TableCell>
                             {editingId === entry.id ? (
                               <Input value={editSubreddit} onChange={(e) => setEditSubreddit(e.target.value)} className="h-8" />
@@ -140,13 +169,7 @@ export default function SubredditWatch() {
                               entry.subreddit ?? '—'
                             )}
                           </TableCell>
-                          <TableCell>
-                            {editingId === entry.id ? (
-                              <Input value={editCount} onChange={(e) => setEditCount(e.target.value)} className="h-8 w-24" />
-                            ) : (
-                              entry.count ?? '—'
-                            )}
-                          </TableCell>
+                          <TableCell>{entry.count ?? '—'}</TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmt(entry.created_at)}</TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmt(entry.last_updated_at)}</TableCell>
                           <TableCell className="text-right">
