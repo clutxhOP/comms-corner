@@ -894,12 +894,16 @@ Body:
   "whatsapp": "+1234567890",
   "website": "https://example.com",
   "stage_id": "new-lead",
+  "source": "reddit",
+  "value": 5000,
   "metadata": {}
 }`}
                   responseExample={`{
   "id": 1,
   "name": "Lead Name",
   "stage_id": "new-lead",
+  "source": "reddit",
+  "value": 5000,
   "created_at": "2026-02-24T10:00:00Z"
 }`}
                 />
@@ -911,6 +915,7 @@ Body:
                   auth="Admin or Ops (JWT)"
                   queryParams={[
                     { name: "stage_id", type: "text", description: "Filter by stage (eq.new-lead)" },
+                    { name: "source", type: "text", description: "Filter by source (eq.reddit)" },
                     { name: "name", type: "text", description: "Search by name (ilike.%search%)" },
                   ]}
                   responseExample={`[
@@ -919,6 +924,8 @@ Body:
     "name": "Lead Name",
     "email": "test@test.com",
     "stage_id": "contacted",
+    "source": "twitter",
+    "value": 2500,
     "created_at": "2026-02-24T10:00:00Z"
   }
 ]`}
@@ -931,7 +938,9 @@ Body:
                   auth="Admin or Ops (JWT)"
                   requestBody={`{
   "stage_id": "qualified",
-  "email": "updated@email.com"
+  "email": "updated@email.com",
+  "source": "facebook",
+  "value": 10000
 }`}
                 />
 
@@ -982,6 +991,52 @@ Body:
                   method="DELETE"
                   path="/rest/v1/lead_stages?id=eq.<id>"
                   description="Delete a pipeline stage."
+                  auth="Admin or Ops (JWT)"
+                />
+
+                {/* Lead Sources */}
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-base font-semibold text-foreground mb-3">Lead Sources</h3>
+                </div>
+
+                <Endpoint
+                  method="GET"
+                  path="/rest/v1/lead_sources"
+                  description="List all lead sources sorted by position."
+                  auth="Admin or Ops (JWT)"
+                  responseExample={`[
+  { "id": "reddit", "name": "Reddit", "icon": null, "is_active": true, "position": 1 },
+  { "id": "twitter", "name": "X (Twitter)", "icon": null, "is_active": true, "position": 2 }
+]`}
+                />
+
+                <Endpoint
+                  method="POST"
+                  path="/rest/v1/lead_sources"
+                  description="Create a new lead source."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "id": "linkedin",
+  "name": "LinkedIn",
+  "position": 5
+}`}
+                />
+
+                <Endpoint
+                  method="PATCH"
+                  path="/rest/v1/lead_sources?id=eq.<id>"
+                  description="Update a lead source."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "name": "Updated Name",
+  "is_active": false
+}`}
+                />
+
+                <Endpoint
+                  method="DELETE"
+                  path="/rest/v1/lead_sources?id=eq.<id>"
+                  description="Delete a lead source."
                   auth="Admin or Ops (JWT)"
                 />
               </CardContent>

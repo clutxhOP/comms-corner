@@ -4,9 +4,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Mail, Phone, Clock, User } from 'lucide-react';
+import { ExternalLink, Mail, Phone, Clock, User, DollarSign, Globe } from 'lucide-react';
 import { Lead } from '@/hooks/useLeads';
 import { LeadStage } from '@/hooks/useLeadStages';
+import { LeadSource } from '@/hooks/useLeadSources';
 import { ProfileDisplay } from '@/hooks/useProfilesDisplay';
 import { useDroppable } from '@dnd-kit/core';
 import { format } from 'date-fns';
@@ -14,11 +15,12 @@ import { format } from 'date-fns';
 interface LeadKanbanProps {
   leads: Lead[];
   stages: LeadStage[];
+  sources: LeadSource[];
   profiles: ProfileDisplay[];
   onUpdateStage: (id: number, stageId: string) => Promise<boolean>;
 }
 
-function KanbanCard({ lead, stages, profiles, isDragging }: { lead: Lead; stages: LeadStage[]; profiles: ProfileDisplay[]; isDragging?: boolean }) {
+function KanbanCard({ lead, stages, sources, profiles, isDragging }: { lead: Lead; stages: LeadStage[]; sources: LeadSource[]; profiles: ProfileDisplay[]; isDragging?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `lead-${lead.id}` });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -62,7 +64,19 @@ function KanbanCard({ lead, stages, profiles, isDragging }: { lead: Lead; stages
               </a>
             </div>
           )}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+          <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+            {lead.source && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {sources.find(s => s.id === lead.source)?.name || lead.source}
+              </Badge>
+            )}
+            {lead.value > 0 && (
+              <span className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+                <DollarSign className="h-2.5 w-2.5" />{Number(lead.value).toLocaleString()}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Clock className="h-2.5 w-2.5 flex-shrink-0" />
             <span>Last Contacted: {format(new Date(lead.updated_at), 'MMM d, yyyy')}</span>
           </div>
@@ -78,7 +92,7 @@ function KanbanCard({ lead, stages, profiles, isDragging }: { lead: Lead; stages
   );
 }
 
-function KanbanColumn({ stage, leads, stages, profiles }: { stage: LeadStage; leads: Lead[]; stages: LeadStage[]; profiles: ProfileDisplay[] }) {
+function KanbanColumn({ stage, leads, stages, sources, profiles }: { stage: LeadStage; leads: Lead[]; stages: LeadStage[]; sources: LeadSource[]; profiles: ProfileDisplay[] }) {
   const { setNodeRef } = useDroppable({ id: `stage-${stage.id}` });
   const ids = leads.map(l => `lead-${l.id}`);
 
@@ -92,7 +106,7 @@ function KanbanColumn({ stage, leads, stages, profiles }: { stage: LeadStage; le
       <div ref={setNodeRef} className="space-y-2 min-h-[100px] p-1 rounded-lg bg-muted/30">
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {leads.map(lead => (
-            <KanbanCard key={lead.id} lead={lead} stages={stages} profiles={profiles} />
+            <KanbanCard key={lead.id} lead={lead} stages={stages} sources={sources} profiles={profiles} />
           ))}
         </SortableContext>
       </div>
@@ -100,7 +114,7 @@ function KanbanColumn({ stage, leads, stages, profiles }: { stage: LeadStage; le
   );
 }
 
-export function LeadKanban({ leads, stages, profiles, onUpdateStage }: LeadKanbanProps) {
+export function LeadKanban({ leads, stages, sources, profiles, onUpdateStage }: LeadKanbanProps) {
   const [activeId, setActiveId] = useState<number | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -140,7 +154,7 @@ export function LeadKanban({ leads, stages, profiles, onUpdateStage }: LeadKanba
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {activeStages.map(stage => (
-          <KanbanColumn key={stage.id} stage={stage} leads={leads.filter(l => l.stage_id === stage.id)} stages={stages} profiles={profiles} />
+          <KanbanColumn key={stage.id} stage={stage} leads={leads.filter(l => l.stage_id === stage.id)} stages={stages} sources={sources} profiles={profiles} />
         ))}
       </div>
       <DragOverlay>
