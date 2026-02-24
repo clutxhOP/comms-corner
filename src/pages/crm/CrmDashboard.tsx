@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Settings, List, Columns3, Contact, Globe, Webhook } from 'lucide-react';
+import { Plus, Settings, List, Columns3, Contact, Globe, Webhook, CalendarClock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 import { useLeadStages } from '@/hooks/useLeadStages';
@@ -17,6 +17,7 @@ import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { StageManagerDialog } from '@/components/crm/StageManagerDialog';
 import { SourceManagerDialog } from '@/components/crm/SourceManagerDialog';
 import { CrmWebhookManager } from '@/components/crm/CrmWebhookManager';
+import { FollowUpManager } from '@/components/crm/FollowUpManager';
 
 export default function CrmDashboard() {
   const { isAdmin, user } = useAuth();
@@ -74,6 +75,7 @@ export default function CrmDashboard() {
           <TabsList>
             <TabsTrigger value="list" className="flex items-center gap-1.5"><List className="h-4 w-4" /> List</TabsTrigger>
             <TabsTrigger value="kanban" className="flex items-center gap-1.5"><Columns3 className="h-4 w-4" /> Kanban</TabsTrigger>
+            <TabsTrigger value="followups" className="flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> Follow-Ups</TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-1.5"><Webhook className="h-4 w-4" /> Integrations</TabsTrigger>
           </TabsList>
           <TabsContent value="list" className="mt-4">
@@ -89,6 +91,9 @@ export default function CrmDashboard() {
             ) : (
               <LeadKanban leads={leads} stages={activeStages} sources={sources} profiles={profiles} onUpdateStage={updateLeadStage} />
             )}
+          </TabsContent>
+          <TabsContent value="followups" className="mt-4">
+            <FollowUpManager />
           </TabsContent>
           <TabsContent value="integrations" className="mt-4">
             <CrmWebhookManager />

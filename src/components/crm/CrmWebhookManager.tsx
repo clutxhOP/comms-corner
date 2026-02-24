@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Trash2, Zap, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { FollowUpManager } from './FollowUpManager';
+
 import { format } from 'date-fns';
 
 export function CrmWebhookManager() {
@@ -142,9 +142,6 @@ export function CrmWebhookManager() {
           )}
         </CardContent>
       </Card>
-
-      {/* Follow-Ups */}
-      <FollowUpManager />
 
       {/* Form Dialog */}
       <CrmWebhookForm open={formOpen} onOpenChange={setFormOpen} onSubmit={createCrmWebhook} />
