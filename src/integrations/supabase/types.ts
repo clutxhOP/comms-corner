@@ -222,6 +222,101 @@ export type Database = {
           },
         ]
       }
+      crm_webhook_events: {
+        Row: {
+          created_by: string | null
+          error_message: string | null
+          event_type: string
+          executed_at: string
+          id: string
+          payload: Json
+          request_url: string | null
+          response_body: string | null
+          response_status: number | null
+          retry_count: number
+          status: string
+          success: boolean
+          webhook_id: string | null
+          webhook_name: string | null
+        }
+        Insert: {
+          created_by?: string | null
+          error_message?: string | null
+          event_type: string
+          executed_at?: string
+          id?: string
+          payload?: Json
+          request_url?: string | null
+          response_body?: string | null
+          response_status?: number | null
+          retry_count?: number
+          status?: string
+          success?: boolean
+          webhook_id?: string | null
+          webhook_name?: string | null
+        }
+        Update: {
+          created_by?: string | null
+          error_message?: string | null
+          event_type?: string
+          executed_at?: string
+          id?: string
+          payload?: Json
+          request_url?: string | null
+          response_body?: string | null
+          response_status?: number | null
+          retry_count?: number
+          status?: string
+          success?: boolean
+          webhook_id?: string | null
+          webhook_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhook_events_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_webhooks: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          events: string[]
+          id: string
+          name: string
+          secret: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          events: string[]
+          id?: string
+          name: string
+          secret?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          events?: string[]
+          id?: string
+          name?: string
+          secret?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           category: string | null
