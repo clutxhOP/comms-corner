@@ -9,6 +9,8 @@ export interface Lead {
   whatsapp: string | null;
   website: string | null;
   stage_id: string | null;
+  source: string | null;
+  value: number;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
@@ -63,7 +65,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
     const active = leads.filter(l => l.stage_id !== 'closed-won' && l.stage_id !== 'closed-lost').length;
     const closedWon = leads.filter(l => l.stage_id === 'closed-won').length;
     const conversionRate = total > 0 ? Math.round((closedWon / total) * 100) : 0;
-    const pipelineValue = leads.reduce((sum, l) => sum + (Number(l.metadata?.value) || 0), 0);
+    const pipelineValue = leads.reduce((sum, l) => sum + (Number(l.value) || 0), 0);
 
     const byStage: Record<string, number> = {};
     leads.forEach(l => {
@@ -71,10 +73,16 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
       byStage[key] = (byStage[key] || 0) + 1;
     });
 
-    return { total, active, closedWon, conversionRate, pipelineValue, byStage };
+    const bySource: Record<string, number> = {};
+    leads.forEach(l => {
+      const key = l.source || 'unknown';
+      bySource[key] = (bySource[key] || 0) + 1;
+    });
+
+    return { total, active, closedWon, conversionRate, pipelineValue, byStage, bySource };
   }, [leads]);
 
-  const addLead = async (lead: { name: string; email?: string; whatsapp?: string; website?: string; stage_id?: string; metadata?: Record<string, any>; created_by?: string }) => {
+  const addLead = async (lead: { name: string; email?: string; whatsapp?: string; website?: string; stage_id?: string; source?: string; value?: number; metadata?: Record<string, any>; created_by?: string }) => {
     const { error } = await supabase.from('leads').insert({ ...lead, updated_by: userId } as any);
     if (error) {
       toast({ title: 'Error adding lead', description: error.message, variant: 'destructive' });

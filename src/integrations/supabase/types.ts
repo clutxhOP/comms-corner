@@ -372,6 +372,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_sources: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id: string
+          is_active?: boolean
+          name: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
       lead_stages: {
         Row: {
           color: string
@@ -413,9 +440,11 @@ export type Database = {
           id: number
           metadata: Json
           name: string
+          source: string | null
           stage_id: string | null
           updated_at: string
           updated_by: string | null
+          value: number | null
           website: string | null
           whatsapp: string | null
         }
@@ -426,9 +455,11 @@ export type Database = {
           id?: number
           metadata?: Json
           name: string
+          source?: string | null
           stage_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          value?: number | null
           website?: string | null
           whatsapp?: string | null
         }
@@ -439,9 +470,11 @@ export type Database = {
           id?: number
           metadata?: Json
           name?: string
+          source?: string | null
           stage_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          value?: number | null
           website?: string | null
           whatsapp?: string | null
         }

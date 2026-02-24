@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { Users, UserCheck, TrendingUp, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LeadStage } from '@/hooks/useLeadStages';
+import { LeadSource } from '@/hooks/useLeadSources';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface CrmStatsProps {
   stats: {
@@ -9,11 +13,18 @@ interface CrmStatsProps {
     conversionRate: number;
     pipelineValue: number;
     byStage: Record<string, number>;
+    bySource: Record<string, number>;
   };
   stages: LeadStage[];
+  sources: LeadSource[];
 }
 
-export function CrmStats({ stats, stages }: CrmStatsProps) {
+type ChartType = 'bar-horizontal' | 'pie' | 'bar-vertical';
+
+export function CrmStats({ stats, stages, sources }: CrmStatsProps) {
+  const [chartType, setChartType] = useState<ChartType>('bar-horizontal');
+  const [chartData, setChartData] = useState<'stage' | 'source'>('stage');
+
   const statCards = [
     { label: 'Total Leads', value: stats.total, icon: Users, color: 'text-primary' },
     { label: 'Active Leads', value: stats.active, icon: UserCheck, color: 'text-success' },
@@ -22,6 +33,24 @@ export function CrmStats({ stats, stages }: CrmStatsProps) {
   ];
 
   const totalForBar = Object.values(stats.byStage).reduce((a, b) => a + b, 0);
+
+  // Build chart data
+  const stageChartData = stages.filter(s => s.is_active && (stats.byStage[s.id] || 0) > 0).map(s => ({
+    name: s.name,
+    value: stats.byStage[s.id] || 0,
+    color: s.color,
+  }));
+
+  const sourceColors = ['#6366f1', '#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+  const sourceChartData = Object.entries(stats.bySource)
+    .filter(([, count]) => count > 0)
+    .map(([key, count], i) => ({
+      name: sources.find(s => s.id === key)?.name || key,
+      value: count,
+      color: sourceColors[i % sourceColors.length],
+    }));
+
+  const activeChartData = chartData === 'stage' ? stageChartData : sourceChartData;
 
   return (
     <div className="space-y-4">
@@ -39,37 +68,86 @@ export function CrmStats({ stats, stages }: CrmStatsProps) {
         ))}
       </div>
 
-      {totalForBar > 0 && (
+      {(totalForBar > 0 || sourceChartData.length > 0) && (
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Stage Distribution</p>
-            <div className="flex h-4 rounded-full overflow-hidden">
-              {stages.filter(s => s.is_active).map(stage => {
-                const count = stats.byStage[stage.id] || 0;
-                if (count === 0) return null;
-                const pct = (count / totalForBar) * 100;
-                return (
-                  <div
-                    key={stage.id}
-                    className="relative group"
-                    style={{ width: `${pct}%`, backgroundColor: stage.color }}
-                    title={`${stage.name}: ${count}`}
-                  />
-                );
-              })}
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-muted-foreground">Distribution</p>
+              <div className="flex items-center gap-2">
+                <Select value={chartData} onValueChange={v => setChartData(v as 'stage' | 'source')}>
+                  <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stage">By Stage</SelectItem>
+                    <SelectItem value="source">By Source</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={chartType} onValueChange={v => setChartType(v as ChartType)}>
+                  <SelectTrigger className="h-7 w-[120px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bar-horizontal">Horizontal Bar</SelectItem>
+                    <SelectItem value="pie">Pie Chart</SelectItem>
+                    <SelectItem value="bar-vertical">Vertical Bar</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3 mt-2">
-              {stages.filter(s => s.is_active).map(stage => {
-                const count = stats.byStage[stage.id] || 0;
-                if (count === 0) return null;
-                return (
-                  <div key={stage.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                    {stage.name}: {count}
-                  </div>
-                );
-              })}
-            </div>
+
+            {chartType === 'bar-horizontal' && (
+              <>
+                <div className="flex h-4 rounded-full overflow-hidden">
+                  {activeChartData.map((item, i) => {
+                    const total = activeChartData.reduce((a, b) => a + b.value, 0);
+                    const pct = (item.value / total) * 100;
+                    return (
+                      <div
+                        key={i}
+                        className="relative group"
+                        style={{ width: `${pct}%`, backgroundColor: item.color }}
+                        title={`${item.name}: ${item.value}`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {activeChartData.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      {item.name}: {item.value}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {chartType === 'pie' && activeChartData.length > 0 && (
+              <div className="flex items-center gap-4">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={activeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {activeChartData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {chartType === 'bar-vertical' && activeChartData.length > 0 && (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={activeChartData}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="value">
+                    {activeChartData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       )}

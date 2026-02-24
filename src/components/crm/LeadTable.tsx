@@ -9,12 +9,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, ExternalLink, Pencil, Save, X } from 'lucide-react';
 import { Lead } from '@/hooks/useLeads';
 import { LeadStage } from '@/hooks/useLeadStages';
+import { LeadSource } from '@/hooks/useLeadSources';
 import { ProfileDisplay } from '@/hooks/useProfilesDisplay';
 import { format } from 'date-fns';
 
 interface LeadTableProps {
   leads: Lead[];
   stages: LeadStage[];
+  sources: LeadSource[];
   profiles: ProfileDisplay[];
   isAdmin: boolean;
   onUpdateLead: (id: number, updates: Partial<Lead>) => Promise<boolean>;
@@ -22,7 +24,7 @@ interface LeadTableProps {
   onUpdateStage: (id: number, stageId: string) => Promise<boolean>;
 }
 
-export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDeleteLead, onUpdateStage }: LeadTableProps) {
+export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateLead, onDeleteLead, onUpdateStage }: LeadTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Lead>>({});
@@ -34,6 +36,12 @@ export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDe
     if (!userId) return '—';
     const p = profiles.find(p => p.user_id === userId);
     return p?.full_name || userId;
+  };
+
+  const getSourceName = (sourceId: string | null) => {
+    if (!sourceId) return '—';
+    const s = sources.find(s => s.id === sourceId);
+    return s?.name || sourceId;
   };
 
   const toggleSelect = (id: number) => {
@@ -52,7 +60,7 @@ export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDe
 
   const startEdit = (lead: Lead) => {
     setEditingId(lead.id);
-    setEditData({ name: lead.name, email: lead.email, whatsapp: lead.whatsapp, website: lead.website });
+    setEditData({ name: lead.name, email: lead.email, whatsapp: lead.whatsapp, website: lead.website, source: lead.source, value: lead.value });
   };
 
   const saveEdit = async () => {
@@ -114,6 +122,8 @@ export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDe
               <TableHead>Email</TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Website</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Value</TableHead>
               <TableHead>Stage</TableHead>
               <TableHead>Last Contacted</TableHead>
               <TableHead>Last Contacted By</TableHead>
@@ -123,7 +133,7 @@ export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDe
           </TableHeader>
           <TableBody>
             {leads.length === 0 && (
-              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
             )}
             {leads.map(lead => {
               const stage = getStage(lead.stage_id);
@@ -152,6 +162,27 @@ export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDe
                       <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 max-w-[200px] truncate">
                         <ExternalLink className="h-3 w-3 flex-shrink-0" /> <span className="truncate">{lead.website}</span>
                       </a>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Select value={editData.source || ''} onValueChange={v => setEditData(p => ({ ...p, source: v }))}>
+                        <SelectTrigger className="h-8 w-[120px]"><SelectValue placeholder="Source" /></SelectTrigger>
+                        <SelectContent>
+                          {sources.filter(s => s.is_active).map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">{getSourceName(lead.source)}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input className="h-8 w-24" type="number" value={editData.value || 0} onChange={e => setEditData(p => ({ ...p, value: parseFloat(e.target.value) || 0 }))} />
+                    ) : lead.value > 0 ? (
+                      <span className="text-sm font-medium">${Number(lead.value).toLocaleString()}</span>
                     ) : '—'}
                   </TableCell>
                   <TableCell>

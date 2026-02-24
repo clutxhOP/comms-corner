@@ -4,16 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Settings, List, Columns3, Contact } from 'lucide-react';
+import { Plus, Settings, List, Columns3, Contact, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 import { useLeadStages } from '@/hooks/useLeadStages';
+import { useLeadSources } from '@/hooks/useLeadSources';
 import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import { CrmStats } from '@/components/crm/CrmStats';
 import { LeadTable } from '@/components/crm/LeadTable';
 import { LeadKanban } from '@/components/crm/LeadKanban';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { StageManagerDialog } from '@/components/crm/StageManagerDialog';
+import { SourceManagerDialog } from '@/components/crm/SourceManagerDialog';
 
 export default function CrmDashboard() {
   const { isAdmin, user } = useAuth();
@@ -21,8 +23,10 @@ export default function CrmDashboard() {
   const [stageFilter, setStageFilter] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [stageManagerOpen, setStageManagerOpen] = useState(false);
+  const [sourceManagerOpen, setSourceManagerOpen] = useState(false);
 
   const { stages, activeStages, addStage, updateStage, deleteStage } = useLeadStages();
+  const { sources, activeSources, addSource, updateSource, deleteSource } = useLeadSources();
   const { leads, loading, stats, addLead, updateLead, updateLeadStage, deleteLead } = useLeads({
     stageFilter: stageFilter || undefined,
     search: search || undefined,
@@ -38,6 +42,9 @@ export default function CrmDashboard() {
             <h1 className="text-2xl font-bold text-foreground">CRM</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setSourceManagerOpen(true)}>
+              <Globe className="h-4 w-4 mr-1" /> Sources
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setStageManagerOpen(true)}>
               <Settings className="h-4 w-4 mr-1" /> Stages
             </Button>
@@ -47,7 +54,7 @@ export default function CrmDashboard() {
           </div>
         </div>
 
-        <CrmStats stats={stats} stages={stages} />
+        <CrmStats stats={stats} stages={stages} sources={sources} />
 
         <div className="flex items-center gap-3">
           <Input placeholder="Search leads..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
@@ -71,20 +78,21 @@ export default function CrmDashboard() {
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
             ) : (
-              <LeadTable leads={leads} stages={stages} profiles={profiles} isAdmin={isAdmin} onUpdateLead={updateLead} onDeleteLead={deleteLead} onUpdateStage={updateLeadStage} />
+              <LeadTable leads={leads} stages={stages} sources={sources} profiles={profiles} isAdmin={isAdmin} onUpdateLead={updateLead} onDeleteLead={deleteLead} onUpdateStage={updateLeadStage} />
             )}
           </TabsContent>
           <TabsContent value="kanban" className="mt-4">
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
             ) : (
-              <LeadKanban leads={leads} stages={activeStages} profiles={profiles} onUpdateStage={updateLeadStage} />
+              <LeadKanban leads={leads} stages={activeStages} sources={sources} profiles={profiles} onUpdateStage={updateLeadStage} />
             )}
           </TabsContent>
         </Tabs>
 
-        <AddLeadDialog open={addOpen} onOpenChange={setAddOpen} stages={activeStages} onAdd={addLead} />
+        <AddLeadDialog open={addOpen} onOpenChange={setAddOpen} stages={activeStages} sources={activeSources} onAdd={addLead} />
         <StageManagerDialog open={stageManagerOpen} onOpenChange={setStageManagerOpen} stages={stages} onAdd={addStage} onUpdate={updateStage} onDelete={deleteStage} />
+        <SourceManagerDialog open={sourceManagerOpen} onOpenChange={setSourceManagerOpen} sources={sources} onAdd={addSource} onUpdate={updateSource} onDelete={deleteSource} />
       </div>
     </MainLayout>
   );
