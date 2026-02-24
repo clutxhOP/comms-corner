@@ -2,7 +2,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2, Contact } from "lucide-react";
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2, Contact, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -1149,6 +1149,99 @@ Body:
 // HMAC-SHA256 Signature Verification:
 // Header: X-Webhook-Signature: sha256=<hex>
 // Verify: HMAC-SHA256(secret, request_body) === signature`} />
+                </div>
+              </CardContent>
+            </Card>
+            {/* CRM Follow-Ups Endpoints */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5" />
+                  CRM Follow-Ups
+                </CardTitle>
+                <CardDescription>Schedule and manage follow-ups for leads via the edge function</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Endpoint
+                  method="POST"
+                  path="/functions/v1/manage-crm-followups"
+                  description="Create a new follow-up for a lead"
+                  auth="Bearer token (JWT) — admin or ops role required"
+                  requestBody={`{
+  "lead_id": 123,
+  "title": "Follow up on proposal",
+  "notes": "Check if they reviewed the deck",
+  "scheduled_at": "2026-03-01T10:00:00Z"
+}`}
+                  responseExample={`{
+  "follow_up": {
+    "id": "uuid",
+    "lead_id": 123,
+    "title": "Follow up on proposal",
+    "notes": "Check if they reviewed the deck",
+    "scheduled_at": "2026-03-01T10:00:00.000Z",
+    "completed": false,
+    "created_by": "user-uuid",
+    "created_at": "2026-02-24T..."
+  }
+}`}
+                />
+                <Endpoint
+                  method="PATCH"
+                  path="/functions/v1/manage-crm-followups"
+                  description="Mark a follow-up as completed"
+                  auth="Bearer token (JWT) — admin or ops role required"
+                  requestBody={`{
+  "id": "follow-up-uuid"
+}`}
+                  responseExample={`{
+  "follow_up": {
+    "id": "follow-up-uuid",
+    "completed": true,
+    "completed_at": "2026-02-24T...",
+    "completed_by": "user-uuid"
+  }
+}`}
+                />
+                <Endpoint
+                  method="GET"
+                  path="/functions/v1/manage-crm-followups"
+                  description="List follow-ups, optionally filtered by lead"
+                  auth="Bearer token (JWT) — admin or ops role required"
+                  queryParams={[
+                    { name: "lead_id", type: "number", description: "Filter by lead ID (optional)" },
+                  ]}
+                  responseExample={`{
+  "follow_ups": [
+    {
+      "id": "uuid",
+      "lead_id": 123,
+      "title": "Follow up on proposal",
+      "scheduled_at": "2026-03-01T10:00:00.000Z",
+      "completed": false
+    }
+  ]
+}`}
+                />
+
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Webhook Events</h4>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Follow-up actions automatically fire webhook events to any CRM webhook subscribed to <code>fu.created</code> or <code>fu.completed</code>.
+                  </p>
+                  <CodeBlock code={`// fu.created payload
+{
+  "event": "fu.created",
+  "follow_up": { "id": "...", "lead_id": 123, "title": "...", ... },
+  "lead_id": 123
+}
+
+// fu.completed payload
+{
+  "event": "fu.completed",
+  "follow_up": { "id": "...", "completed": true, "completed_at": "...", ... },
+  "lead_id": 123
+}`} />
                 </div>
               </CardContent>
             </Card>

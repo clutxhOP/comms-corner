@@ -7,6 +7,9 @@ export const CRM_WEBHOOK_EVENTS = [
   { value: 'lead.updated', label: 'Lead Updated' },
   { value: 'lead.stage_changed', label: 'Lead Stage Changed' },
   { value: 'lead.deleted', label: 'Lead Deleted' },
+  { value: 'fu.created', label: 'Follow-Up Created' },
+  { value: 'fu.completed', label: 'Follow-Up Completed' },
+  { value: 'fu.overdue', label: 'Follow-Up Overdue' },
 ];
 
 export interface CrmWebhook {
