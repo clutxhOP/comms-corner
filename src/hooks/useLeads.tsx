@@ -10,6 +10,7 @@ export interface Lead {
   website: string | null;
   stage_id: string | null;
   created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
   metadata: Record<string, any>;
@@ -20,7 +21,7 @@ interface UseLeadsOptions {
   search?: string;
 }
 
-export function useLeads(options: UseLeadsOptions = {}) {
+export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -74,7 +75,7 @@ export function useLeads(options: UseLeadsOptions = {}) {
   }, [leads]);
 
   const addLead = async (lead: { name: string; email?: string; whatsapp?: string; website?: string; stage_id?: string; metadata?: Record<string, any>; created_by?: string }) => {
-    const { error } = await supabase.from('leads').insert(lead as any);
+    const { error } = await supabase.from('leads').insert({ ...lead, updated_by: userId } as any);
     if (error) {
       toast({ title: 'Error adding lead', description: error.message, variant: 'destructive' });
       return false;
@@ -84,7 +85,7 @@ export function useLeads(options: UseLeadsOptions = {}) {
   };
 
   const updateLead = async (id: number, updates: Partial<Lead>) => {
-    const { error } = await supabase.from('leads').update(updates as any).eq('id', id);
+    const { error } = await supabase.from('leads').update({ ...updates, updated_by: userId } as any).eq('id', id);
     if (error) {
       toast({ title: 'Error updating lead', description: error.message, variant: 'destructive' });
       return false;
@@ -93,7 +94,7 @@ export function useLeads(options: UseLeadsOptions = {}) {
   };
 
   const updateLeadStage = async (id: number, stage_id: string) => {
-    const { error } = await supabase.from('leads').update({ stage_id } as any).eq('id', id);
+    const { error } = await supabase.from('leads').update({ stage_id, updated_by: userId } as any).eq('id', id);
     if (error) {
       toast({ title: 'Error moving lead', description: error.message, variant: 'destructive' });
       return false;
