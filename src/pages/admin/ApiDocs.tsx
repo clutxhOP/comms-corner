@@ -1039,6 +1039,117 @@ Body:
                   description="Delete a lead source."
                   auth="Admin or Ops (JWT)"
                 />
+
+                {/* CRM Webhooks */}
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-base font-semibold text-foreground mb-3">CRM Webhooks</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Dedicated webhook system for CRM lead events. Separate from the task webhook system.
+                  </p>
+                </div>
+
+                <Endpoint
+                  method="GET"
+                  path="/rest/v1/crm_webhooks"
+                  description="List all CRM webhooks."
+                  auth="Admin (full) or Ops (read-only)"
+                  responseExample={`[
+  {
+    "id": "uuid",
+    "name": "CRM Lead Sync",
+    "url": "https://example.com/webhook",
+    "events": ["lead.created", "lead.stage_changed"],
+    "active": true,
+    "created_at": "2026-02-24T10:00:00Z"
+  }
+]`}
+                />
+
+                <Endpoint
+                  method="POST"
+                  path="/rest/v1/crm_webhooks"
+                  description="Create a new CRM webhook. Admin only."
+                  auth="Admin only (JWT)"
+                  requestBody={`{
+  "name": "CRM Lead Sync",
+  "url": "https://example.com/webhook",
+  "events": ["lead.created", "lead.stage_changed", "lead.updated", "lead.deleted"],
+  "secret": "optional-hmac-secret",
+  "created_by": "user-uuid"
+}`}
+                />
+
+                <Endpoint
+                  method="PATCH"
+                  path="/rest/v1/crm_webhooks?id=eq.<id>"
+                  description="Update a CRM webhook. Admin only."
+                  auth="Admin only (JWT)"
+                  requestBody={`{
+  "active": false,
+  "events": ["lead.created"]
+}`}
+                />
+
+                <Endpoint
+                  method="DELETE"
+                  path="/rest/v1/crm_webhooks?id=eq.<id>"
+                  description="Delete a CRM webhook. Admin only."
+                  auth="Admin only (JWT)"
+                />
+
+                <Endpoint
+                  method="GET"
+                  path="/rest/v1/crm_webhook_events"
+                  description="List CRM webhook delivery logs."
+                  auth="Admin or Ops (JWT)"
+                  queryParams={[
+                    { name: "status", type: "text", description: "Filter by status (eq.pending, eq.sent, eq.failed)" },
+                    { name: "event_type", type: "text", description: "Filter by event type (eq.lead.created)" },
+                  ]}
+                  responseExample={`[
+  {
+    "id": "uuid",
+    "event_type": "lead.stage_changed",
+    "status": "sent",
+    "webhook_name": "CRM Lead Sync",
+    "response_status": 200,
+    "executed_at": "2026-02-24T10:00:00Z"
+  }
+]`}
+                />
+
+                <Endpoint
+                  method="POST"
+                  path="/functions/v1/deliver-crm-webhooks"
+                  description="Trigger delivery of pending CRM webhook events. Internal/Admin use."
+                  auth="Service role or Admin"
+                  responseExample={`{
+  "processed": 3,
+  "results": [
+    { "id": "uuid", "status": "sent", "response_status": 200 }
+  ]
+}`}
+                />
+
+                {/* Payload Format */}
+                <div className="border rounded-lg p-4 space-y-4 bg-primary/5 border-primary/20">
+                  <h4 className="font-medium text-foreground">Standard Webhook Payload</h4>
+                  <p className="text-sm text-muted-foreground">All CRM webhooks receive this standard format:</p>
+                  <CodeBlock code={`{
+  "event": "lead.stage_changed",
+  "timestamp": "2026-02-24T20:27:00Z",
+  "data": {
+    "lead_id": 123,
+    "old_stage": "new-lead",
+    "new_stage": "contacted",
+    "lead": { ... }
+  }
+}
+
+// HMAC-SHA256 Signature Verification:
+// Header: X-Webhook-Signature: sha256=<hex>
+// Verify: HMAC-SHA256(secret, request_body) === signature`} />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

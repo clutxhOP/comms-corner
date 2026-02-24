@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.outreach-delete-old]
 verify_jwt = false
+
+[functions.deliver-crm-webhooks]
+verify_jwt = false
