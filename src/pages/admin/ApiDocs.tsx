@@ -1233,14 +1233,31 @@ Body:
 {
   "event": "fu.created",
   "follow_up": { "id": "...", "lead_id": 123, "title": "...", ... },
-  "lead_id": 123
+  "lead_id": 123,
+  "lead": {
+    "id": 123,
+    "name": "Acme Corp",
+    "email": "contact@acme.com",
+    "whatsapp": "+1234567890",
+    "website": "https://acme.com",
+    "stage_id": "contacted",
+    "source": "manual",
+    "value": 5000,
+    "metadata": { ... }
+  }
 }
 
 // fu.completed payload
 {
   "event": "fu.completed",
   "follow_up": { "id": "...", "completed": true, "completed_at": "...", ... },
-  "lead_id": 123
+  "lead_id": 123,
+  "lead": {
+    "id": 123,
+    "name": "Acme Corp",
+    "email": "contact@acme.com",
+    ...
+  }
 }`} />
                 </div>
               </CardContent>
