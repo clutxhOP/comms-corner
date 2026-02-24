@@ -2,7 +2,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2 } from "lucide-react";
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2, Contact } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -199,7 +199,7 @@ export default function ApiDocs() {
 
         {/* Endpoints */}
         <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Tasks
@@ -219,6 +219,10 @@ export default function ApiDocs() {
             <TabsTrigger value="outreach" className="flex items-center gap-2">
               <Share2 className="h-4 w-4" />
               Outreach
+            </TabsTrigger>
+            <TabsTrigger value="crm" className="flex items-center gap-2">
+              <Contact className="h-4 w-4" />
+              CRM
             </TabsTrigger>
           </TabsList>
 
@@ -862,6 +866,124 @@ Body:
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* CRM API */}
+          <TabsContent value="crm" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Contact className="h-5 w-5" />
+                  CRM API (Direct Table Operations)
+                </CardTitle>
+                <CardDescription>
+                  Manage CRM leads and pipeline stages. Admin and Ops access only (Delete: Admin only).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Endpoint
+                  method="POST"
+                  path="/rest/v1/leads"
+                  description="Create a new lead."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "name": "Lead Name (required)",
+  "email": "email@example.com",
+  "whatsapp": "+1234567890",
+  "website": "https://example.com",
+  "stage_id": "new-lead",
+  "metadata": {}
+}`}
+                  responseExample={`{
+  "id": 1,
+  "name": "Lead Name",
+  "stage_id": "new-lead",
+  "created_at": "2026-02-24T10:00:00Z"
+}`}
+                />
+
+                <Endpoint
+                  method="GET"
+                  path="/rest/v1/leads"
+                  description="List leads with optional filters."
+                  auth="Admin or Ops (JWT)"
+                  queryParams={[
+                    { name: "stage_id", type: "text", description: "Filter by stage (eq.new-lead)" },
+                    { name: "name", type: "text", description: "Search by name (ilike.%search%)" },
+                  ]}
+                  responseExample={`[
+  {
+    "id": 1,
+    "name": "Lead Name",
+    "email": "test@test.com",
+    "stage_id": "contacted",
+    "created_at": "2026-02-24T10:00:00Z"
+  }
+]`}
+                />
+
+                <Endpoint
+                  method="PATCH"
+                  path="/rest/v1/leads?id=eq.<id>"
+                  description="Update a lead."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "stage_id": "qualified",
+  "email": "updated@email.com"
+}`}
+                />
+
+                <Endpoint
+                  method="DELETE"
+                  path="/rest/v1/leads?id=eq.<id>"
+                  description="Delete a lead. Admin only."
+                  auth="Admin only (JWT)"
+                />
+
+                <Endpoint
+                  method="GET"
+                  path="/rest/v1/lead_stages"
+                  description="List all pipeline stages sorted by position."
+                  auth="Admin or Ops (JWT)"
+                  responseExample={`[
+  { "id": "new-lead", "name": "New Lead", "color": "#28a745", "position": 1, "is_active": true },
+  { "id": "contacted", "name": "Contacted", "color": "#007BFF", "position": 2, "is_active": true }
+]`}
+                />
+
+                <Endpoint
+                  method="POST"
+                  path="/rest/v1/lead_stages"
+                  description="Create a new pipeline stage."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "id": "custom-stage",
+  "name": "Custom Stage",
+  "color": "#ff6600",
+  "position": 8
+}`}
+                />
+
+                <Endpoint
+                  method="PATCH"
+                  path="/rest/v1/lead_stages?id=eq.<id>"
+                  description="Update a pipeline stage."
+                  auth="Admin or Ops (JWT)"
+                  requestBody={`{
+  "name": "Updated Name",
+  "color": "#new-color",
+  "is_active": false
+}`}
+                />
+
+                <Endpoint
+                  method="DELETE"
+                  path="/rest/v1/lead_stages?id=eq.<id>"
+                  description="Delete a pipeline stage."
+                  auth="Admin or Ops (JWT)"
+                />
               </CardContent>
             </Card>
           </TabsContent>
