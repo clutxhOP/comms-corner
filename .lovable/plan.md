@@ -1,24 +1,26 @@
 
 
-# CRM Webhooks and Event System
+# CRM Follow-Ups System
 
 ## Overview
-Add a dedicated CRM webhook system that fires events on lead changes (create, update, stage change, delete). This is entirely additive -- no existing webhooks, endpoints, functions, or table structures will be modified or deleted.
+Add a follow-up scheduling system tied to leads. When a lead moves to the "contacted" stage (or any stage), follow-ups can be created, completed, and tracked -- with webhook events firing automatically. This is entirely additive.
 
 ---
 
 ## Phase 1: Database Migration
 
-### New Table: `crm_webhooks`
-Stores CRM-specific webhook registrations, completely separate from the existing `webhooks` table.
+### New Table: `crm_follow_ups`
+Tracks scheduled follow-up tasks for leads.
 
 ```text
 id: uuid (PK, gen_random_uuid())
-name: text NOT NULL
-url: text NOT NULL
-events: text[] NOT NULL
-active: boolean DEFAULT true
-secret: text (HMAC signing secret)
+lead_id: bigint NOT NULL (references leads.id ON DELETE CASCADE)
+title: text NOT NULL
+notes: text
+scheduled_at: timestamptz NOT NULL
+completed: boolean DEFAULT false
+completed_at: timestamptz
+completed_by: uuid
 created_by: uuid NOT NULL
 created_at: timestamptz DEFAULT now()
 updated_at: timestamptz DEFAULT now()
@@ -26,152 +28,120 @@ updated_at: timestamptz DEFAULT now()
 
 **RLS Policies:**
 - Admin: full CRUD
-- Ops: SELECT only
+- Ops: SELECT, INSERT, UPDATE
 
-### New Table: `crm_webhook_events`
-Audit log for all CRM webhook deliveries.
+### New Postgres Trigger Function: `notify_crm_followup_webhook()`
+Fires AFTER INSERT, UPDATE on `crm_follow_ups`:
+- INSERT --> `fu.created` event with full follow-up + lead_id in payload
+- UPDATE where `completed` changes from false to true --> `fu.completed` event with follow-up data
+- Inserts rows into existing `crm_webhook_events` for each matching active `crm_webhooks` entry
 
+### New Trigger on `crm_follow_ups`
 ```text
-id: uuid (PK, gen_random_uuid())
-event_type: text NOT NULL
-payload: jsonb NOT NULL
-webhook_id: uuid (references crm_webhooks.id ON DELETE SET NULL)
-webhook_name: text
-request_url: text
-response_status: integer
-response_body: text
-error_message: text
-success: boolean DEFAULT false
-retry_count: integer DEFAULT 0
-status: text DEFAULT 'pending'
-executed_at: timestamptz DEFAULT now()
-created_by: uuid
+crm_followup_webhook_trigger AFTER INSERT OR UPDATE ON crm_follow_ups
 ```
 
-**RLS Policies:**
-- Admin: SELECT, INSERT
-- Ops: SELECT only
-
-### New Postgres Trigger Function: `notify_crm_webhook()`
-Fires AFTER INSERT, UPDATE, DELETE on `leads` table. Determines event type:
-- INSERT --> `lead.created`
-- UPDATE with `stage_id` change --> `lead.stage_changed` (includes old_stage, new_stage)
-- UPDATE (other fields) --> `lead.updated`
-- DELETE --> `lead.deleted`
-
-Inserts a row into `crm_webhook_events` for each matching active `crm_webhooks` entry with `status = 'pending'`.
-
-### New Trigger on `leads` table
-```text
-crm_lead_webhook_trigger AFTER INSERT OR UPDATE OR DELETE
-```
-This is additive -- does NOT interfere with existing realtime subscription on leads.
+### Add New Event Types to CRM Webhook Events Constant
+Add 3 new selectable events in the webhook creation form:
+- `fu.created` -- Follow-Up Created
+- `fu.completed` -- Follow-Up Completed
+- `fu.overdue` -- Follow-Up Overdue (for future cron use)
 
 ### Enable Realtime
-Both new tables added to `supabase_realtime` publication.
+```text
+ALTER PUBLICATION supabase_realtime ADD TABLE public.crm_follow_ups;
+```
 
 ---
 
-## Phase 2: Delivery Edge Function
+## Phase 2: New Edge Function for Follow-Ups
 
-### New File: `supabase/functions/deliver-crm-webhooks/index.ts`
-- Scans `crm_webhook_events` where `status = 'pending'`
-- For each event, POSTs to the webhook URL with HMAC-SHA256 signature
-- Standard payload format:
-```text
-{
-  "event": "lead.stage_changed",
-  "timestamp": "2026-02-24T20:27:00Z",
-  "data": { ... },
-  "signature": "sha256=..."
-}
-```
-- Updates `status` to `sent` or `failed`
-- Records `response_status`, `response_body`, `error_message`
-- Retry logic: up to 3 retries (increments `retry_count`)
-- Uses service role key (internal invocation only)
-- CORS headers included
-- JWT verification disabled in config.toml
+### New File: `supabase/functions/manage-crm-followups/index.ts`
+REST-style edge function with 3 endpoints:
+
+1. **POST** (create follow-up): Accepts `{ lead_id, title, notes?, scheduled_at }`, inserts into `crm_follow_ups`
+2. **PATCH** (complete follow-up): Accepts `{ id }`, marks `completed = true`, sets `completed_at` and `completed_by`
+3. **GET** (list follow-ups): Returns follow-ups, optionally filtered by `lead_id` query param
+
+Auth: Validates JWT, checks admin/ops role. Uses service role client for writes.
 
 ---
 
 ## Phase 3: New React Hook
 
-### New File: `src/hooks/useCrmWebhooks.tsx`
-- Fetches from `crm_webhooks` and `crm_webhook_events` tables
-- CRUD operations: `createCrmWebhook`, `updateCrmWebhook`, `deleteCrmWebhook`
-- `testCrmWebhook(id)` -- inserts a sample `lead.created` event
-- Realtime subscriptions on both tables
-- Exports `CRM_WEBHOOK_EVENTS` constant array
+### New File: `src/hooks/useCrmFollowUps.tsx`
+- Fetches from `crm_follow_ups` table with optional `lead_id` filter
+- CRUD: `createFollowUp`, `completeFollowUp`, `deleteFollowUp`
+- Realtime subscription on `crm_follow_ups`
+- Computed `overdueFollowUps` list (where `scheduled_at < now()` and not completed)
 
 ---
 
 ## Phase 4: UI Components
 
-### New File: `src/components/crm/CrmWebhookForm.tsx`
-Dialog form for creating a new CRM webhook:
-- Name input
-- URL input
-- Secret input (auto-generate option)
-- Events multi-select checkboxes
+### New File: `src/components/crm/FollowUpManager.tsx`
+A card/section shown inside the CRM Integrations tab (below webhooks) with:
+- **Upcoming Follow-Ups Table**: Lead name, title, scheduled date, status badge (upcoming/overdue/completed), Complete button
+- **Add Follow-Up Dialog**: Lead selector, title, notes, date picker
+- Overdue items highlighted in red
+- Filter by lead
 
-### New File: `src/components/crm/CrmWebhookManager.tsx`
-Full management UI with three sections:
-1. **Add Webhook** button (opens CrmWebhookForm dialog)
-2. **Active Webhooks Table**: Name, URL, Events (badges), Active toggle, Test button, Delete button
-3. **Recent Events Log**: Collapsible list with event_type, status badge, timestamp, expandable payload/response
+### Modified File: `src/components/crm/CrmWebhookManager.tsx` (additive only)
+- Import and render `<FollowUpManager />` below the existing webhook cards
+- No existing components removed
 
-Permissions enforced: Admin can create/delete/toggle. Ops can view only.
+### Modified File: `src/hooks/useCrmWebhooks.tsx` (additive only)
+- Add 3 new entries to `CRM_WEBHOOK_EVENTS` constant array:
+  - `{ value: 'fu.created', label: 'Follow-Up Created' }`
+  - `{ value: 'fu.completed', label: 'Follow-Up Completed' }`
+  - `{ value: 'fu.overdue', label: 'Follow-Up Overdue' }`
 
----
-
-## Phase 5: CRM Dashboard Integration
-
-### Modified File: `src/pages/crm/CrmDashboard.tsx`
-- Add a third tab "Integrations" (with Webhook icon) alongside existing "List" and "Kanban" tabs
-- The Integrations tab renders `<CrmWebhookManager />`
-- No existing tabs or components removed
+### Modified File: `src/components/crm/CrmWebhookForm.tsx`
+- No changes needed -- it already reads from `CRM_WEBHOOK_EVENTS`, so new events appear automatically
 
 ---
 
-## Phase 6: API Docs Update
+## Phase 5: API Docs Update
 
-### Modified File: `src/pages/admin/ApiDocs.tsx`
-Add a new "CRM Webhooks" section at the bottom of the existing CRM tab documenting:
-- `GET /rest/v1/crm_webhooks`
-- `POST /rest/v1/crm_webhooks`
-- `PATCH /rest/v1/crm_webhooks?id=eq.<id>`
-- `DELETE /rest/v1/crm_webhooks?id=eq.<id>`
-- `GET /rest/v1/crm_webhook_events`
-- `POST /functions/v1/deliver-crm-webhooks`
-- Standard payload format and HMAC signature verification docs
+### Modified File: `src/pages/admin/ApiDocs.tsx` (additive only)
+Add a "CRM Follow-Ups" section documenting:
+- `POST /functions/v1/manage-crm-followups` -- create follow-up
+- `PATCH /functions/v1/manage-crm-followups` -- complete follow-up
+- `GET /functions/v1/manage-crm-followups?lead_id=123` -- list follow-ups
+- Follow-up webhook event payload examples
 
 ---
 
 ## Files Summary
 
 ### New Files Created
-1. `supabase/migrations/xxx_add_crm_webhooks.sql` -- tables, RLS, trigger function, trigger
-2. `supabase/functions/deliver-crm-webhooks/index.ts` -- delivery edge function
-3. `src/hooks/useCrmWebhooks.tsx` -- React hook for CRM webhooks CRUD + logs
-4. `src/components/crm/CrmWebhookManager.tsx` -- main webhook management UI
-5. `src/components/crm/CrmWebhookForm.tsx` -- webhook creation dialog
+1. Database migration -- `crm_follow_ups` table, RLS, trigger function, trigger
+2. `supabase/functions/manage-crm-followups/index.ts` -- REST edge function
+3. `src/hooks/useCrmFollowUps.tsx` -- React hook for follow-ups CRUD
+4. `src/components/crm/FollowUpManager.tsx` -- Follow-ups UI
 
 ### Modified Files (additive only)
-1. `src/pages/crm/CrmDashboard.tsx` -- add "Integrations" tab (no existing tabs removed)
-2. `src/pages/admin/ApiDocs.tsx` -- add CRM webhooks section to existing CRM tab
+1. `src/hooks/useCrmWebhooks.tsx` -- add 3 new event types to `CRM_WEBHOOK_EVENTS` constant
+2. `src/components/crm/CrmWebhookManager.tsx` -- render `<FollowUpManager />` below existing content
+3. `src/pages/admin/ApiDocs.tsx` -- add follow-ups endpoints documentation
+4. `supabase/config.toml` -- add `manage-crm-followups` function config
 
 ### Existing Structures NOT Touched
-- `webhooks` table -- unchanged
-- `webhook_logs` table -- unchanged
-- `useWebhooks` hook -- unchanged
-- All existing edge functions -- unchanged
-- All existing routes, components, sidebar items -- unchanged
-- All existing triggers and database functions -- unchanged
+- `crm_webhooks` table -- unchanged
+- `crm_webhook_events` table -- unchanged (reused for fu.* events)
+- `notify_crm_webhook()` function -- unchanged
+- `deliver-crm-webhooks` edge function -- unchanged (already delivers any event type)
+- `leads` table -- unchanged
+- All existing webhooks, hooks, components -- unchanged
+
+### Integration Flow
+1. Lead moves to "contacted" stage --> existing `lead.stage_changed` webhook fires
+2. User creates follow-up for that lead --> `fu.created` event queued in `crm_webhook_events`
+3. User completes follow-up --> `fu.completed` event queued
+4. `deliver-crm-webhooks` edge function picks up and delivers all pending events (no changes needed)
 
 ### Permissions
-- `crm_webhooks`: Admin full CRUD, Ops SELECT only
-- `crm_webhook_events`: Admin SELECT/INSERT, Ops SELECT only
-- Postgres trigger fires for all users with write access to `leads` (admin/ops per existing RLS)
-- Edge function uses service role for internal delivery
+- `crm_follow_ups`: Admin full CRUD, Ops can SELECT/INSERT/UPDATE
+- Edge function validates JWT and role before operations
+- Webhook trigger uses SECURITY DEFINER to insert into `crm_webhook_events`
 
