@@ -560,6 +560,105 @@ export type Database = {
         }
         Relationships: []
       }
+      old_customers: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          feedback_status: string | null
+          human_mode: boolean | null
+          icp: string | null
+          id: string | null
+          info_confirmed: string | null
+          lastleadsendat: string | null
+          lastmessaged: string | null
+          location: string | null
+          name: string | null
+          notes: string | null
+          num_of_leads: number | null
+          offering: string | null
+          slack_groupid: string | null
+          status: string | null
+          sub_status: string | null
+          tags: string | null
+          updated_at: string | null
+          usp: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          feedback_status?: string | null
+          human_mode?: boolean | null
+          icp?: string | null
+          id?: string | null
+          info_confirmed?: string | null
+          lastleadsendat?: string | null
+          lastmessaged?: string | null
+          location?: string | null
+          name?: string | null
+          notes?: string | null
+          num_of_leads?: number | null
+          offering?: string | null
+          slack_groupid?: string | null
+          status?: string | null
+          sub_status?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          usp?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          feedback_status?: string | null
+          human_mode?: boolean | null
+          icp?: string | null
+          id?: string | null
+          info_confirmed?: string | null
+          lastleadsendat?: string | null
+          lastmessaged?: string | null
+          location?: string | null
+          name?: string | null
+          notes?: string | null
+          num_of_leads?: number | null
+          offering?: string | null
+          slack_groupid?: string | null
+          status?: string | null
+          sub_status?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          usp?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      old_subreddit_watch: {
+        Row: {
+          count: string | null
+          created_at: string | null
+          id: number | null
+          last_updated_at: string | null
+          subreddit: string | null
+        }
+        Insert: {
+          count?: string | null
+          created_at?: string | null
+          id?: number | null
+          last_updated_at?: string | null
+          subreddit?: string | null
+        }
+        Update: {
+          count?: string | null
+          created_at?: string | null
+          id?: number | null
+          last_updated_at?: string | null
+          subreddit?: string | null
+        }
+        Relationships: []
+      }
       outreach_entries: {
         Row: {
           comment: string
