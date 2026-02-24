@@ -1,167 +1,177 @@
 
 
-# CRM Enhancements: Source Column, Lead Value, and Statistics Charts
+# CRM Webhooks and Event System
 
 ## Overview
-Three additions to the CRM module: (1) a "Source" field for leads with default options and custom source management, (2) a "Lead Value" field for tracking monetary value per lead, and (3) multiple chart types (pie, bar) for the statistics section. No existing webhooks, endpoints, functions, or table structures will be deleted.
+Add a dedicated CRM webhook system that fires events on lead changes (create, update, stage change, delete). This is entirely additive -- no existing webhooks, endpoints, functions, or table structures will be modified or deleted.
 
 ---
 
-## Change 1: Source Column
+## Phase 1: Database Migration
 
-### Database Migration
-Add a `source` column to the `leads` table and create a `lead_sources` table for managing source options.
+### New Table: `crm_webhooks`
+Stores CRM-specific webhook registrations, completely separate from the existing `webhooks` table.
 
-```sql
--- Add source column to leads
-ALTER TABLE public.leads ADD COLUMN source text;
-
--- Create lead_sources table for customizable options
-CREATE TABLE public.lead_sources (
-  id text PRIMARY KEY,
-  name text NOT NULL,
-  icon text, -- optional icon identifier
-  is_active boolean NOT NULL DEFAULT true,
-  position integer NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
--- Seed default sources
-INSERT INTO public.lead_sources (id, name, position) VALUES
-  ('reddit', 'Reddit', 1),
-  ('twitter', 'X (Twitter)', 2),
-  ('facebook', 'Facebook', 3),
-  ('whatsapp', 'WhatsApp', 4);
-
--- RLS: admin and ops can CRUD
-ALTER TABLE public.lead_sources ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admin and Ops can select lead_sources" ON public.lead_sources FOR SELECT USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'ops'));
-CREATE POLICY "Admin and Ops can insert lead_sources" ON public.lead_sources FOR INSERT WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'ops'));
-CREATE POLICY "Admin and Ops can update lead_sources" ON public.lead_sources FOR UPDATE USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'ops'));
-CREATE POLICY "Admin and Ops can delete lead_sources" ON public.lead_sources FOR DELETE USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'ops'));
-
--- Enable realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.lead_sources;
+```text
+id: uuid (PK, gen_random_uuid())
+name: text NOT NULL
+url: text NOT NULL
+events: text[] NOT NULL
+active: boolean DEFAULT true
+secret: text (HMAC signing secret)
+created_by: uuid NOT NULL
+created_at: timestamptz DEFAULT now()
+updated_at: timestamptz DEFAULT now()
 ```
 
-### New File: `src/hooks/useLeadSources.tsx`
-- Fetch all active sources sorted by position
-- CRUD: addSource, updateSource, deleteSource
-- Realtime subscription on `lead_sources`
+**RLS Policies:**
+- Admin: full CRUD
+- Ops: SELECT only
 
-### File Changes: `src/hooks/useLeads.tsx`
-- Add `source` to the `Lead` interface
-- Add `source` param to `addLead`
-- Add `bySource` stats computation (count per source)
+### New Table: `crm_webhook_events`
+Audit log for all CRM webhook deliveries.
 
-### File Changes: `src/components/crm/AddLeadDialog.tsx`
-- Add `sources` prop
-- Add Source dropdown (with options from `lead_sources`)
-- Pass `source` value in `onAdd` callback
-
-### File Changes: `src/components/crm/LeadTable.tsx`
-- Add "Source" column header after "Website"
-- Show source as a Badge in each row
-- Make source editable inline (dropdown) when editing
-- Update colSpan for empty state
-
-### File Changes: `src/components/crm/LeadKanban.tsx`
-- Show source as a small badge/label on each Kanban card
-
-### File Changes: `src/pages/crm/CrmDashboard.tsx`
-- Import and use `useLeadSources` hook
-- Pass `sources` to `AddLeadDialog`
-- Add a "Manage Sources" button or integrate into existing StageManagerDialog
-- Pass sources to LeadTable and LeadKanban
-
-### New File: `src/components/crm/SourceManagerDialog.tsx`
-- Modal to add/edit/delete lead sources
-- Fields: id (auto-slug), name, position, active toggle
-- Similar pattern to StageManagerDialog
-
----
-
-## Change 2: Lead Value Field
-
-### Database Migration
-```sql
-ALTER TABLE public.leads ADD COLUMN value numeric DEFAULT 0;
+```text
+id: uuid (PK, gen_random_uuid())
+event_type: text NOT NULL
+payload: jsonb NOT NULL
+webhook_id: uuid (references crm_webhooks.id ON DELETE SET NULL)
+webhook_name: text
+request_url: text
+response_status: integer
+response_body: text
+error_message: text
+success: boolean DEFAULT false
+retry_count: integer DEFAULT 0
+status: text DEFAULT 'pending'
+executed_at: timestamptz DEFAULT now()
+created_by: uuid
 ```
 
-### File Changes: `src/hooks/useLeads.tsx`
-- Add `value` to the `Lead` interface
-- Update `pipelineValue` stat to use the dedicated `value` column instead of `metadata.value`
-- Include `value` in addLead params
+**RLS Policies:**
+- Admin: SELECT, INSERT
+- Ops: SELECT only
 
-### File Changes: `src/components/crm/AddLeadDialog.tsx`
-- Add "Lead Value" number input field
-- Pass `value` in onAdd callback
+### New Postgres Trigger Function: `notify_crm_webhook()`
+Fires AFTER INSERT, UPDATE, DELETE on `leads` table. Determines event type:
+- INSERT --> `lead.created`
+- UPDATE with `stage_id` change --> `lead.stage_changed` (includes old_stage, new_stage)
+- UPDATE (other fields) --> `lead.updated`
+- DELETE --> `lead.deleted`
 
-### File Changes: `src/components/crm/LeadTable.tsx`
-- Add "Value" column header (after Source)
-- Display formatted dollar amount
-- Make value editable inline
-- Update colSpan for empty state
+Inserts a row into `crm_webhook_events` for each matching active `crm_webhooks` entry with `status = 'pending'`.
 
-### File Changes: `src/components/crm/LeadKanban.tsx`
-- Show value on Kanban card if > 0
+### New Trigger on `leads` table
+```text
+crm_lead_webhook_trigger AFTER INSERT OR UPDATE OR DELETE
+```
+This is additive -- does NOT interfere with existing realtime subscription on leads.
+
+### Enable Realtime
+Both new tables added to `supabase_realtime` publication.
 
 ---
 
-## Change 3: Statistics Display Options (Pie Chart, Bar Chart)
+## Phase 2: Delivery Edge Function
 
-### File Changes: `src/components/crm/CrmStats.tsx`
-- Add a toggle/select to switch between display modes: **Bar** (current horizontal bar), **Pie Chart**, and **Bar Chart** (vertical)
-- Use `recharts` (already installed) for Pie and Bar chart rendering
-- Import `PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer` from recharts
-- Add state for selected chart type
-- Render the appropriate chart based on selection
-- Add `bySource` data display as a secondary chart/section
-- Accept `bySource` in stats prop for source distribution
-
-### Stats interface update:
-```typescript
-stats: {
-  total: number;
-  active: number;
-  conversionRate: number;
-  pipelineValue: number;
-  byStage: Record<string, number>;
-  bySource: Record<string, number>;
+### New File: `supabase/functions/deliver-crm-webhooks/index.ts`
+- Scans `crm_webhook_events` where `status = 'pending'`
+- For each event, POSTs to the webhook URL with HMAC-SHA256 signature
+- Standard payload format:
+```text
+{
+  "event": "lead.stage_changed",
+  "timestamp": "2026-02-24T20:27:00Z",
+  "data": { ... },
+  "signature": "sha256=..."
 }
 ```
+- Updates `status` to `sent` or `failed`
+- Records `response_status`, `response_body`, `error_message`
+- Retry logic: up to 3 retries (increments `retry_count`)
+- Uses service role key (internal invocation only)
+- CORS headers included
+- JWT verification disabled in config.toml
 
 ---
 
-## Change 4: API Docs Update
+## Phase 3: New React Hook
 
-### File Changes: `src/pages/admin/ApiDocs.tsx`
-- Update the POST /leads endpoint docs to include `source` and `value` fields in request body
-- Update the GET /leads response example to include `source` and `value`
-- Update the PATCH /leads request body example to include `source` and `value`
-- Add `lead_sources` endpoints:
-  - GET /rest/v1/lead_sources
-  - POST /rest/v1/lead_sources
-  - PATCH /rest/v1/lead_sources?id=eq.{id}
-  - DELETE /rest/v1/lead_sources?id=eq.{id}
+### New File: `src/hooks/useCrmWebhooks.tsx`
+- Fetches from `crm_webhooks` and `crm_webhook_events` tables
+- CRUD operations: `createCrmWebhook`, `updateCrmWebhook`, `deleteCrmWebhook`
+- `testCrmWebhook(id)` -- inserts a sample `lead.created` event
+- Realtime subscriptions on both tables
+- Exports `CRM_WEBHOOK_EVENTS` constant array
+
+---
+
+## Phase 4: UI Components
+
+### New File: `src/components/crm/CrmWebhookForm.tsx`
+Dialog form for creating a new CRM webhook:
+- Name input
+- URL input
+- Secret input (auto-generate option)
+- Events multi-select checkboxes
+
+### New File: `src/components/crm/CrmWebhookManager.tsx`
+Full management UI with three sections:
+1. **Add Webhook** button (opens CrmWebhookForm dialog)
+2. **Active Webhooks Table**: Name, URL, Events (badges), Active toggle, Test button, Delete button
+3. **Recent Events Log**: Collapsible list with event_type, status badge, timestamp, expandable payload/response
+
+Permissions enforced: Admin can create/delete/toggle. Ops can view only.
+
+---
+
+## Phase 5: CRM Dashboard Integration
+
+### Modified File: `src/pages/crm/CrmDashboard.tsx`
+- Add a third tab "Integrations" (with Webhook icon) alongside existing "List" and "Kanban" tabs
+- The Integrations tab renders `<CrmWebhookManager />`
+- No existing tabs or components removed
+
+---
+
+## Phase 6: API Docs Update
+
+### Modified File: `src/pages/admin/ApiDocs.tsx`
+Add a new "CRM Webhooks" section at the bottom of the existing CRM tab documenting:
+- `GET /rest/v1/crm_webhooks`
+- `POST /rest/v1/crm_webhooks`
+- `PATCH /rest/v1/crm_webhooks?id=eq.<id>`
+- `DELETE /rest/v1/crm_webhooks?id=eq.<id>`
+- `GET /rest/v1/crm_webhook_events`
+- `POST /functions/v1/deliver-crm-webhooks`
+- Standard payload format and HMAC signature verification docs
 
 ---
 
 ## Files Summary
 
-### New Files
-1. `supabase/migrations/xxx_add_source_value_and_lead_sources.sql`
-2. `src/hooks/useLeadSources.tsx`
-3. `src/components/crm/SourceManagerDialog.tsx`
+### New Files Created
+1. `supabase/migrations/xxx_add_crm_webhooks.sql` -- tables, RLS, trigger function, trigger
+2. `supabase/functions/deliver-crm-webhooks/index.ts` -- delivery edge function
+3. `src/hooks/useCrmWebhooks.tsx` -- React hook for CRM webhooks CRUD + logs
+4. `src/components/crm/CrmWebhookManager.tsx` -- main webhook management UI
+5. `src/components/crm/CrmWebhookForm.tsx` -- webhook creation dialog
 
 ### Modified Files (additive only)
-1. `src/hooks/useLeads.tsx` -- add `source`, `value` to interface; update stats with `bySource`
-2. `src/components/crm/AddLeadDialog.tsx` -- add Source dropdown and Value input
-3. `src/components/crm/LeadTable.tsx` -- add Source and Value columns
-4. `src/components/crm/LeadKanban.tsx` -- show source badge and value on cards
-5. `src/components/crm/CrmStats.tsx` -- add pie/bar chart toggles using recharts; add source distribution
-6. `src/pages/crm/CrmDashboard.tsx` -- integrate useLeadSources; pass data to components; add Manage Sources button
-7. `src/pages/admin/ApiDocs.tsx` -- add source/value fields to CRM docs; add lead_sources endpoints
+1. `src/pages/crm/CrmDashboard.tsx` -- add "Integrations" tab (no existing tabs removed)
+2. `src/pages/admin/ApiDocs.tsx` -- add CRM webhooks section to existing CRM tab
 
-### No Deletions
-No existing webhooks, endpoints, functions, or table structures will be deleted.
+### Existing Structures NOT Touched
+- `webhooks` table -- unchanged
+- `webhook_logs` table -- unchanged
+- `useWebhooks` hook -- unchanged
+- All existing edge functions -- unchanged
+- All existing routes, components, sidebar items -- unchanged
+- All existing triggers and database functions -- unchanged
+
+### Permissions
+- `crm_webhooks`: Admin full CRUD, Ops SELECT only
+- `crm_webhook_events`: Admin SELECT/INSERT, Ops SELECT only
+- Postgres trigger fires for all users with write access to `leads` (admin/ops per existing RLS)
+- Edge function uses service role for internal delivery
+
