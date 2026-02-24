@@ -3,18 +3,22 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Mail, Phone } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ExternalLink, Mail, Phone, Clock, User } from 'lucide-react';
 import { Lead } from '@/hooks/useLeads';
 import { LeadStage } from '@/hooks/useLeadStages';
+import { ProfileDisplay } from '@/hooks/useProfilesDisplay';
 import { useDroppable } from '@dnd-kit/core';
+import { format } from 'date-fns';
 
 interface LeadKanbanProps {
   leads: Lead[];
   stages: LeadStage[];
+  profiles: ProfileDisplay[];
   onUpdateStage: (id: number, stageId: string) => Promise<boolean>;
 }
 
-function KanbanCard({ lead, isDragging }: { lead: Lead; isDragging?: boolean }) {
+function KanbanCard({ lead, stages, profiles, isDragging }: { lead: Lead; stages: LeadStage[]; profiles: ProfileDisplay[]; isDragging?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `lead-${lead.id}` });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -22,16 +26,21 @@ function KanbanCard({ lead, isDragging }: { lead: Lead; isDragging?: boolean }) 
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const stage = stages.find(s => s.id === lead.stage_id);
+  const updatedByName = lead.updated_by
+    ? (profiles.find(p => p.user_id === lead.updated_by)?.full_name || lead.updated_by)
+    : null;
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
         <CardContent className="p-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-mono">#{lead.id}</span>
-            {lead.website && (
-              <a href={lead.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-muted-foreground hover:text-primary">
-                <ExternalLink className="h-3 w-3" />
-              </a>
+            {stage && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0" style={{ borderColor: stage.color, color: stage.color }}>
+                {stage.name}
+              </Badge>
             )}
           </div>
           <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
@@ -45,18 +54,36 @@ function KanbanCard({ lead, isDragging }: { lead: Lead; isDragging?: boolean }) 
               <Phone className="h-3 w-3 flex-shrink-0" /> {lead.whatsapp}
             </div>
           )}
+          {lead.website && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+              <a href={lead.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="hover:text-primary truncate">
+                {lead.website}
+              </a>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+            <Clock className="h-2.5 w-2.5 flex-shrink-0" />
+            <span>Last Contacted: {format(new Date(lead.updated_at), 'MMM d, yyyy')}</span>
+          </div>
+          {updatedByName && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <User className="h-2.5 w-2.5 flex-shrink-0" />
+              <span>By: {updatedByName}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function KanbanColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
+function KanbanColumn({ stage, leads, stages, profiles }: { stage: LeadStage; leads: Lead[]; stages: LeadStage[]; profiles: ProfileDisplay[] }) {
   const { setNodeRef } = useDroppable({ id: `stage-${stage.id}` });
   const ids = leads.map(l => `lead-${l.id}`);
 
   return (
-    <div className="flex-shrink-0 w-64">
+    <div className="flex-shrink-0 w-72">
       <div className="flex items-center gap-2 mb-3 px-1">
         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: stage.color }} />
         <h3 className="text-sm font-semibold text-foreground">{stage.name}</h3>
@@ -65,7 +92,7 @@ function KanbanColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
       <div ref={setNodeRef} className="space-y-2 min-h-[100px] p-1 rounded-lg bg-muted/30">
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {leads.map(lead => (
-            <KanbanCard key={lead.id} lead={lead} />
+            <KanbanCard key={lead.id} lead={lead} stages={stages} profiles={profiles} />
           ))}
         </SortableContext>
       </div>
@@ -73,7 +100,7 @@ function KanbanColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
   );
 }
 
-export function LeadKanban({ leads, stages, onUpdateStage }: LeadKanbanProps) {
+export function LeadKanban({ leads, stages, profiles, onUpdateStage }: LeadKanbanProps) {
   const [activeId, setActiveId] = useState<number | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -113,12 +140,12 @@ export function LeadKanban({ leads, stages, onUpdateStage }: LeadKanbanProps) {
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {activeStages.map(stage => (
-          <KanbanColumn key={stage.id} stage={stage} leads={leads.filter(l => l.stage_id === stage.id)} />
+          <KanbanColumn key={stage.id} stage={stage} leads={leads.filter(l => l.stage_id === stage.id)} stages={stages} profiles={profiles} />
         ))}
       </div>
       <DragOverlay>
         {activeLead && (
-          <Card className="w-64 shadow-lg">
+          <Card className="w-72 shadow-lg">
             <CardContent className="p-3">
               <p className="text-sm font-medium">{activeLead.name}</p>
             </CardContent>

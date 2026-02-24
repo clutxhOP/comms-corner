@@ -415,6 +415,7 @@ export type Database = {
           name: string
           stage_id: string | null
           updated_at: string
+          updated_by: string | null
           website: string | null
           whatsapp: string | null
         }
@@ -427,6 +428,7 @@ export type Database = {
           name: string
           stage_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           website?: string | null
           whatsapp?: string | null
         }
@@ -439,6 +441,7 @@ export type Database = {
           name?: string
           stage_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           website?: string | null
           whatsapp?: string | null
         }

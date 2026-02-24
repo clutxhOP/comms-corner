@@ -8,6 +8,7 @@ import { Plus, Settings, List, Columns3, Contact } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 import { useLeadStages } from '@/hooks/useLeadStages';
+import { useProfilesDisplay } from '@/hooks/useProfilesDisplay';
 import { CrmStats } from '@/components/crm/CrmStats';
 import { LeadTable } from '@/components/crm/LeadTable';
 import { LeadKanban } from '@/components/crm/LeadKanban';
@@ -15,7 +16,7 @@ import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { StageManagerDialog } from '@/components/crm/StageManagerDialog';
 
 export default function CrmDashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [addOpen, setAddOpen] = useState(false);
@@ -25,7 +26,8 @@ export default function CrmDashboard() {
   const { leads, loading, stats, addLead, updateLead, updateLeadStage, deleteLead } = useLeads({
     stageFilter: stageFilter || undefined,
     search: search || undefined,
-  });
+  }, user?.id);
+  const { profiles } = useProfilesDisplay();
 
   return (
     <MainLayout>
@@ -69,14 +71,14 @@ export default function CrmDashboard() {
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
             ) : (
-              <LeadTable leads={leads} stages={stages} isAdmin={isAdmin} onUpdateLead={updateLead} onDeleteLead={deleteLead} onUpdateStage={updateLeadStage} />
+              <LeadTable leads={leads} stages={stages} profiles={profiles} isAdmin={isAdmin} onUpdateLead={updateLead} onDeleteLead={deleteLead} onUpdateStage={updateLeadStage} />
             )}
           </TabsContent>
           <TabsContent value="kanban" className="mt-4">
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
             ) : (
-              <LeadKanban leads={leads} stages={activeStages} onUpdateStage={updateLeadStage} />
+              <LeadKanban leads={leads} stages={activeStages} profiles={profiles} onUpdateStage={updateLeadStage} />
             )}
           </TabsContent>
         </Tabs>

@@ -9,24 +9,32 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, ExternalLink, Pencil, Save, X } from 'lucide-react';
 import { Lead } from '@/hooks/useLeads';
 import { LeadStage } from '@/hooks/useLeadStages';
+import { ProfileDisplay } from '@/hooks/useProfilesDisplay';
 import { format } from 'date-fns';
 
 interface LeadTableProps {
   leads: Lead[];
   stages: LeadStage[];
+  profiles: ProfileDisplay[];
   isAdmin: boolean;
   onUpdateLead: (id: number, updates: Partial<Lead>) => Promise<boolean>;
   onDeleteLead: (id: number) => Promise<boolean>;
   onUpdateStage: (id: number, stageId: string) => Promise<boolean>;
 }
 
-export function LeadTable({ leads, stages, isAdmin, onUpdateLead, onDeleteLead, onUpdateStage }: LeadTableProps) {
+export function LeadTable({ leads, stages, profiles, isAdmin, onUpdateLead, onDeleteLead, onUpdateStage }: LeadTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkStageOpen, setBulkStageOpen] = useState(false);
   const [bulkStageId, setBulkStageId] = useState('');
+
+  const getProfileName = (userId: string | null) => {
+    if (!userId) return '—';
+    const p = profiles.find(p => p.user_id === userId);
+    return p?.full_name || userId;
+  };
 
   const toggleSelect = (id: number) => {
     const next = new Set(selectedIds);
@@ -107,13 +115,15 @@ export function LeadTable({ leads, stages, isAdmin, onUpdateLead, onDeleteLead, 
               <TableHead>WhatsApp</TableHead>
               <TableHead>Website</TableHead>
               <TableHead>Stage</TableHead>
+              <TableHead>Last Contacted</TableHead>
+              <TableHead>Last Contacted By</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="w-20">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {leads.length === 0 && (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
             )}
             {leads.map(lead => {
               const stage = getStage(lead.stage_id);
@@ -139,8 +149,8 @@ export function LeadTable({ leads, stages, isAdmin, onUpdateLead, onDeleteLead, 
                     {isEditing ? (
                       <Input className="h-8" value={editData.website || ''} onChange={e => setEditData(p => ({ ...p, website: e.target.value }))} />
                     ) : lead.website ? (
-                      <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                        <ExternalLink className="h-3 w-3" /> Link
+                      <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 max-w-[200px] truncate">
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" /> <span className="truncate">{lead.website}</span>
                       </a>
                     ) : '—'}
                   </TableCell>
@@ -160,6 +170,8 @@ export function LeadTable({ leads, stages, isAdmin, onUpdateLead, onDeleteLead, 
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.updated_at), 'MMM d, yyyy')}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getProfileName(lead.updated_by)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.created_at), 'MMM d, yyyy')}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
