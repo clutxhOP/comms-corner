@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.subreddit_watch_subreddit_unique;
