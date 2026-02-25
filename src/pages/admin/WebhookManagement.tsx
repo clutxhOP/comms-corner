@@ -150,7 +150,7 @@ export default function WebhookManagement() {
                   <label className="text-sm font-medium">
                     Trigger On (select one or more)
                   </label>
-                  <div className="space-y-2 border rounded-lg p-3">
+                  <div className="space-y-2 border rounded-lg p-3 max-h-48 overflow-y-auto">
                     {TRIGGER_ACTIONS.map(action => (
                       <div key={action.value} className="flex items-center space-x-2">
                         <Checkbox
