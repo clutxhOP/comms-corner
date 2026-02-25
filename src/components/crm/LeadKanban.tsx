@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Mail, Phone, Clock, User, DollarSign, Globe } from 'lucide-react';
+import { ExternalLink, Phone, Clock, User, DollarSign, Globe, Link } from 'lucide-react';
 import { Lead } from '@/hooks/useLeads';
 import { LeadStage } from '@/hooks/useLeadStages';
 import { LeadSource } from '@/hooks/useLeadSources';
@@ -46,9 +46,12 @@ function KanbanCard({ lead, stages, sources, profiles, isDragging }: { lead: Lea
             )}
           </div>
           <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
-          {lead.email && (
+          {lead.profile_url && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-              <Mail className="h-3 w-3 flex-shrink-0" /> {lead.email}
+              <Link className="h-3 w-3 flex-shrink-0" />
+              <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="hover:text-primary truncate">
+                {lead.profile_url}
+              </a>
             </div>
           )}
           {lead.whatsapp && (
