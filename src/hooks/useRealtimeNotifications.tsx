@@ -188,20 +188,8 @@ export function useRealtimeNotifications() {
         description: `New entry: "${entry.name}"`,
       });
 
-      // Persist to bell notifications
-      if (user) {
-        supabase
-          .from('chat_notifications')
-          .insert({
-            user_id: user.id,
-            sender_id: user.id,
-            sender_name: 'Outreach FU',
-            message_preview: `New entry (${label}): "${entry.name}"`,
-          })
-          .then(({ error }) => {
-            if (error) console.error('Error inserting outreach FU bell notification:', error);
-          });
-      }
+      // Bell notifications are handled by a database trigger (notify_outreach_fu_bell)
+      // which inserts chat_notifications for all ops and admin users automatically.
 
       // Browser push (fires when tab is backgrounded)
       showOutreachFUNotification(tableName, entry.name);
