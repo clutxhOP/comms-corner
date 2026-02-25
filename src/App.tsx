@@ -24,6 +24,7 @@ import CustomerDashboard from "./pages/admin/CustomerDashboard";
 import Outreach from "./pages/Outreach";
 import SubredditWatch from "./pages/admin/SubredditWatch";
 import CrmDashboard from "./pages/crm/CrmDashboard";
+import OutreachFU from "./pages/admin/OutreachFU";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,11 @@ const App = () => (
               <Route path="/crm" element={
                 <ProtectedRoute requireOpsOrAdmin>
                   <CrmDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/outreach-fu" element={
+                <ProtectedRoute requireOpsOrAdmin>
+                  <OutreachFU />
                 </ProtectedRoute>
               } />
               {/* Keep old route for backwards compatibility */}

@@ -16,6 +16,7 @@ import {
   Share2,
   Radio,
   Contact,
+  Repeat,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,7 @@ const adminNavItems = [
   { title: "Channels", url: "/channels", icon: Hash },
   { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
   { title: "CRM", url: "/crm", icon: Contact },
+  { title: "Outreach FU", url: "/outreach-fu", icon: Repeat },
 ];
 
 // Items accessible by dev and ops (non-admin)
@@ -71,6 +73,7 @@ const opsNavItems = [
   { title: "Social Engagement", url: "/outreach", icon: Share2 },
   { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
   { title: "CRM", url: "/crm", icon: Contact },
+  { title: "Outreach FU", url: "/outreach-fu", icon: Repeat },
 ];
 
 export function AppSidebar() {

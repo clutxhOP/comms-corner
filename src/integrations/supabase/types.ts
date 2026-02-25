@@ -843,6 +843,114 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_fu_day_2: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: number
+          name: string
+          proof: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name: string
+          proof: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name?: string
+          proof?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_fu_day_5: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: number
+          name: string
+          proof: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name: string
+          proof: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name?: string
+          proof?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_fu_day_7: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: number
+          name: string
+          proof: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name: string
+          proof: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name?: string
+          proof?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_fu_dynamic: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: number
+          name: string
+          proof: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name: string
+          proof: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: never
+          name?: string
+          proof?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       personal_access_tokens: {
         Row: {
           created_at: string

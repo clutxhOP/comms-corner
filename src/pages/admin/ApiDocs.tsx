@@ -2,7 +2,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2, Contact, CalendarClock } from "lucide-react";
+import { Code, FileText, Users, Send, Copy, Check, Key, Eye, EyeOff, Hash, Share2, Contact, CalendarClock, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -199,7 +199,7 @@ export default function ApiDocs() {
 
         {/* Endpoints */}
         <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Tasks
@@ -223,6 +223,10 @@ export default function ApiDocs() {
             <TabsTrigger value="crm" className="flex items-center gap-2">
               <Contact className="h-4 w-4" />
               CRM
+            </TabsTrigger>
+            <TabsTrigger value="outreach-fu" className="flex items-center gap-2">
+              <Repeat className="h-4 w-4" />
+              Outreach FU
             </TabsTrigger>
           </TabsList>
 
@@ -1260,6 +1264,135 @@ Body:
   }
 }`} />
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Outreach FU API */}
+          <TabsContent value="outreach-fu" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Outreach Follow-Up Endpoints</CardTitle>
+                <CardDescription>Add follow-up entries to Day 2, Day 5, Day 7, or Dynamic tables. Each fires a webhook trigger and sends an OPS notification.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Endpoint
+                  method="POST"
+                  path="/outreach-fu-day-2"
+                  description="Add a new Day 2 follow-up entry. Fires outreach_fu_day_2 webhook trigger."
+                  auth="Bearer <JWT or PAT>"
+                  requestBody={`{
+  "name": "string (required, max 500 chars)",
+  "proof": "string (required, max 2000 chars — plain text or URL)",
+  "created_at": "timestamptz (optional, defaults to now())"
+}`}
+                  responseExample={`{
+  "id": 1,
+  "name": "Acme Corp",
+  "proof": "https://example.com/proof",
+  "created_at": "2026-02-25T10:00:00Z",
+  "done": false,
+  "updated_at": "2026-02-25T10:00:00Z"
+}`}
+                />
+                <Endpoint
+                  method="POST"
+                  path="/outreach-fu-day-5"
+                  description="Add a new Day 5 follow-up entry. Fires outreach_fu_day_5 webhook trigger."
+                  auth="Bearer <JWT or PAT>"
+                  requestBody={`{
+  "name": "string (required, max 500 chars)",
+  "proof": "string (required, max 2000 chars)",
+  "created_at": "timestamptz (optional)"
+}`}
+                  responseExample={`{
+  "id": 1,
+  "name": "Lead Name",
+  "proof": "Follow-up completed via email",
+  "created_at": "2026-02-25T10:00:00Z",
+  "done": false,
+  "updated_at": "2026-02-25T10:00:00Z"
+}`}
+                />
+                <Endpoint
+                  method="POST"
+                  path="/outreach-fu-day-7"
+                  description="Add a new Day 7 follow-up entry. Fires outreach_fu_day_7 webhook trigger."
+                  auth="Bearer <JWT or PAT>"
+                  requestBody={`{
+  "name": "string (required, max 500 chars)",
+  "proof": "string (required, max 2000 chars)",
+  "created_at": "timestamptz (optional)"
+}`}
+                  responseExample={`{
+  "id": 1,
+  "name": "Lead Name",
+  "proof": "https://proof-link.com",
+  "created_at": "2026-02-25T10:00:00Z",
+  "done": false,
+  "updated_at": "2026-02-25T10:00:00Z"
+}`}
+                />
+                <Endpoint
+                  method="POST"
+                  path="/outreach-fu-dynamic"
+                  description="Add a new Dynamic follow-up entry. Fires outreach_fu_dynamic webhook trigger."
+                  auth="Bearer <JWT or PAT>"
+                  requestBody={`{
+  "name": "string (required, max 500 chars)",
+  "proof": "string (required, max 2000 chars)",
+  "created_at": "timestamptz (optional)"
+}`}
+                  responseExample={`{
+  "id": 1,
+  "name": "Lead Name",
+  "proof": "Custom follow-up proof text",
+  "created_at": "2026-02-25T10:00:00Z",
+  "done": false,
+  "updated_at": "2026-02-25T10:00:00Z"
+}`}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Sample cURL</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock
+                  code={`curl -X POST ${BASE_URL}/outreach-fu-day-2 \\
+  -H "Content-Type: application/json" \\
+  -H "apikey: YOUR_SUPABASE_ANON_KEY" \\
+  -H "Authorization: Bearer YOUR_JWT_OR_PAT" \\
+  -d '{
+    "name": "Acme Corp",
+    "proof": "https://example.com/proof"
+  }'`}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Webhook Payload</CardTitle>
+                <CardDescription>Sent to registered webhooks when an entry is created</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock
+                  code={`{
+  "trigger": "outreach_fu_day_2",
+  "data": {
+    "id": 1,
+    "name": "Acme Corp",
+    "proof": "https://example.com/proof",
+    "created_at": "2026-02-25T10:00:00Z",
+    "done": false,
+    "updated_at": "2026-02-25T10:00:00Z"
+  },
+  "timestamp": "2026-02-25T10:00:00Z"
+}`}
+                />
               </CardContent>
             </Card>
           </TabsContent>
