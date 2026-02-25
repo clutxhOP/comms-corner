@@ -1,61 +1,62 @@
 
 
-# Create CRM Edge Function Endpoints
+# Add OPS Dashboard Notifications for Outreach FU Entries
 
 ## Problem
-The current API docs reference direct PostgREST paths (`/rest/v1/leads`, `/rest/v1/lead_stages`, etc.) which don't work as edge function endpoints from external tools like n8n. The user expects dedicated edge functions prefixed with `/crm-`.
+When new data is added to outreach FU tables, no in-app notification appears on the OPS dashboard. The edge functions send email notifications via `send-task-notifications`, but there are no browser/in-app notifications, and the database webhook triggers are not attached.
+
+## Root Cause
+1. **Missing database triggers**: The function `notify_outreach_fu_webhook` exists but no triggers are bound to the outreach FU tables (`outreach_fu_day_2`, `outreach_fu_day_5`, `outreach_fu_day_7`, `outreach_fu_dynamic`), so webhooks never fire on INSERT.
+2. **No realtime browser notifications**: `useRealtimeNotifications` only subscribes to the `tasks` table. There is no subscription for outreach FU tables, so OPS users never see browser push notifications for new entries.
 
 ## Plan
 
-### Step 1: Create `crm-leads` Edge Function
-Create `supabase/functions/crm-leads/index.ts` — a new edge function handling full CRUD for the `leads` table:
-- **POST** — Insert a new lead (requires `name`)
-- **GET** — List leads with optional query params (`stage_id`, `source`, `name` ilike search)
-- **PATCH** — Update a lead by `id` query param
-- **DELETE** — Delete a lead by `id` query param
-- Auth: JWT or PAT validation (reuse the same pattern from `manage-tasks`)
-- Role check: admin or ops for all ops, admin-only for DELETE
+### Step 1: Database Migration -- Create Triggers
+Create triggers on all four outreach FU tables to fire `notify_outreach_fu_webhook` on INSERT:
 
-### Step 2: Create `crm-stages` Edge Function
-Create `supabase/functions/crm-stages/index.ts` — CRUD for `lead_stages` table:
-- **GET** — List all stages ordered by position
-- **POST** — Create a stage
-- **PATCH** — Update a stage by `id`
-- **DELETE** — Delete a stage by `id`
+```sql
+CREATE TRIGGER trg_outreach_fu_day_2_webhook
+  AFTER INSERT ON public.outreach_fu_day_2
+  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
 
-### Step 3: Create `crm-sources` Edge Function
-Create `supabase/functions/crm-sources/index.ts` — CRUD for `lead_sources` table:
-- **GET** — List all sources ordered by position
-- **POST** — Create a source
-- **PATCH** — Update a source by `id`
-- **DELETE** — Delete a source by `id`
+CREATE TRIGGER trg_outreach_fu_day_5_webhook
+  AFTER INSERT ON public.outreach_fu_day_5
+  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
 
-### Step 4: Create `crm-webhooks` Edge Function
-Create `supabase/functions/crm-webhooks/index.ts` — CRUD for `crm_webhooks` table:
-- **GET** — List webhooks
-- **POST** — Create webhook (admin only)
-- **PATCH** — Update webhook (admin only)
-- **DELETE** — Delete webhook (admin only)
+CREATE TRIGGER trg_outreach_fu_day_7_webhook
+  AFTER INSERT ON public.outreach_fu_day_7
+  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
 
-### Step 5: Create `crm-webhook-events` Edge Function
-Create `supabase/functions/crm-webhook-events/index.ts` — Read-only for `crm_webhook_events`:
-- **GET** — List webhook events with optional `status` and `event_type` filters
+CREATE TRIGGER trg_outreach_fu_dynamic_webhook
+  AFTER INSERT ON public.outreach_fu_dynamic
+  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
+```
 
-### Step 6: Register all new functions in `supabase/config.toml`
-Add `verify_jwt = false` entries for `crm-leads`, `crm-stages`, `crm-sources`, `crm-webhooks`, `crm-webhook-events`.
+Also enable realtime for these tables:
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_2;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_5;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_7;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_dynamic;
+```
 
-### Step 7: Update API Docs
-Update `src/pages/admin/ApiDocs.tsx` to change all CRM endpoint paths:
-- `/rest/v1/leads` → `/crm-leads`
-- `/rest/v1/lead_stages` → `/crm-stages`
-- `/rest/v1/lead_sources` → `/crm-sources`
-- `/rest/v1/crm_webhooks` → `/crm-webhooks`
-- `/rest/v1/crm_webhook_events` → `/crm-webhook-events`
+### Step 2: Add Realtime Browser Notifications
+Update `src/hooks/useRealtimeNotifications.tsx` to subscribe to INSERT events on all four outreach FU tables. When a new entry arrives, call `showNotification()` with a title like "New Outreach FU (Day 2)" and body containing the entry name, so OPS users see a browser push notification immediately.
 
-Query param format will change from PostgREST style (`?id=eq.5`) to simple params (`?id=5`).
+### Step 3: Also create CRM triggers (while at it)
+The `notify_crm_webhook` and `notify_crm_followup_webhook` functions also have no triggers attached. Create them:
 
-### Technical Details
-- Each edge function follows the existing pattern from `manage-tasks/index.ts`: CORS headers, PAT + JWT auth, service-role Supabase client for DB operations
-- No changes to the frontend hooks (`useLeads`, etc.) — those continue using the Supabase JS client directly
-- No database schema changes needed
+```sql
+CREATE TRIGGER trg_leads_crm_webhook
+  AFTER INSERT OR UPDATE OR DELETE ON public.leads
+  FOR EACH ROW EXECUTE FUNCTION public.notify_crm_webhook();
+
+CREATE TRIGGER trg_crm_follow_ups_webhook
+  AFTER INSERT OR UPDATE ON public.crm_follow_ups
+  FOR EACH ROW EXECUTE FUNCTION public.notify_crm_followup_webhook();
+```
+
+### Files Changed
+- **Migration SQL** -- triggers + realtime publication
+- `src/hooks/useRealtimeNotifications.tsx` -- add outreach FU table subscriptions with browser notifications for OPS users
 
