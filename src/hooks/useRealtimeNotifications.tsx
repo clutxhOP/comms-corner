@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useBrowserNotifications } from './useBrowserNotifications';
+import { toast } from 'sonner';
 
 interface Task {
   id: string;
@@ -142,7 +143,7 @@ export function useRealtimeNotifications() {
 
   // Subscribe to outreach FU table inserts
   useEffect(() => {
-    if (!user || permissionStatus !== 'granted') return;
+    if (!user) return;
 
     const outreachTables = [
       'outreach_fu_day_2',
@@ -174,6 +175,20 @@ export function useRealtimeNotifications() {
 
       if (new Date(entry.created_at) <= new Date(mountTimeRef.current)) return;
 
+      const labelMap: Record<string, string> = {
+        outreach_fu_day_2: 'Day 2',
+        outreach_fu_day_5: 'Day 5',
+        outreach_fu_day_7: 'Day 7',
+        outreach_fu_dynamic: 'Dynamic',
+      };
+      const label = labelMap[tableName] || tableName;
+
+      // In-app toast (always fires)
+      toast(`New Outreach FU (${label})`, {
+        description: `New entry: "${entry.name}"`,
+      });
+
+      // Browser push (fires when tab is backgrounded)
       showOutreachFUNotification(tableName, entry.name);
     }
 
