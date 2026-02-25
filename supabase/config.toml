@@ -32,3 +32,18 @@ verify_jwt = false
 
 [functions.manage-crm-followups]
 verify_jwt = false
+
+[functions.crm-leads]
+verify_jwt = false
+
+[functions.crm-stages]
+verify_jwt = false
+
+[functions.crm-sources]
+verify_jwt = false
+
+[functions.crm-webhooks]
+verify_jwt = false
+
+[functions.crm-webhook-events]
+verify_jwt = false
