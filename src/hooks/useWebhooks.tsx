@@ -41,6 +41,10 @@ export const TRIGGER_ACTIONS = [
   { value: "lead_reassigned", label: "Lead Reassigned" },
   { value: "awaiting_business_approved", label: "Awaiting Business Approved" },
   { value: "awaiting_business_disapproved", label: "Awaiting Business Disapproved" },
+  { value: "outreach_fu_day_2", label: "Outreach FU Day 2" },
+  { value: "outreach_fu_day_5", label: "Outreach FU Day 5" },
+  { value: "outreach_fu_day_7", label: "Outreach FU Day 7" },
+  { value: "outreach_fu_dynamic", label: "Outreach FU Dynamic" },
 ] as const;
 
 export function useWebhooks() {
