@@ -880,18 +880,18 @@ Body:
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Contact className="h-5 w-5" />
-                  CRM API (Direct Table Operations)
+                  CRM API (Edge Function Endpoints)
                 </CardTitle>
                 <CardDescription>
-                  Manage CRM leads and pipeline stages. Admin and Ops access only (Delete: Admin only).
+                  Manage CRM leads and pipeline stages via dedicated edge functions. Auth: JWT or PAT. Admin and Ops access (Delete: Admin only).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Endpoint
                   method="POST"
-                  path="/rest/v1/leads"
+                  path="/crm-leads"
                   description="Create a new lead."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "name": "Lead Name (required — only required field)",
   "profile_url": "https://profile.example.com (optional)",
@@ -914,13 +914,13 @@ Body:
 
                 <Endpoint
                   method="GET"
-                  path="/rest/v1/leads"
+                  path="/crm-leads"
                   description="List leads with optional filters."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   queryParams={[
-                    { name: "stage_id", type: "text", description: "Filter by stage (eq.new-lead)" },
-                    { name: "source", type: "text", description: "Filter by source (eq.reddit)" },
-                    { name: "name", type: "text", description: "Search by name (ilike.%search%)" },
+                    { name: "stage_id", type: "text", description: "Filter by stage ID" },
+                    { name: "source", type: "text", description: "Filter by source" },
+                    { name: "name", type: "text", description: "Search by name (partial match)" },
                   ]}
                   responseExample={`[
   {
@@ -937,9 +937,9 @@ Body:
 
                 <Endpoint
                   method="PATCH"
-                  path="/rest/v1/leads?id=eq.<id>"
+                  path="/crm-leads?id=<id>"
                   description="Update a lead."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "stage_id": "qualified",
   "profile_url": "https://updated-profile.example.com",
@@ -950,16 +950,16 @@ Body:
 
                 <Endpoint
                   method="DELETE"
-                  path="/rest/v1/leads?id=eq.<id>"
+                  path="/crm-leads?id=<id>"
                   description="Delete a lead. Admin only."
-                  auth="Admin only (JWT)"
+                  auth="Admin only (JWT or PAT)"
                 />
 
                 <Endpoint
                   method="GET"
-                  path="/rest/v1/lead_stages"
+                  path="/crm-stages"
                   description="List all pipeline stages sorted by position."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   responseExample={`[
   { "id": "new-lead", "name": "New Lead", "color": "#28a745", "position": 1, "is_active": true },
   { "id": "contacted", "name": "Contacted", "color": "#007BFF", "position": 2, "is_active": true }
@@ -968,9 +968,9 @@ Body:
 
                 <Endpoint
                   method="POST"
-                  path="/rest/v1/lead_stages"
+                  path="/crm-stages"
                   description="Create a new pipeline stage."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "id": "custom-stage",
   "name": "Custom Stage",
@@ -981,9 +981,9 @@ Body:
 
                 <Endpoint
                   method="PATCH"
-                  path="/rest/v1/lead_stages?id=eq.<id>"
+                  path="/crm-stages?id=<id>"
                   description="Update a pipeline stage."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "name": "Updated Name",
   "color": "#new-color",
@@ -993,9 +993,9 @@ Body:
 
                 <Endpoint
                   method="DELETE"
-                  path="/rest/v1/lead_stages?id=eq.<id>"
+                  path="/crm-stages?id=<id>"
                   description="Delete a pipeline stage."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                 />
 
                 {/* Lead Sources */}
@@ -1005,9 +1005,9 @@ Body:
 
                 <Endpoint
                   method="GET"
-                  path="/rest/v1/lead_sources"
+                  path="/crm-sources"
                   description="List all lead sources sorted by position."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   responseExample={`[
   { "id": "reddit", "name": "Reddit", "icon": null, "is_active": true, "position": 1 },
   { "id": "twitter", "name": "X (Twitter)", "icon": null, "is_active": true, "position": 2 }
@@ -1016,9 +1016,9 @@ Body:
 
                 <Endpoint
                   method="POST"
-                  path="/rest/v1/lead_sources"
+                  path="/crm-sources"
                   description="Create a new lead source."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "id": "linkedin",
   "name": "LinkedIn",
@@ -1028,9 +1028,9 @@ Body:
 
                 <Endpoint
                   method="PATCH"
-                  path="/rest/v1/lead_sources?id=eq.<id>"
+                  path="/crm-sources?id=<id>"
                   description="Update a lead source."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                   requestBody={`{
   "name": "Updated Name",
   "is_active": false
@@ -1039,9 +1039,9 @@ Body:
 
                 <Endpoint
                   method="DELETE"
-                  path="/rest/v1/lead_sources?id=eq.<id>"
+                  path="/crm-sources?id=<id>"
                   description="Delete a lead source."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin, Ops, or Dev (JWT or PAT)"
                 />
 
                 {/* CRM Webhooks */}
@@ -1054,9 +1054,9 @@ Body:
 
                 <Endpoint
                   method="GET"
-                  path="/rest/v1/crm_webhooks"
+                  path="/crm-webhooks"
                   description="List all CRM webhooks."
-                  auth="Admin (full) or Ops (read-only)"
+                  auth="Admin (full) or Ops (read-only) — JWT or PAT"
                   responseExample={`[
   {
     "id": "uuid",
@@ -1071,9 +1071,9 @@ Body:
 
                 <Endpoint
                   method="POST"
-                  path="/rest/v1/crm_webhooks"
+                  path="/crm-webhooks"
                   description="Create a new CRM webhook. Admin only."
-                  auth="Admin only (JWT)"
+                  auth="Admin only (JWT or PAT)"
                   requestBody={`{
   "name": "CRM Lead Sync",
   "url": "https://example.com/webhook",
@@ -1085,9 +1085,9 @@ Body:
 
                 <Endpoint
                   method="PATCH"
-                  path="/rest/v1/crm_webhooks?id=eq.<id>"
+                  path="/crm-webhooks?id=<id>"
                   description="Update a CRM webhook. Admin only."
-                  auth="Admin only (JWT)"
+                  auth="Admin only (JWT or PAT)"
                   requestBody={`{
   "active": false,
   "events": ["lead.created"]
@@ -1096,19 +1096,19 @@ Body:
 
                 <Endpoint
                   method="DELETE"
-                  path="/rest/v1/crm_webhooks?id=eq.<id>"
+                  path="/crm-webhooks?id=<id>"
                   description="Delete a CRM webhook. Admin only."
-                  auth="Admin only (JWT)"
+                  auth="Admin only (JWT or PAT)"
                 />
 
                 <Endpoint
                   method="GET"
-                  path="/rest/v1/crm_webhook_events"
+                  path="/crm-webhook-events"
                   description="List CRM webhook delivery logs."
-                  auth="Admin or Ops (JWT)"
+                  auth="Admin or Ops (JWT or PAT)"
                   queryParams={[
-                    { name: "status", type: "text", description: "Filter by status (eq.pending, eq.sent, eq.failed)" },
-                    { name: "event_type", type: "text", description: "Filter by event type (eq.lead.created)" },
+                    { name: "status", type: "text", description: "Filter by status (pending, sent, failed)" },
+                    { name: "event_type", type: "text", description: "Filter by event type (lead.created)" },
                   ]}
                   responseExample={`[
   {
