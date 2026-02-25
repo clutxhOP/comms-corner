@@ -12,6 +12,13 @@ interface Task {
   created_at: string;
 }
 
+interface OutreachFUEntry {
+  id: number;
+  name: string;
+  proof: string;
+  created_at: string;
+}
+
 interface ChatNotification {
   id: string;
   user_id: string;
@@ -26,11 +33,12 @@ interface ChatNotification {
 
 export function useRealtimeNotifications() {
   const { user } = useAuth();
-  const { showTaskAssignmentNotification, showMentionNotification, permissionStatus } =
+  const { showTaskAssignmentNotification, showMentionNotification, showOutreachFUNotification, permissionStatus } =
     useBrowserNotifications();
   const mountTimeRef = useRef<string>(new Date().toISOString());
   const processedTasksRef = useRef<Set<string>>(new Set());
   const processedMentionsRef = useRef<Set<string>>(new Set());
+  const processedOutreachRef = useRef<Set<string>>(new Set());
 
   // Subscribe to new task assignments
   useEffect(() => {
@@ -132,6 +140,48 @@ export function useRealtimeNotifications() {
     };
   }, [user, permissionStatus, showMentionNotification]);
 
+  // Subscribe to outreach FU table inserts
+  useEffect(() => {
+    if (!user || permissionStatus !== 'granted') return;
+
+    const outreachTables = [
+      'outreach_fu_day_2',
+      'outreach_fu_day_5',
+      'outreach_fu_day_7',
+      'outreach_fu_dynamic',
+    ] as const;
+
+    const channel = supabase
+      .channel('outreach-fu-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'outreach_fu_day_2' }, (payload) => {
+        handleOutreachInsert('outreach_fu_day_2', payload.new as OutreachFUEntry);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'outreach_fu_day_5' }, (payload) => {
+        handleOutreachInsert('outreach_fu_day_5', payload.new as OutreachFUEntry);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'outreach_fu_day_7' }, (payload) => {
+        handleOutreachInsert('outreach_fu_day_7', payload.new as OutreachFUEntry);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'outreach_fu_dynamic' }, (payload) => {
+        handleOutreachInsert('outreach_fu_dynamic', payload.new as OutreachFUEntry);
+      })
+      .subscribe();
+
+    function handleOutreachInsert(tableName: string, entry: OutreachFUEntry) {
+      const key = `${tableName}-${entry.id}`;
+      if (processedOutreachRef.current.has(key)) return;
+      processedOutreachRef.current.add(key);
+
+      if (new Date(entry.created_at) <= new Date(mountTimeRef.current)) return;
+
+      showOutreachFUNotification(tableName, entry.name);
+    }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, permissionStatus, showOutreachFUNotification]);
+
   // Clean up old processed IDs periodically to prevent memory bloat
   useEffect(() => {
     const cleanup = setInterval(() => {
@@ -141,7 +191,10 @@ export function useRealtimeNotifications() {
       if (processedMentionsRef.current.size > 1000) {
         processedMentionsRef.current.clear();
       }
-    }, 60000); // Every minute
+      if (processedOutreachRef.current.size > 1000) {
+        processedOutreachRef.current.clear();
+      }
+    }, 60000);
 
     return () => clearInterval(cleanup);
   }, []);
