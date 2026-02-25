@@ -1,33 +1,33 @@
 
 
-# Fix Outreach FU Notifications
+# Add Outreach FU Notifications to the Bell
 
-## Problem
-The database triggers, realtime publication, and frontend realtime subscriptions are all correctly in place. The reason notifications don't appear is that `showNotification()` in `useBrowserNotifications.tsx` **skips notifications when the browser tab is visible and focused** (line 83). Since OPS users are actively on the dashboard when new data arrives, no notification ever fires.
+## What Changes
 
-## Root Cause
-```
-if (!forceShow && document.visibilityState === 'visible' && document.hasFocus()) {
-  return null; // <-- silently drops the notification
-}
-```
+When a new Outreach FU entry arrives via realtime, in addition to the existing toast and browser push, insert a row into the `chat_notifications` table so it appears in the notification bell dropdown.
 
-Additionally, browser notification permission must be `'granted'` or the entire subscription is skipped (line 145 of `useRealtimeNotifications.tsx`).
+## Technical Details
 
-## Plan
+### 1. `src/hooks/useRealtimeNotifications.tsx`
+Inside `handleOutreachInsert`, after the toast call, insert a notification into `chat_notifications`:
+- `user_id`: current user's ID
+- `sender_name`: `"Outreach FU"` (used as the display name)
+- `message_preview`: `"New entry (Day 2): \"John Doe\""` — contains the label and entry name
+- `sender_id`: current user's ID (required field, system-generated notification)
+- `channel_id`: `null`
+- `message_id`: `null`
 
-### Change: Add in-app toast notifications for Outreach FU inserts
+### 2. `src/components/chat/NotificationBell.tsx`
+Update the notification row rendering to handle non-mention notifications:
+- Instead of always showing `"{sender_name} mentioned you"`, check if `channel_id` is null
+- If `channel_id` is null (system notification like outreach FU), show `sender_name` as a bold title and `message_preview` as the body directly
+- If `channel_id` exists (chat mention), keep existing "mentioned you" behavior
+- When clicking a notification without a `channel_id`, don't navigate to `/chat` — instead just mark as read and close the popover
 
-Modify `src/hooks/useRealtimeNotifications.tsx` to import `toast` from `sonner` and fire a toast inside `handleOutreachInsert` **in addition to** the existing browser notification call. This mirrors how other parts of the app use sonner toasts for in-app alerts.
-
-- Add `import { toast } from 'sonner'`
-- Inside `handleOutreachInsert`, add a `toast()` call with the table label and entry name before calling `showOutreachFUNotification`
-- Remove the `permissionStatus !== 'granted'` guard from the outreach FU subscription `useEffect` so toasts fire regardless of browser notification permission
-- Keep the browser notification call as-is (it will still fire when the tab is backgrounded)
-
-### Technical Detail
-The `showOutreachFUNotification` browser push will continue to work when the tab is not focused. The new toast ensures users see alerts when they are actively on the page. No existing code is altered or deleted -- only additive toast logic within the existing `handleOutreachInsert` function.
+### No Database Changes
+The `chat_notifications` table already supports nullable `channel_id` and `message_id`, so no migration is needed. No existing structures are altered.
 
 ### Files Changed
-- `src/hooks/useRealtimeNotifications.tsx` -- add sonner toast import and toast call in outreach FU handler, relax permission guard for that subscription
+- `src/hooks/useRealtimeNotifications.tsx` — add `supabase.from('chat_notifications').insert(...)` in `handleOutreachInsert`
+- `src/components/chat/NotificationBell.tsx` — conditional rendering for system vs. mention notifications
 
