@@ -19,11 +19,13 @@ export function NotificationBell() {
       await markAsRead(notification.id);
     }
     setOpen(false);
-    // Navigate to chat, deep-linking to the mentioned message when possible
-    const params = new URLSearchParams();
-    if (notification.channel_id) params.set("channel", notification.channel_id);
-    if (notification.message_id) params.set("message", notification.message_id);
-    navigate(`/chat?${params.toString()}`);
+    // System notifications (no channel) just mark as read; chat mentions deep-link
+    if (notification.channel_id) {
+      const params = new URLSearchParams();
+      params.set("channel", notification.channel_id);
+      if (notification.message_id) params.set("message", notification.message_id);
+      navigate(`/chat?${params.toString()}`);
+    }
   };
 
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
@@ -89,7 +91,9 @@ export function NotificationBell() {
                     <div className="flex items-start gap-2">
                       {!notification.read_at && <span className="h-2 w-2 rounded-full bg-primary mt-2 shrink-0" />}
                       <div className={cn("flex-1 min-w-0 pr-8", notification.read_at && "ml-4")}>
-                        <p className="text-sm font-medium truncate">{notification.sender_name} mentioned you</p>
+                        <p className="text-sm font-medium truncate">
+                          {notification.channel_id ? `${notification.sender_name} mentioned you` : notification.sender_name}
+                        </p>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{notification.message_preview}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
