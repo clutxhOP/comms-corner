@@ -893,12 +893,12 @@ Body:
                   description="Create a new lead."
                   auth="Admin or Ops (JWT)"
                   requestBody={`{
-  "name": "Lead Name (required)",
-  "email": "email@example.com",
-  "whatsapp": "+1234567890",
-  "website": "https://example.com",
-  "stage_id": "new-lead",
-  "source": "reddit",
+  "name": "Lead Name (required — only required field)",
+  "profile_url": "https://profile.example.com (optional)",
+  "whatsapp": "+1234567890 (optional)",
+  "website": "https://example.com (optional)",
+  "stage_id": "new-lead (optional)",
+  "source": "reddit (optional)",
   "value": 5000,
   "metadata": {}
 }`}
@@ -926,7 +926,7 @@ Body:
   {
     "id": 1,
     "name": "Lead Name",
-    "email": "test@test.com",
+    "profile_url": "https://profile.example.com",
     "stage_id": "contacted",
     "source": "twitter",
     "value": 2500,
@@ -942,7 +942,7 @@ Body:
                   auth="Admin or Ops (JWT)"
                   requestBody={`{
   "stage_id": "qualified",
-  "email": "updated@email.com",
+  "profile_url": "https://updated-profile.example.com",
   "source": "facebook",
   "value": 10000
 }`}
@@ -1241,7 +1241,7 @@ Body:
   "lead": {
     "id": 123,
     "name": "Acme Corp",
-    "email": "contact@acme.com",
+    "profile_url": "https://acme.com/profile",
     "whatsapp": "+1234567890",
     "website": "https://acme.com",
     "stage_id": "contacted",
@@ -1259,7 +1259,7 @@ Body:
   "lead": {
     "id": 123,
     "name": "Acme Corp",
-    "email": "contact@acme.com",
+    "profile_url": "https://acme.com/profile",
     ...
   }
 }`} />

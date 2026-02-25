@@ -60,7 +60,7 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
 
   const startEdit = (lead: Lead) => {
     setEditingId(lead.id);
-    setEditData({ name: lead.name, email: lead.email, whatsapp: lead.whatsapp, website: lead.website, source: lead.source, value: lead.value });
+    setEditData({ name: lead.name, profile_url: lead.profile_url, whatsapp: lead.whatsapp, website: lead.website, source: lead.source, value: lead.value });
   };
 
   const saveEdit = async () => {
@@ -119,7 +119,7 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
               </TableHead>
               <TableHead className="w-16">#</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Profile URL</TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Website</TableHead>
               <TableHead>Source</TableHead>
@@ -146,7 +146,13 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
                     {isEditing ? <Input className="h-8" value={editData.name || ''} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} /> : lead.name}
                   </TableCell>
                   <TableCell>
-                    {isEditing ? <Input className="h-8" value={editData.email || ''} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} /> : lead.email || '—'}
+                    {isEditing ? (
+                      <Input className="h-8" type="url" value={editData.profile_url || ''} onChange={e => setEditData(p => ({ ...p, profile_url: e.target.value }))} placeholder="https://..." />
+                    ) : lead.profile_url ? (
+                      <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 max-w-[200px] truncate">
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" /> <span className="truncate">{lead.profile_url}</span>
+                      </a>
+                    ) : '—'}
                   </TableCell>
                   <TableCell>
                     {isEditing ? (

@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface Lead {
   id: number;
   name: string;
-  email: string | null;
+  profile_url: string | null;
   whatsapp: string | null;
   website: string | null;
   stage_id: string | null;
@@ -35,7 +35,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
       query = query.eq('stage_id', options.stageFilter);
     }
     if (options.search) {
-      query = query.or(`name.ilike.%${options.search}%,email.ilike.%${options.search}%`);
+      query = query.or(`name.ilike.%${options.search}%,profile_url.ilike.%${options.search}%`);
     }
 
     const { data, error } = await query;
@@ -82,7 +82,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
     return { total, active, closedWon, conversionRate, pipelineValue, byStage, bySource };
   }, [leads]);
 
-  const addLead = async (lead: { name: string; email?: string; whatsapp?: string; website?: string; stage_id?: string; source?: string; value?: number; metadata?: Record<string, any>; created_by?: string }) => {
+  const addLead = async (lead: { name: string; profile_url?: string; whatsapp?: string; website?: string; stage_id?: string; source?: string; value?: number; metadata?: Record<string, any>; created_by?: string }) => {
     const { error } = await supabase.from('leads').insert({ ...lead, updated_by: userId } as any);
     if (error) {
       toast({ title: 'Error adding lead', description: error.message, variant: 'destructive' });

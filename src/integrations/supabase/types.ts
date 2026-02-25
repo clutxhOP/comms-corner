@@ -581,10 +581,10 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          email: string | null
           id: number
           metadata: Json
           name: string
+          profile_url: string | null
           source: string | null
           stage_id: string | null
           updated_at: string
@@ -596,10 +596,10 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          email?: string | null
           id?: number
           metadata?: Json
           name: string
+          profile_url?: string | null
           source?: string | null
           stage_id?: string | null
           updated_at?: string
@@ -611,10 +611,10 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          email?: string | null
           id?: number
           metadata?: Json
           name?: string
+          profile_url?: string | null
           source?: string | null
           stage_id?: string | null
           updated_at?: string

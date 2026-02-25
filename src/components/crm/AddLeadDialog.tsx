@@ -12,12 +12,12 @@ interface AddLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   stages: LeadStage[];
   sources: LeadSource[];
-  onAdd: (lead: { name: string; email?: string; whatsapp?: string; website?: string; stage_id: string; source?: string; value?: number }) => Promise<boolean>;
+  onAdd: (lead: { name: string; profile_url?: string; whatsapp?: string; website?: string; stage_id: string; source?: string; value?: number }) => Promise<boolean>;
 }
 
 export function AddLeadDialog({ open, onOpenChange, stages, sources, onAdd }: AddLeadDialogProps) {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [profileUrl, setProfileUrl] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [website, setWebsite] = useState('');
   const [stageId, setStageId] = useState('new-lead');
@@ -30,7 +30,7 @@ export function AddLeadDialog({ open, onOpenChange, stages, sources, onAdd }: Ad
     setSaving(true);
     const success = await onAdd({
       name: name.trim(),
-      email: email.trim() || undefined,
+      profile_url: profileUrl.trim() || undefined,
       whatsapp: whatsapp.trim() || undefined,
       website: website.trim() || undefined,
       stage_id: stageId,
@@ -39,7 +39,7 @@ export function AddLeadDialog({ open, onOpenChange, stages, sources, onAdd }: Ad
     });
     setSaving(false);
     if (success) {
-      setName(''); setEmail(''); setWhatsapp(''); setWebsite(''); setStageId('new-lead'); setSource(''); setValue('');
+      setName(''); setProfileUrl(''); setWhatsapp(''); setWebsite(''); setStageId('new-lead'); setSource(''); setValue('');
       onOpenChange(false);
     }
   };
@@ -56,8 +56,8 @@ export function AddLeadDialog({ open, onOpenChange, stages, sources, onAdd }: Ad
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="Lead name" />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" />
+            <Label>Profile URL</Label>
+            <Input type="url" value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://profile.example.com" />
           </div>
           <div>
             <Label>WhatsApp</Label>
