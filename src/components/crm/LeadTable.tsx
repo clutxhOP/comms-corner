@@ -118,7 +118,7 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
                 <Checkbox checked={selectedIds.size === leads.length && leads.length > 0} onCheckedChange={toggleAll} />
               </TableHead>
               <TableHead className="w-16">#</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead className="min-w-[180px]">Name</TableHead>
               <TableHead>Profile URL</TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Website</TableHead>
@@ -142,7 +142,7 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
                 <TableRow key={lead.id}>
                   <TableCell><Checkbox checked={selectedIds.has(lead.id)} onCheckedChange={() => toggleSelect(lead.id)} /></TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{lead.id}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {isEditing ? <Input className="h-8" value={editData.name || ''} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} /> : lead.name}
                   </TableCell>
                   <TableCell>
