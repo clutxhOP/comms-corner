@@ -1,62 +1,33 @@
 
 
-# Add OPS Dashboard Notifications for Outreach FU Entries
+# Fix Outreach FU Notifications
 
 ## Problem
-When new data is added to outreach FU tables, no in-app notification appears on the OPS dashboard. The edge functions send email notifications via `send-task-notifications`, but there are no browser/in-app notifications, and the database webhook triggers are not attached.
+The database triggers, realtime publication, and frontend realtime subscriptions are all correctly in place. The reason notifications don't appear is that `showNotification()` in `useBrowserNotifications.tsx` **skips notifications when the browser tab is visible and focused** (line 83). Since OPS users are actively on the dashboard when new data arrives, no notification ever fires.
 
 ## Root Cause
-1. **Missing database triggers**: The function `notify_outreach_fu_webhook` exists but no triggers are bound to the outreach FU tables (`outreach_fu_day_2`, `outreach_fu_day_5`, `outreach_fu_day_7`, `outreach_fu_dynamic`), so webhooks never fire on INSERT.
-2. **No realtime browser notifications**: `useRealtimeNotifications` only subscribes to the `tasks` table. There is no subscription for outreach FU tables, so OPS users never see browser push notifications for new entries.
+```
+if (!forceShow && document.visibilityState === 'visible' && document.hasFocus()) {
+  return null; // <-- silently drops the notification
+}
+```
+
+Additionally, browser notification permission must be `'granted'` or the entire subscription is skipped (line 145 of `useRealtimeNotifications.tsx`).
 
 ## Plan
 
-### Step 1: Database Migration -- Create Triggers
-Create triggers on all four outreach FU tables to fire `notify_outreach_fu_webhook` on INSERT:
+### Change: Add in-app toast notifications for Outreach FU inserts
 
-```sql
-CREATE TRIGGER trg_outreach_fu_day_2_webhook
-  AFTER INSERT ON public.outreach_fu_day_2
-  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
+Modify `src/hooks/useRealtimeNotifications.tsx` to import `toast` from `sonner` and fire a toast inside `handleOutreachInsert` **in addition to** the existing browser notification call. This mirrors how other parts of the app use sonner toasts for in-app alerts.
 
-CREATE TRIGGER trg_outreach_fu_day_5_webhook
-  AFTER INSERT ON public.outreach_fu_day_5
-  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
+- Add `import { toast } from 'sonner'`
+- Inside `handleOutreachInsert`, add a `toast()` call with the table label and entry name before calling `showOutreachFUNotification`
+- Remove the `permissionStatus !== 'granted'` guard from the outreach FU subscription `useEffect` so toasts fire regardless of browser notification permission
+- Keep the browser notification call as-is (it will still fire when the tab is backgrounded)
 
-CREATE TRIGGER trg_outreach_fu_day_7_webhook
-  AFTER INSERT ON public.outreach_fu_day_7
-  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
-
-CREATE TRIGGER trg_outreach_fu_dynamic_webhook
-  AFTER INSERT ON public.outreach_fu_dynamic
-  FOR EACH ROW EXECUTE FUNCTION public.notify_outreach_fu_webhook();
-```
-
-Also enable realtime for these tables:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_2;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_5;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_day_7;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.outreach_fu_dynamic;
-```
-
-### Step 2: Add Realtime Browser Notifications
-Update `src/hooks/useRealtimeNotifications.tsx` to subscribe to INSERT events on all four outreach FU tables. When a new entry arrives, call `showNotification()` with a title like "New Outreach FU (Day 2)" and body containing the entry name, so OPS users see a browser push notification immediately.
-
-### Step 3: Also create CRM triggers (while at it)
-The `notify_crm_webhook` and `notify_crm_followup_webhook` functions also have no triggers attached. Create them:
-
-```sql
-CREATE TRIGGER trg_leads_crm_webhook
-  AFTER INSERT OR UPDATE OR DELETE ON public.leads
-  FOR EACH ROW EXECUTE FUNCTION public.notify_crm_webhook();
-
-CREATE TRIGGER trg_crm_follow_ups_webhook
-  AFTER INSERT OR UPDATE ON public.crm_follow_ups
-  FOR EACH ROW EXECUTE FUNCTION public.notify_crm_followup_webhook();
-```
+### Technical Detail
+The `showOutreachFUNotification` browser push will continue to work when the tab is not focused. The new toast ensures users see alerts when they are actively on the page. No existing code is altered or deleted -- only additive toast logic within the existing `handleOutreachInsert` function.
 
 ### Files Changed
-- **Migration SQL** -- triggers + realtime publication
-- `src/hooks/useRealtimeNotifications.tsx` -- add outreach FU table subscriptions with browser notifications for OPS users
+- `src/hooks/useRealtimeNotifications.tsx` -- add sonner toast import and toast call in outreach FU handler, relax permission guard for that subscription
 
