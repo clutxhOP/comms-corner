@@ -173,6 +173,30 @@ export function useBrowserNotifications() {
     [preferences?.mention_notifications, showNotification]
   );
 
+  const showOutreachFUNotification = useCallback(
+    (tableName: string, entryName: string) => {
+      if (!preferences?.task_notifications) return null;
+
+      const labelMap: Record<string, string> = {
+        outreach_fu_day_2: 'Day 2',
+        outreach_fu_day_5: 'Day 5',
+        outreach_fu_day_7: 'Day 7',
+        outreach_fu_dynamic: 'Dynamic',
+      };
+      const label = labelMap[tableName] || tableName;
+
+      return showNotification({
+        title: `New Outreach FU (${label})`,
+        body: `New entry: "${entryName}"`,
+        tag: `outreach-fu-${tableName}-${Date.now()}`,
+        data: {
+          url: '/admin/outreach-fu',
+        },
+      });
+    },
+    [preferences?.task_notifications, showNotification]
+  );
+
   return {
     isSupported,
     permissionStatus,
@@ -181,6 +205,7 @@ export function useBrowserNotifications() {
     showTestNotification,
     showTaskAssignmentNotification,
     showMentionNotification,
+    showOutreachFUNotification,
     preferences,
   };
 }
