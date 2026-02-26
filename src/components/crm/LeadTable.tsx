@@ -33,7 +33,7 @@ export function LeadTable({ leads, stages, sources, profiles, isAdmin, onUpdateL
   const [bulkStageId, setBulkStageId] = useState('');
 
   const getProfileName = (userId: string | null) => {
-    if (!userId) return '—';
+    if (!userId) return 'OPS';
     const p = profiles.find(p => p.user_id === userId);
     return p?.full_name || userId;
   };
