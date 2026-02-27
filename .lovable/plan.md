@@ -1,27 +1,28 @@
 
 
-# Default "Last Contacted By" to "Liam" When Unknown
+# Fix "Last Contacted By" Data and Defaults
 
-## Current Behavior
-The `updated_by` field already stores the user ID of whoever (admin or ops) performs changes. The `getProfileName` function looks up their name from `profiles`. This part works correctly.
+## Part 1: Fix existing data
+Update leads currently showing "Abdullahi Kareem" as `updated_by` to Liam's user ID (`6a58a5d2-8287-4829-a333-e56a5e7e93ee`). These are leads 12, 13, 14 in the "new-lead" stage.
 
-The only gap: when `updated_by` is `null` (e.g., leads created via API/webhook without a user context), it currently shows "OPS".
-
-## Change
-
-**File:** `src/components/crm/LeadTable.tsx` — `getProfileName` function (line 36-39)
-
-Update the fallback logic:
-- When `userId` is null → return `'Liam'`
-- When profile lookup fails (user ID exists but no matching profile) → also return `'Liam'` instead of showing a raw UUID
-
-```typescript
-const getProfileName = (userId: string | null) => {
-  if (!userId) return 'Liam';
-  const p = profiles.find(p => p.user_id === userId);
-  return p?.full_name || 'Liam';
-};
+**Action:** Use the data insert tool to run:
+```sql
+UPDATE leads SET updated_by = '6a58a5d2-8287-4829-a333-e56a5e7e93ee' WHERE id IN (12, 13, 14);
 ```
 
-No changes to webhooks, endpoints, functions, or database structure. The existing `updated_by` tracking for admin/ops users continues to work — this only affects the display fallback.
+## Part 2: Default `updated_by` column to Liam
+Add a database default so any lead inserted without an explicit `updated_by` automatically gets Liam's ID.
+
+**Action:** Migration to set column default:
+```sql
+ALTER TABLE leads ALTER COLUMN updated_by SET DEFAULT '6a58a5d2-8287-4829-a333-e56a5e7e93ee';
+ALTER TABLE leads ALTER COLUMN created_by SET DEFAULT '6a58a5d2-8287-4829-a333-e56a5e7e93ee';
+```
+
+## Part 3: Code fallback already done
+The `getProfileName` function in `LeadTable.tsx` already falls back to "Liam" when `updated_by` is null or profile not found (from previous edit). No further code changes needed.
+
+### Files changed
+- Database: `leads` table data update + column defaults
+- No code file changes
 
