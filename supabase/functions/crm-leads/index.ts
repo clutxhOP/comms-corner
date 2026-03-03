@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
     // GET - List leads
     if (method === "GET") {
-      let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("crm_leads").select("*").order("created_at", { ascending: false });
 
       const stageId = url.searchParams.get("stage_id");
       const source = url.searchParams.get("source");
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data, error } = await supabase.from("leads").insert({
+      const { data, error } = await supabase.from("crm_leads").insert({
         name: body.name,
         profile_url: body.profile_url || null,
         whatsapp: body.whatsapp || null,
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         if (body[field] !== undefined) updates[field] = body[field];
       }
 
-      const { data, error } = await supabase.from("leads").update(updates).eq("id", Number(id)).select().single();
+      const { data, error } = await supabase.from("crm_leads").update(updates).eq("id", Number(id)).select().single();
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { error } = await supabase.from("leads").delete().eq("id", Number(id));
+      const { error } = await supabase.from("crm_leads").delete().eq("id", Number(id));
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

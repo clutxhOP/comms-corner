@@ -29,7 +29,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   const { toast } = useToast();
 
   const fetchLeads = useCallback(async () => {
-    let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('crm_leads').select('*').order('created_at', { ascending: false });
 
     if (options.stageFilter) {
       query = query.eq('stage_id', options.stageFilter);
@@ -52,7 +52,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
 
     const channel = supabase
       .channel('leads_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_leads' }, () => {
         fetchLeads();
       })
       .subscribe();
@@ -83,7 +83,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   }, [leads]);
 
   const addLead = async (lead: { name: string; profile_url?: string; whatsapp?: string; website?: string; stage_id?: string; source?: string; value?: number; metadata?: Record<string, any>; created_by?: string }) => {
-    const { error } = await supabase.from('leads').insert({ ...lead, updated_by: userId } as any);
+    const { error } = await supabase.from('crm_leads').insert({ ...lead, updated_by: userId } as any);
     if (error) {
       toast({ title: 'Error adding lead', description: error.message, variant: 'destructive' });
       return false;
@@ -93,7 +93,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   };
 
   const updateLead = async (id: number, updates: Partial<Lead>) => {
-    const { error } = await supabase.from('leads').update({ ...updates, updated_by: userId } as any).eq('id', id);
+    const { error } = await supabase.from('crm_leads').update({ ...updates, updated_by: userId } as any).eq('id', id);
     if (error) {
       toast({ title: 'Error updating lead', description: error.message, variant: 'destructive' });
       return false;
@@ -102,7 +102,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   };
 
   const updateLeadStage = async (id: number, stage_id: string) => {
-    const { error } = await supabase.from('leads').update({ stage_id, updated_by: userId } as any).eq('id', id);
+    const { error } = await supabase.from('crm_leads').update({ stage_id, updated_by: userId } as any).eq('id', id);
     if (error) {
       toast({ title: 'Error moving lead', description: error.message, variant: 'destructive' });
       return false;
@@ -111,7 +111,7 @@ export function useLeads(options: UseLeadsOptions = {}, userId?: string) {
   };
 
   const deleteLead = async (id: number) => {
-    const { error } = await supabase.from('leads').delete().eq('id', id);
+    const { error } = await supabase.from('crm_leads').delete().eq('id', id);
     if (error) {
       toast({ title: 'Error deleting lead', description: error.message, variant: 'destructive' });
       return false;
