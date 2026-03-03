@@ -104,21 +104,9 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Authenticated users can read all user roles"
   ON public.user_roles FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Admins can insert roles"
-  ON public.user_roles FOR INSERT
-  WITH CHECK (public.has_role(auth.uid(), 'admin'::user_role));
-
-CREATE POLICY "Admins can update roles"
-  ON public.user_roles FOR UPDATE
-  USING (public.has_role(auth.uid(), 'admin'::user_role));
-
-CREATE POLICY "Admins can delete roles"
-  ON public.user_roles FOR DELETE
-  USING (public.has_role(auth.uid(), 'admin'::user_role));
-
 
 -- ---------------------------------------------------------------------------
--- 5. has_role FUNCTION (defined after user_roles table exists)
+-- 5. has_role FUNCTION (must be defined before user_roles admin policies)
 -- ---------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.user_role)
@@ -134,6 +122,20 @@ AS $$
     WHERE user_id = _user_id AND role = _role
   )
 $$;
+
+
+-- user_roles admin policies (defined after has_role exists)
+CREATE POLICY "Admins can insert roles"
+  ON public.user_roles FOR INSERT
+  WITH CHECK (public.has_role(auth.uid(), 'admin'::user_role));
+
+CREATE POLICY "Admins can update roles"
+  ON public.user_roles FOR UPDATE
+  USING (public.has_role(auth.uid(), 'admin'::user_role));
+
+CREATE POLICY "Admins can delete roles"
+  ON public.user_roles FOR DELETE
+  USING (public.has_role(auth.uid(), 'admin'::user_role));
 
 
 -- ---------------------------------------------------------------------------
