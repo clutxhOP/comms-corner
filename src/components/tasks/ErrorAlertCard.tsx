@@ -26,7 +26,7 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
   const isPending = status === "pending";
 
   // Support both new 'description' field and legacy 'error' field
-  const description = details.description || details.error || "";
+  const description = details?.description || details?.error || "";
 
   return (
     <Card className="border-l-4 border-l-destructive bg-destructive/5 shadow-sm hover:shadow-md transition-shadow">
@@ -78,16 +78,16 @@ export function ErrorAlertCard({ id, title, createdAt, details, status, onMarkDo
           </div>
 
           {/* Legacy URL support */}
-          {details.url && !details.description && (
+          {details?.url && !details?.description && (
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">URL</p>
               <a
-                href={details.url}
+                href={details?.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline flex items-center gap-1 break-all"
               >
-                {details.url}
+                {details?.url}
               </a>
             </div>
           )}

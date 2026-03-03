@@ -97,12 +97,12 @@ export function OtherTaskCard({ task, onMarkDone, onDelete }: OtherTaskCardProps
                   h3: ({ children }) => <h3 className="text-xs font-bold my-1 break-words">{children}</h3>,
                 }}
               >
-                {details.description}
+                {details?.description ?? ""}
               </ReactMarkdown>
             </div>
           </div>
 
-          {details.notes && (
+          {details?.notes && (
             <div className="border-t border-dashed pt-3">
               <p className="font-medium text-foreground text-xs">Notes:</p>
               <p className="text-muted-foreground text-xs break-words">{details.notes}</p>
