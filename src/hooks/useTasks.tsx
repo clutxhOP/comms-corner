@@ -347,9 +347,15 @@ export function useTasks() {
         console.error("Error completing task:", error);
         // Revert optimistic update on failure
         await fetchTasks();
+        const msg =
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "message" in error
+              ? String((error as { message: unknown }).message)
+              : JSON.stringify(error);
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to complete task",
+          description: msg || "Failed to complete task",
           variant: "destructive",
         });
       }
