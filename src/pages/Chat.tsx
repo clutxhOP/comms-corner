@@ -18,13 +18,11 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { ChatMessageActions } from "@/components/chat/ChatMessageActions";
-import { MessageReactions } from "@/components/chat/MessageReactions";
 import { ChatRichTextInput } from "@/components/chat/ChatMentionInput";
 import { NotificationBell } from "@/components/chat/NotificationBell";
 import { ChatFilePreview } from "@/components/chat/ChatFilePreview";
 import { ChatAttachmentDisplay } from "@/components/chat/ChatAttachmentDisplay";
 import { ChatDropZone } from "@/components/chat/ChatDropZone";
-import { ConvertToTaskDialog } from "@/components/chat/ConvertToTaskDialog";
 import { UnreadDivider } from "@/components/chat/UnreadDivider";
 import { MessageVisibilityTracker } from "@/components/chat/MessageVisibilityTracker";
 import { format, isSameDay, parseISO } from "date-fns";
@@ -93,7 +91,6 @@ export default function Chat() {
     sendMessage,
     editMessage,
     deleteMessage,
-    toggleReaction,
   } = useChannelMessages(selectedChannelId);
   const { user, profile } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles(user?.id);
@@ -122,16 +119,6 @@ export default function Chat() {
     userName: string;
   } | null>(null);
 
-  // State for Convert to Task dialog
-  const [convertToTaskOpen, setConvertToTaskOpen] = useState(false);
-  const [selectedMessageForTask, setSelectedMessageForTask] = useState<{
-    content: string;
-    sender: string;
-    timestamp: string;
-    channel: string;
-  } | null>(null);
-
-  // Check if current user is admin (only admin can convert messages to tasks)
   const isAdmin = roles.includes("admin");
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
@@ -424,28 +411,6 @@ export default function Chat() {
     return result;
   };
 
-  const getAggregatedReactions = (message: ChannelMessage) => {
-    const reactionMap = new Map<string, { count: number; hasReacted: boolean }>();
-
-    message.reactions?.forEach((reaction) => {
-      const existing = reactionMap.get(reaction.emoji);
-      if (existing) {
-        existing.count++;
-        if (reaction.user_id === user?.id) existing.hasReacted = true;
-      } else {
-        reactionMap.set(reaction.emoji, {
-          count: 1,
-          hasReacted: reaction.user_id === user?.id,
-        });
-      }
-    });
-
-    return Array.from(reactionMap.entries()).map(([emoji, data]) => ({
-      emoji,
-      ...data,
-    }));
-  };
-
   return (
     <>
       <MainLayout>
@@ -720,37 +685,15 @@ export default function Chat() {
                                         </p>
                                       </div>
 
-                                      <MessageReactions
-                                        reactions={getAggregatedReactions(message)}
-                                        onToggleReaction={(emoji) => toggleReaction(message.id, emoji)}
-                                        isOwn={isOwn}
-                                      />
                                     </div>
 
                                     <ChatMessageActions
                                       isOwn={isOwn}
-                                      onEdit={isOwn ? () => handleStartEdit(message.id, message.content) : () => {}}
-                                      onDelete={isOwn ? () => handleDelete(message.id) : () => {}}
-                                      onReact={(emoji) => toggleReaction(message.id, emoji)}
+                                      onEdit={() => handleStartEdit(message.id, message.content)}
+                                      onDelete={() => handleDelete(message.id)}
                                       onReply={() =>
                                         handleReply(message.id, message.content, message.user_name || "Unknown")
                                       }
-                                      canConvertToTask={isAdmin}
-                                      onConvertToTask={() => {
-                                        setSelectedMessageForTask({
-                                          content: message.content,
-                                          sender: message.sender_name || message.user_name || "Unknown",
-                                          timestamp: new Date(message.created_at).toLocaleString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric",
-                                            hour: "numeric",
-                                            minute: "2-digit",
-                                          }),
-                                          channel: selectedChannel?.name || "Unknown",
-                                        });
-                                        setConvertToTaskOpen(true);
-                                      }}
                                     />
                                   </div>
                                 </div>
@@ -827,16 +770,6 @@ export default function Chat() {
         </div>
       </MainLayout>
 
-      {selectedMessageForTask && (
-        <ConvertToTaskDialog
-          open={convertToTaskOpen}
-          onOpenChange={(open) => {
-            setConvertToTaskOpen(open);
-            if (!open) setSelectedMessageForTask(null);
-          }}
-          message={selectedMessageForTask}
-        />
-      )}
     </>
   );
 }

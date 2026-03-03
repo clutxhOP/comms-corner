@@ -14,17 +14,11 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import CreateTask from "./pages/admin/CreateTask";
-import ApiDocs from "./pages/admin/ApiDocs";
-import TokenManagement from "./pages/admin/TokenManagement";
-import WebhookManagement from "./pages/admin/WebhookManagement";
-import WebhookLogs from "./pages/admin/WebhookLogs";
-import CompletedTasks from "./pages/admin/CompletedTasks";
-import ChannelManagement from "./pages/admin/ChannelManagement";
 import CustomerDashboard from "./pages/admin/CustomerDashboard";
-import Outreach from "./pages/Outreach";
-import SubredditWatch from "./pages/admin/SubredditWatch";
 import CrmDashboard from "./pages/crm/CrmDashboard";
-import OutreachFU from "./pages/admin/OutreachFU";
+import SourcesMonitor from "./pages/admin/SourcesMonitor";
+import ActivityLog from "./pages/admin/ActivityLog";
+import DevTools from "./pages/admin/DevTools";
 
 const queryClient = new QueryClient();
 
@@ -53,12 +47,6 @@ const App = () => (
                   <Chat />
                 </ProtectedRoute>
               } />
-              {/* API Docs accessible by admin and dev */}
-              <Route path="/api-docs" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <ApiDocs />
-                </ProtectedRoute>
-              } />
               <Route path="/admin" element={
                 <ProtectedRoute requireAdmin>
                   <AdminDashboard />
@@ -74,44 +62,9 @@ const App = () => (
                   <CreateTask />
                 </ProtectedRoute>
               } />
-              <Route path="/admin/completed-tasks" element={
-                <ProtectedRoute requireAdmin>
-                  <CompletedTasks />
-                </ProtectedRoute>
-              } />
-              <Route path="/tokens" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <TokenManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/webhooks" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <WebhookManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/webhook-logs" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <WebhookLogs />
-                </ProtectedRoute>
-              } />
-              <Route path="/channels" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <ChannelManagement />
-                </ProtectedRoute>
-              } />
               <Route path="/customers" element={
                 <ProtectedRoute requireOpsOrAdmin>
                   <CustomerDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/outreach" element={
-                <ProtectedRoute requireOpsOrAdmin>
-                  <Outreach />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/subreddits" element={
-                <ProtectedRoute requireOpsOrAdmin>
-                  <SubredditWatch />
                 </ProtectedRoute>
               } />
               <Route path="/crm" element={
@@ -119,15 +72,19 @@ const App = () => (
                   <CrmDashboard />
                 </ProtectedRoute>
               } />
-              <Route path="/outreach-fu" element={
+              <Route path="/sources" element={
                 <ProtectedRoute requireOpsOrAdmin>
-                  <OutreachFU />
+                  <SourcesMonitor />
                 </ProtectedRoute>
               } />
-              {/* Keep old route for backwards compatibility */}
-              <Route path="/admin/api-docs" element={
-                <ProtectedRoute requireDevOrAdmin>
-                  <ApiDocs />
+              <Route path="/activity" element={
+                <ProtectedRoute requireAdmin>
+                  <ActivityLog />
+                </ProtectedRoute>
+              } />
+              <Route path="/dev-tools" element={
+                <ProtectedRoute requireAdmin>
+                  <DevTools />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />

@@ -18,7 +18,6 @@ import {
   Mic,
   Paperclip,
 } from "lucide-react";
-import { EmojiPicker } from "./EmojiPicker";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -388,7 +387,6 @@ export function ChatRichTextInput({ value, onChange, placeholder, className, onS
             <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Format text">
               <Type className="h-4 w-4" />
             </Button>
-            <EmojiPicker onEmojiSelect={(emoji) => insertText(emoji)} />
             <Button
               type="button"
               variant="ghost"

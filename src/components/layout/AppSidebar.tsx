@@ -6,21 +6,14 @@ import {
   Shield,
   Users,
   Plus,
-  Code,
-  Key,
-  Webhook,
-  Archive,
-  ScrollText,
-  Hash,
   Building2,
-  Share2,
-  Radio,
   Contact,
-  Repeat,
+  Radio,
+  ActivitySquare,
+  Code2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRoles } from "@/hooks/useUserRoles";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -46,43 +39,18 @@ const adminNavItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield },
   { title: "Manage Users", url: "/admin/users", icon: Users },
   { title: "Customers", url: "/customers", icon: Building2 },
-  { title: "Social Engagement", url: "/outreach", icon: Share2 },
+  { title: "Sources Monitor", url: "/sources", icon: Radio },
+  { title: "CRM", url: "/crm", icon: Contact },
   { title: "Create Task", url: "/admin/create-task", icon: Plus },
-  { title: "Completed Tasks", url: "/admin/completed-tasks", icon: Archive },
-  { title: "Access Tokens", url: "/tokens", icon: Key },
-  { title: "Webhooks", url: "/webhooks", icon: Webhook },
-  { title: "Webhook Logs", url: "/webhook-logs", icon: ScrollText },
-  { title: "Channels", url: "/channels", icon: Hash },
-  { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
-  { title: "CRM", url: "/crm", icon: Contact },
-  { title: "Outreach FU", url: "/outreach-fu", icon: Repeat },
+  { title: "Activity Log", url: "/activity", icon: ActivitySquare },
+  { title: "Dev Tools", url: "/dev-tools", icon: Code2 },
 ];
 
-// Items accessible by dev and ops (non-admin)
-const devNavItems = [
-  { title: "API Docs", url: "/api-docs", icon: Code },
-  { title: "Access Tokens", url: "/tokens", icon: Key },
-  { title: "Webhooks", url: "/webhooks", icon: Webhook },
-  { title: "Webhook Logs", url: "/webhook-logs", icon: ScrollText },
-  { title: "Channels", url: "/channels", icon: Hash },
-];
-
-// Items accessible by ops role
-const opsNavItems = [
-  { title: "Customers", url: "/customers", icon: Building2 },
-  { title: "Social Engagement", url: "/outreach", icon: Share2 },
-  { title: "Subreddit Watch", url: "/admin/subreddits", icon: Radio },
-  { title: "CRM", url: "/crm", icon: Contact },
-  { title: "Outreach FU", url: "/outreach-fu", icon: Repeat },
-];
+const navLinkClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground";
+const activeLinkClass = "bg-sidebar-accent text-sidebar-foreground font-medium";
 
 export function AppSidebar() {
-  const { profile, isAdmin, signOut, user } = useAuth();
-  const { roles } = useUserRoles(user?.id);
-
-  const isDev = roles.includes("dev");
-  const isOps = roles.includes("ops");
-  const canAccessApiDocs = isAdmin || isDev;
+  const { profile, isAdmin, signOut } = useAuth();
 
   return (
     <Sidebar className="border-r border-sidebar-border">
@@ -106,33 +74,13 @@ export function AppSidebar() {
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                    >
+                    <NavLink to={item.url} end={item.url === "/"} className={navLinkClass} activeClassName={activeLinkClass}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {/* API Docs for dev and admin */}
-              {canAccessApiDocs && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/api-docs"
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                    >
-                      <Code className="h-4 w-4" />
-                      <span>API Docs</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -147,65 +95,7 @@ export function AppSidebar() {
                 {adminNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Dev section - only show if dev but not admin (admins see it in admin section) */}
-        {isDev && !isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/50 text-xs uppercase tracking-wider">
-              Developer
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {devNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Ops section - only show if ops but not admin */}
-        {isOps && !isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/50 text-xs uppercase tracking-wider">
-              Operations
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {opsNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                        activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                      >
+                      <NavLink to={item.url} className={navLinkClass} activeClassName={activeLinkClass}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </NavLink>
@@ -234,7 +124,7 @@ export function AppSidebar() {
               {profile?.full_name || "Team Member"}
             </p>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {isAdmin ? "Admin" : isDev ? "Developer" : "Operations"}
+              {isAdmin ? "Admin" : "Team Member"}
             </p>
           </div>
           <Button
