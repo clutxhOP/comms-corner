@@ -282,21 +282,18 @@ export function useTasks() {
       const shouldSendToOps = devCloseResponse?.sendToOps === true;
       const newStatus = shouldSendToOps ? "pending" : "done";
 
-      // Optimistically update UI first
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                status: newStatus as DbTask["status"],
-                actioned_by: user.id,
-                actioned_at: new Date().toISOString(),
-                // Update sent_to_ops for filtering purposes
-                ...(devCloseResponse && { sent_to_ops: devCloseResponse.sendToOps }),
-              }
-            : t,
-        ),
-      );
+      // Optimistically remove from board (done tasks are hidden; sent-to-ops stays as pending)
+      if (!shouldSendToOps) {
+        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      } else {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === taskId
+              ? { ...t, status: "pending", sent_to_ops: true, ops_reason: devCloseResponse?.reason ?? null }
+              : t,
+          ),
+        );
+      }
 
       try {
         const updateData: Record<string, unknown> = {

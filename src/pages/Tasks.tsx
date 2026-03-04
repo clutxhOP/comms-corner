@@ -154,8 +154,10 @@ export default function Tasks() {
       );
     }
 
-    // Filter by status (only if status is allowed for this role)
-    if (statusFilter !== 'all' && allowedStatusFilters.includes(statusFilter)) {
+    // By default hide completed/actioned tasks; show them only when explicitly filtered
+    if (statusFilter === 'all') {
+      result = result.filter(task => task.status === 'pending');
+    } else if (allowedStatusFilters.includes(statusFilter)) {
       result = result.filter(task => task.status === statusFilter);
     }
 
