@@ -116,6 +116,16 @@ export function useTasks() {
           ),
         );
 
+        // Log to activity_logs
+        await supabase.from("activity_logs").insert({
+          user_id: user.id,
+          action_type: "lead_approved",
+          resource_type: "task",
+          resource_id: taskId,
+          details: { title: task?.title, type: task?.type },
+          success: true,
+        });
+
         // For awaiting-business tasks, use dedicated webhooks instead of general task_approve
         const taskType = task?.type;
         console.log(`🔍 Task type resolved: "${taskType}" for task ${taskId}`);
@@ -209,6 +219,16 @@ export function useTasks() {
               : t,
           ),
         );
+
+        // Log to activity_logs
+        await supabase.from("activity_logs").insert({
+          user_id: user.id,
+          action_type: "lead_rejected",
+          resource_type: "task",
+          resource_id: taskId,
+          details: { title: task?.title, type: task?.type, reason },
+          success: true,
+        });
 
         // For awaiting-business tasks, use dedicated webhooks instead of general task_disapprove
         const taskType = task?.type;
@@ -318,6 +338,16 @@ export function useTasks() {
         if (!data) {
           throw new Error("Update failed - you may not have permission to modify this task");
         }
+
+        // Log to activity_logs
+        await supabase.from("activity_logs").insert({
+          user_id: user.id,
+          action_type: shouldSendToOps ? "task_escalated" : "task_completed",
+          resource_type: "task",
+          resource_id: taskId,
+          details: { title: task?.title, type: task?.type, ...(devCloseResponse ?? {}) },
+          success: true,
+        });
 
         // Trigger webhook
         await triggerWebhook("task_done", {
