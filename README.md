@@ -1,73 +1,70 @@
-# Welcome to your Lovable project
+# comms-corner
 
-## Project info
-
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+> AI-powered communications hub — real-time messaging & workflow automation for teams
+>
+> ## 🚀 Overview
+>
+> **comms-corner** is a full-stack communication platform built to streamline team messaging, automate notification workflows, and integrate seamlessly with modern productivity tools. Designed with automation-first architecture so your team spends less time on repetitive comms tasks and more time on what matters.
+>
+> ## ✨ Features
+>
+> - 💬 Real-time team messaging and channel management
+> - - 🤖 Automated workflow triggers based on message events
+>   - - 🔔 Smart notification routing (Slack, WhatsApp, Email)
+>     - - 📊 Activity logging and audit trails via DB triggers
+>       - - 🔐 Role-based access control with Supabase auth
+>         - - ⚡ Instant updates powered by Supabase Realtime
+>          
+>           - ## 🛠️ Tech Stack
+>          
+>           - | Layer | Technology |
+>           - |-------|-----------|
+>           - | Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+> | Backend | Supabase (PostgreSQL, Realtime, Auth, Edge Functions) |
+> | Automation | Custom DB triggers, activity logging |
+> | Deployment | Vercel |
+>
+> ## 📦 Getting Started
+>
+> ### Prerequisites
+>
+> - Node.js 18+ and npm
+> - - Supabase account
+>  
+>   - ### Installation
+>  
+>   - ```bash
+>     # Clone the repository
+>     git clone https://github.com/clutxhOP/comms-corner.git
+>
+>     # Navigate to project directory
+>     cd comms-corner
+>
+>     # Install dependencies
+>     npm install
+>
+>     # Start development server
+>     npm run dev
+>     ```
+>
+> ### Environment Variables
+>
+> Create a `.env` file in the root directory:
+>
+> ```env
+> VITE_SUPABASE_URL=your_supabase_url
+> VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+> ```
+>
+> ## 🌐 Live Demo
+>
+> Visit the live app: [comms-corner.vercel.app](https://comms-corner.vercel.app)
+>
+> ## 👤 Author
+>
+> **Faheem Mashoor** — AI Automation Engineer & Workflow Architect
+>
+> - 🌐 [buildwithfaheem.lovable.app](https://buildwithfaheem.lovable.app)
+> - - 💼 [Upwork](https://www.upwork.com/freelancers/~01df7cb0ba307acdc6)
+>   - - 📅 [Book a Call](https://calendly.com/faheemmashoor)
+>     - - 📧 faheemmashoor@gmail.com
